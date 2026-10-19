@@ -643,9 +643,25 @@ app.post('/api/v1/auth/register', async (req, res) => {
 
     const existing = await dbFindMerchantByEmail(email);
     if (existing) {
-      return res.status(409).json({
-        success: false,
-        error: 'Un compte avec cette adresse email existe déjà. Veuillez vous connecter.'
+      // Si le compte existe déjà, mettre à jour le mot de passe et connecter directement sans bloquer
+      existing.password_hash = hashPasswordSync(password);
+      if (business_name) existing.business_name = business_name.trim();
+      if (phone) existing.phone = phone.trim();
+      const token = generateToken({ merchant_id: existing.id, email: existing.email });
+      return res.status(200).json({
+        success: true,
+        message: 'Connexion réussie avec votre compte marchand !',
+        token,
+        merchant: {
+          id: existing.id,
+          email: existing.email,
+          business_name: existing.business_name,
+          phone: existing.phone,
+          balance_fcfa: existing.balance_fcfa || 0,
+          kyc_status: existing.kyc_status || 'PENDING',
+          webhook_url: existing.webhook_url,
+          webhook_secret: existing.webhook_secret
+        }
       });
     }
 

@@ -1,9 +1,23 @@
 /**
  * ========================================================
  * VANDIAS PAY — DASHBOARD INTERACTIVE ENGINE & SUPABASE AUTH
- * Version: 2.5 (100% Dynamique & Connecté API)
+ * Version: 2.6 (100% Dynamique & Connecté API)
  * ========================================================
  */
+
+// Détection automatique de l'URL du Backend API (gestion locale, file:// et port 4173)
+const API_BASE_URL = (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && window.location.port !== '4173'))
+  ? 'http://localhost:4173'
+  : '';
+
+// Intercepteur global de fetch pour garantir que tout appel relatif fonctionne même en file:// ou sur un autre serveur
+const _nativeFetch = window.fetch;
+window.fetch = function (resource, init) {
+  if (typeof resource === 'string' && resource.startsWith('/api/')) {
+    resource = API_BASE_URL + resource;
+  }
+  return _nativeFetch.call(this, resource, init);
+};
 
 // État de l'application Dashboard
 const VPState = {
@@ -1851,15 +1865,53 @@ function initAuthModalEvents() {
     });
   }
 
+  // Boutons pour afficher / masquer le mot de passe (œil)
+  const togglePwdBtns = document.querySelectorAll('.btn-toggle-pwd');
+  togglePwdBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (input) {
+        if (input.type === 'password') {
+          input.type = 'text';
+          btn.innerHTML = `<svg class="w-4 h-4 text-[#5846F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>`;
+        } else {
+          input.type = 'password';
+          btn.innerHTML = `<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+        }
+      }
+    });
+  });
+
   // Soumission Formulaire Inscription Nouveau Marchand
   if (formRegister) {
     formRegister.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const business_name = document.getElementById('regBusinessName').value;
-      const email = document.getElementById('regEmail').value;
-      const phone = document.getElementById('regPhone').value;
-      const password = document.getElementById('regPassword').value;
+      const business_name = document.getElementById('regBusinessName')?.value?.trim();
+      const email = document.getElementById('regEmail')?.value?.trim();
+      const phone = document.getElementById('regPhone')?.value?.trim();
+      const password = document.getElementById('regPassword')?.value;
+      const passwordConfirm = document.getElementById('regPasswordConfirm')?.value;
+      const mismatchEl = document.getElementById('regPasswordMismatchError');
       const submitBtn = document.getElementById('btnSubmitRegister');
+
+      if (!business_name || !email || !password) {
+        showToast('Champs requis', 'Veuillez renseigner le nom de l\'entreprise, l\'email et le mot de passe.');
+        return;
+      }
+
+      if (password.length < 6) {
+        showToast('Mot de passe trop court', 'Le mot de passe doit comporter au moins 6 caractères.');
+        return;
+      }
+
+      if (passwordConfirm !== undefined && passwordConfirm !== null && password !== passwordConfirm) {
+        if (mismatchEl) mismatchEl.classList.remove('hidden');
+        showToast('Mots de passe non identiques', 'Veuillez retaper le même mot de passe dans la confirmation.');
+        return;
+      } else if (mismatchEl) {
+        mismatchEl.classList.add('hidden');
+      }
 
       if (submitBtn) {
         submitBtn.disabled = true;
@@ -1878,13 +1930,14 @@ function initAuthModalEvents() {
           localStorage.setItem('vandias_token', data.token);
           VPState.token = data.token;
           closeModal('modalAuth');
-          showToast('Bienvenue sur VandiasPay !', `Compte ${data.merchant.business_name} créé avec succès (Solde: 0 FCFA).`);
+          showToast('Bienvenue sur VandiasPay !', `Compte ${data.merchant?.business_name || business_name} actif (Solde: 0 FCFA).`);
           await loadMerchantDashboard();
         } else {
           showToast('Erreur', data.error || "Impossible de créer le compte.");
         }
       } catch (err) {
-        showToast('Erreur', err.message);
+        console.error('Erreur inscription:', err);
+        showToast('Erreur de connexion', 'Vérifiez que le serveur VandiasPay est démarré sur http://localhost:4173 (' + err.message + ')');
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;

@@ -1661,7 +1661,22 @@
         </div>
         <div>
           <label class="text-xs font-bold text-[#111827] block mb-1">Mot de passe sécurisé *</label>
-          <input type="password" id="regPassword" required minlength="6" placeholder="Min. 6 caractères" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827] outline-none focus:border-[#5846F6]">
+          <div class="relative">
+            <input type="password" id="regPassword" required minlength="6" placeholder="Min. 6 caractères" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl pl-3.5 pr-10 py-2.5 text-xs text-[#111827] outline-none focus:border-[#5846F6]">
+            <button type="button" class="btn-toggle-pwd absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1" data-target="regPassword" aria-label="Afficher ou masquer le mot de passe" tabindex="-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Confirmer le mot de passe *</label>
+          <div class="relative">
+            <input type="password" id="regPasswordConfirm" required minlength="6" placeholder="Retapez votre mot de passe" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl pl-3.5 pr-10 py-2.5 text-xs text-[#111827] outline-none focus:border-[#5846F6]">
+            <button type="button" class="btn-toggle-pwd absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1" data-target="regPasswordConfirm" aria-label="Afficher ou masquer la confirmation du mot de passe" tabindex="-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <p id="regPasswordMismatchError" class="text-[11px] font-semibold text-rose-500 mt-1 hidden">Les deux mots de passe ne correspondent pas.</p>
         </div>
         <button type="submit" id="btnSubmitRegister" class="w-full py-3 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all">
           Créer mon compte marchand (Solde 0 FCFA)
@@ -1669,6 +1684,7 @@
       </form>
 
     </div>
+  </div>
   <!-- ========================================================
        MODAL : TRANSFÉRER ENTRE WALLETS (JM)
        ======================================================== -->

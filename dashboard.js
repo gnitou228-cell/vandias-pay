@@ -13,31 +13,31 @@ const VPState = {
   transactions: [],
   paymentLinks: [],
   wallets: [
-    { code: "USD", name: "Dollar Américain", balance: 0, flag: "🇺🇸", symbol: "$" },
-    { code: "XOF", name: "Franc CFA UEMOA (Sénégal, CI, Bénin...)", balance: 0, flag: "🇸🇳", symbol: "F" },
-    { code: "CDF", name: "Franc Congolais (RDC)", balance: 0, flag: "🇨🇩", symbol: "FC" },
-    { code: "ZMW", name: "Kwacha Zambien (Zambie)", balance: 0, flag: "🇿🇲", symbol: "ZK" },
-    { code: "UGX", name: "Shilling Ougandais (Ouganda)", balance: 0, flag: "🇺🇬", symbol: "USh" },
-    { code: "TZS", name: "Shilling Tanzanien (Tanzanie)", balance: 0, flag: "🇹🇿", symbol: "TSh" },
-    { code: "RWF", name: "Franc Rwandais (Rwanda)", balance: 0, flag: "🇷🇼", symbol: "RF" },
-    { code: "NGN", name: "Naira Nigérian (Nigéria)", balance: 0, flag: "🇳🇬", symbol: "₦" },
-    { code: "MZN", name: "Metical Mozambicain (Mozambique)", balance: 0, flag: "🇲🇿", symbol: "MT" },
-    { code: "XAF", name: "Franc CFA CEMAC (Cameroun, Gabon, Congo...)", balance: 0, flag: "🇨🇲", symbol: "F" },
-    { code: "KES", name: "Shilling Kenyan (Kenya)", balance: 0, flag: "🇰🇪", symbol: "KSh" },
-    { code: "GHS", name: "Cedi Ghanéen (Ghana)", balance: 0, flag: "🇬🇭", symbol: "GH₵" },
-    { code: "GNF", name: "Franc Guinéen (Guinée Conakry)", balance: 0, flag: "🇬🇳", symbol: "FG" },
-    { code: "ZAR", name: "Rand Sud-Africain (Afrique du Sud)", balance: 0, flag: "🇿🇦", symbol: "R" },
-    { code: "EUR", name: "Euro (Europe & Diaspora)", balance: 0, flag: "🇪🇺", symbol: "€" },
-    { code: "GBP", name: "Livre Sterling (Royaume-Uni)", balance: 0, flag: "🇬🇧", symbol: "£" },
-    { code: "BWP", name: "Pula Botswanais (Botswana)", balance: 0, flag: "🇧🇼", symbol: "P" },
-    { code: "ETB", name: "Birr Éthiopien (Éthiopie)", balance: 0, flag: "🇪🇹", symbol: "Br" },
-    { code: "MAD", name: "Dirham Marocain (Maroc)", balance: 0, flag: "🇲🇦", symbol: "DH" },
-    { code: "EGP", name: "Livre Égyptienne (Égypte)", balance: 0, flag: "🇪🇬", symbol: "E£" },
-    { code: "CAD", name: "Dollar Canadien (Canada)", balance: 0, flag: "🇨🇦", symbol: "C$" },
-    { code: "AOA", name: "Kwanza Angolais (Angola)", balance: 0, flag: "🇦🇴", symbol: "Kz" },
-    { code: "BIF", name: "Franc Burundais (Burundi)", balance: 0, flag: "🇧🇮", symbol: "FBu" },
-    { code: "SLL", name: "Leone Sierra-Léonais", balance: 0, flag: "🇸🇱", symbol: "Le" },
-    { code: "LRD", name: "Dollar Libérien", balance: 0, flag: "🇱🇷", symbol: "L$" }
+    { code: "XOF", country: "TG", name: "Togo", balance: 80, flag: "🇹🇬", symbol: "XOF" },
+    { code: "USD", country: "XC", name: "XC", balance: 0, flag: "🌐", symbol: "USD" },
+    { code: "ZMW", country: "ZM", name: "Zambie", balance: 0, flag: "🇿🇲", symbol: "ZMW" },
+    { code: "USD", country: "US_INTL", name: "International (USD)", balance: 0, flag: "🇺🇸", symbol: "USD" },
+    { code: "USD", country: "US", name: "États-Unis", balance: 0, flag: "🇺🇸", symbol: "USD" },
+    { code: "UGX", country: "UG", name: "Ouganda", balance: 0, flag: "🇺🇬", symbol: "UGX" },
+    { code: "TZS", country: "TZ", name: "Tanzanie", balance: 0, flag: "🇹🇿", symbol: "TZS" },
+    { code: "XOF", country: "SN", name: "Sénégal", balance: 0, flag: "🇸🇳", symbol: "XOF" },
+    { code: "RWF", country: "RW", name: "Rwanda", balance: 0, flag: "🇷🇼", symbol: "RWF" },
+    { code: "NGN", country: "NG", name: "Nigeria", balance: 0, flag: "🇳🇬", symbol: "NGN" },
+    { code: "XOF", country: "NE", name: "Niger", balance: 0, flag: "🇳🇪", symbol: "XOF" },
+    { code: "MZN", country: "MZ", name: "Mozambique", balance: 0, flag: "🇲🇿", symbol: "MZN" },
+    { code: "MWK", country: "MW", name: "Malawi", balance: 0, flag: "🇲🇼", symbol: "MWK" },
+    { code: "XOF", country: "ML", name: "Mali", balance: 0, flag: "🇲🇱", symbol: "XOF" },
+    { code: "KES", country: "KE", name: "Kenya", balance: 0, flag: "🇰🇪", symbol: "KES" },
+    { code: "INR", country: "IN", name: "Inde", balance: 0, flag: "🇮🇳", symbol: "INR" },
+    { code: "GNF", country: "GN", name: "Guinée", balance: 0, flag: "🇬🇳", symbol: "GNF" },
+    { code: "GHS", country: "GH", name: "Ghana", balance: 0, flag: "🇬🇭", symbol: "GHS" },
+    { code: "XAF", country: "GA", name: "Gabon", balance: 0, flag: "🇬🇦", symbol: "XAF" },
+    { code: "XAF", country: "CM", name: "Cameroun", balance: 0, flag: "🇨🇲", symbol: "XAF" },
+    { code: "XOF", country: "CI", name: "Côte d'Ivoire", balance: 0, flag: "🇨🇮", symbol: "XOF" },
+    { code: "XAF", country: "CG", name: "Congo", balance: 0, flag: "🇨🇬", symbol: "XAF" },
+    { code: "CDF", country: "CD", name: "Congo (République démocratique du)", balance: 0, flag: "🇨🇩", symbol: "CDF" },
+    { code: "XOF", country: "BJ", name: "Bénin", balance: 0, flag: "🇧🇯", symbol: "XOF" },
+    { code: "XOF", country: "BF", name: "Burkina Faso", balance: 0, flag: "🇧🇫", symbol: "XOF" }
   ],
   pricingRates: [],
   settings: null,
@@ -479,15 +479,70 @@ function renderCustomersList() {
 
 const REGION_NAMES = new Intl.DisplayNames(['fr'], { type: 'region' });
 
+const COUNTRY_FLAGS = {
+  'TG': '🇹🇬',
+  'XC': '🌐',
+  'ZM': '🇿🇲',
+  'US_INTL': '🇺🇸',
+  'US': '🇺🇸',
+  'UG': '🇺🇬',
+  'TZ': '🇹🇿',
+  'SN': '🇸🇳',
+  'RW': '🇷🇼',
+  'NG': '🇳🇬',
+  'NE': '🇳🇪',
+  'MZ': '🇲🇿',
+  'MW': '🇲🇼',
+  'ML': '🇲🇱',
+  'KE': '🇰🇪',
+  'IN': '🇮🇳',
+  'GN': '🇬🇳',
+  'GH': '🇬🇭',
+  'GA': '🇬🇦',
+  'CM': '🇨🇲',
+  'CI': '🇨🇮',
+  'CG': '🇨🇬',
+  'CD': '🇨🇩',
+  'BJ': '🇧🇯',
+  'BF': '🇧🇫'
+};
+
+const COUNTRY_NAMES = {
+  'TG': 'Togo',
+  'XC': 'XC',
+  'ZM': 'Zambie',
+  'US_INTL': 'International (USD)',
+  'US': 'États-Unis',
+  'UG': 'Ouganda',
+  'TZ': 'Tanzanie',
+  'SN': 'Sénégal',
+  'RW': 'Rwanda',
+  'NG': 'Nigeria',
+  'NE': 'Niger',
+  'MZ': 'Mozambique',
+  'MW': 'Malawi',
+  'ML': 'Mali',
+  'KE': 'Kenya',
+  'IN': 'Inde',
+  'GN': 'Guinée',
+  'GH': 'Ghana',
+  'GA': 'Gabon',
+  'CM': 'Cameroun',
+  'CI': 'Côte d\'Ivoire',
+  'CG': 'Congo',
+  'CD': 'Congo (République démocratique du)',
+  'BJ': 'Bénin',
+  'BF': 'Burkina Faso'
+};
+
 function getCountryFlag(code) {
-  if (!code || code.length !== 2) return '';
-  if (code.toUpperCase() === 'US') return '🇺🇸';
+  if (COUNTRY_FLAGS[code]) return COUNTRY_FLAGS[code];
+  if (!code || code.length !== 2) return '🌍';
   return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)));
 }
 
 function getCountryName(code) {
-  if (!code || code.length !== 2) return code || '';
-  if (code.toUpperCase() === 'US') return 'International (USD)';
+  if (COUNTRY_NAMES[code]) return COUNTRY_NAMES[code];
   try {
     return REGION_NAMES.of(code.toUpperCase()) || code;
   } catch {
@@ -495,8 +550,9 @@ function getCountryName(code) {
   }
 }
 
-function formatWalletMoney(amount, currency = 'XOF') {
-  return `${new Intl.NumberFormat('fr-FR').format(Math.abs(amount || 0))} ${currency}`;
+function formatWalletMoney(amount, currency = '') {
+  const formatted = new Intl.NumberFormat('fr-FR').format(Math.abs(amount || 0));
+  return currency ? `${formatted} ${currency}` : formatted;
 }
 
 const WALLET_EXCHANGE_RATES = {
@@ -508,6 +564,24 @@ const WALLET_EXCHANGE_RATES = {
   'XOF/USD': 1 / 605.0,
   'USD/XAF': 605.0,
   'XAF/USD': 1 / 605.0,
+  'ZMW/XOF': 23.5,
+  'XOF/ZMW': 1 / 23.5,
+  'UGX/XOF': 0.16,
+  'XOF/UGX': 6.25,
+  'TZS/XOF': 0.23,
+  'XOF/TZS': 4.35,
+  'RWF/XOF': 0.44,
+  'XOF/RWF': 2.27,
+  'NGN/XOF': 0.41,
+  'XOF/NGN': 2.44,
+  'MZN/XOF': 9.5,
+  'XOF/MZN': 0.105,
+  'MWK/XOF': 0.35,
+  'XOF/MWK': 2.85,
+  'KES/XOF': 4.65,
+  'XOF/KES': 0.215,
+  'INR/XOF': 7.2,
+  'XOF/INR': 0.138,
   'CDF/XOF': 0.22,
   'XOF/CDF': 4.54,
   'GNF/XOF': 0.07,
@@ -515,6 +589,15 @@ const WALLET_EXCHANGE_RATES = {
   'GHS/XOF': 40.0,
   'XOF/GHS': 0.025
 };
+
+function getInterwalletRate(fromCurrency, toCurrency) {
+  if (fromCurrency === toCurrency) return 1.0;
+  const directKey = `${fromCurrency}/${toCurrency}`;
+  if (WALLET_EXCHANGE_RATES[directKey]) return WALLET_EXCHANGE_RATES[directKey];
+  const toXof = WALLET_EXCHANGE_RATES[`${fromCurrency}/XOF`] || (WALLET_EXCHANGE_RATES[`XOF/${fromCurrency}`] ? 1 / WALLET_EXCHANGE_RATES[`XOF/${fromCurrency}`] : 1.0);
+  const fromXof = WALLET_EXCHANGE_RATES[`XOF/${toCurrency}`] || (WALLET_EXCHANGE_RATES[`${toCurrency}/XOF`] ? 1 / WALLET_EXCHANGE_RATES[`${toCurrency}/XOF`] : 1.0);
+  return toXof * fromXof;
+}
 
 function renderDetailedWallets() {
   const container = document.getElementById('allWalletsDetailedGrid');
@@ -548,7 +631,7 @@ async function loadAndRenderWallets() {
   const grid = document.getElementById('walletCardsGrid');
   const merchantNameEl = document.getElementById('walletMerchantName');
   if (merchantNameEl && VPState.merchant) {
-    merchantNameEl.textContent = VPState.merchant.business_name || 'ton entreprise';
+    merchantNameEl.textContent = VPState.merchant.business_name || 'VANDIA IA';
   }
 
   try {
@@ -561,12 +644,22 @@ async function loadAndRenderWallets() {
 
     VPState.walletsList = data.wallets;
 
-    // Trier : portefeuilles avec solde disponible > 0 en tête, puis alphabétique
+    // Trier : portefeuilles avec solde disponible > 0 en tête, puis ordre décroissant des pays
+    const SASPAY_CANONICAL_ORDER = [
+      'TG', 'XC', 'ZM', 'US_INTL', 'US', 'UG', 'TZ', 'SN', 'RW',
+      'NG', 'NE', 'MZ', 'MW', 'ML', 'KE', 'IN', 'GN', 'GH', 'GA',
+      'CM', 'CI', 'CG', 'CD', 'BJ', 'BF'
+    ];
+
     const sorted = [...data.wallets].sort((a, b) => {
       const balA = parseFloat(a.available_amount || 0);
       const balB = parseFloat(b.available_amount || 0);
-      if (balB !== balA) return balB - balA;
-      return a.country.localeCompare(b.country);
+      if (balB > 0 && balA <= 0) return 1;
+      if (balA > 0 && balB <= 0) return -1;
+      if (balA > 0 && balB > 0) return balB - balA;
+      const idxA = SASPAY_CANONICAL_ORDER.indexOf(a.country);
+      const idxB = SASPAY_CANONICAL_ORDER.indexOf(b.country);
+      return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
     });
 
     if (grid) {
@@ -580,29 +673,32 @@ async function loadAndRenderWallets() {
         const frozen = parseFloat(w.frozen_amount || 0);
 
         const card = document.createElement('div');
-        card.className = 'rounded-2xl border border-violet-900/8 bg-white p-5 shadow-sm space-y-4 hover:border-violet-300 transition-all';
+        card.className = 'rounded-3xl border border-[#ECEEF6] bg-white p-5 sm:p-6 shadow-sm hover:border-violet-200 transition-all flex flex-col justify-between min-h-[145px]';
         card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <span class="text-2xl">${flag}</span>
-              <span class="text-xs sm:text-sm font-bold text-[#111827]">${name}</span>
-            </div>
-            ${isFrozen ? '<span class="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600">Gelé</span>' : ''}
-          </div>
           <div>
-            <p class="text-[11px] font-medium text-[#6B7280]">Disponible</p>
-            <p class="text-2xl font-black tracking-tight text-[#111827] font-mono mt-0.5">${formatWalletMoney(available, w.currency)}</p>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5 font-bold text-sm text-[#111827]">
+                <span class="font-extrabold text-sm mr-1">${flag}</span>
+                <span>${name}</span>
+              </div>
+              ${isFrozen ? '<span class="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600">Gelé</span>' : ''}
+            </div>
+            <div class="mt-3">
+              <p class="text-xs text-[#6B7280] font-normal">Disponible</p>
+              <p class="text-2xl font-black text-[#111827] font-mono mt-0.5 tracking-tight">${formatWalletMoney(available)} ${w.currency}</p>
+            </div>
           </div>
-          <div class="grid grid-cols-2 gap-2 pt-1 border-t border-[#F0F2F9]">
-            <div class="rounded-xl bg-violet-50/50 p-2.5">
+          ${(pending > 0 || frozen > 0) ? `
+          <div class="grid grid-cols-2 gap-2 pt-2.5 mt-3 border-t border-[#F0F2F9]">
+            <div class="rounded-xl bg-violet-50/50 p-2">
               <span class="text-[10px] font-medium text-[#6B7280] block">En attente</span>
-              <p class="text-xs font-bold text-[#111827] font-mono mt-0.5">${formatWalletMoney(pending, w.currency)}</p>
+              <p class="text-xs font-bold text-[#111827] font-mono mt-0.5">${formatWalletMoney(pending)} ${w.currency}</p>
             </div>
-            <div class="rounded-xl bg-violet-50/50 p-2.5">
+            <div class="rounded-xl bg-violet-50/50 p-2">
               <span class="text-[10px] font-medium text-[#6B7280] block">Gelé (litige)</span>
-              <p class="text-xs font-bold ${frozen > 0 ? 'text-rose-600' : 'text-[#111827]'} font-mono mt-0.5">${formatWalletMoney(frozen, w.currency)}</p>
+              <p class="text-xs font-bold ${frozen > 0 ? 'text-rose-600' : 'text-[#111827]'} font-mono mt-0.5">${formatWalletMoney(frozen)} ${w.currency}</p>
             </div>
-          </div>
+          </div>` : ''}
         `;
         grid.appendChild(card);
       });
@@ -924,14 +1020,13 @@ function updateTransferEstimate() {
     return;
   }
 
-  const pairKey = `${sourceW.currency}/${destW.currency}`;
-  const rate = WALLET_EXCHANGE_RATES[pairKey] || 1.0;
+  const rate = getInterwalletRate(sourceW.currency, destW.currency);
   const converted = amount * rate;
 
   estimateEl.classList.remove('hidden');
   estimateEl.innerHTML = `
     ≈ <span class="font-bold text-[#111827]">${formatWalletMoney(converted, destW.currency)}</span> reçu
-    <span class="text-slate-400 text-[11px] block mt-0.5">Taux de conversion : 1 ${sourceW.currency} = ${rate} ${destW.currency}</span>
+    <span class="text-slate-400 text-[11px] block mt-0.5">Taux de conversion : 1 ${sourceW.currency} = ${rate.toFixed(4)} ${destW.currency}</span>
   `;
 }
 

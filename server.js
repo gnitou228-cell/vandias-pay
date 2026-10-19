@@ -217,9 +217,10 @@ const memoryDb = {
       id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d',
       email: 'demo@vandiaspay.com',
       password_hash: hashPasswordSync('vandias2026'),
-      business_name: 'Jeff Digital Inc.',
+      business_name: 'VANDIA IA',
+      full_name: 'Gnitou',
       phone: '+221778421904',
-      balance_fcfa: 1450000.00,
+      balance_fcfa: 0.00,
       kyc_status: 'VERIFIED',
       webhook_url: 'https://webhook.site/vandias-demo',
       webhook_secret: 'whsec_9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d',
@@ -295,24 +296,38 @@ const memoryDb = {
       fee: 0.00,
       channel: 'WAVE',
       recipient_phone: '+221778421904',
-      recipient_name: 'Jeff Digital',
+      recipient_name: 'VANDIA IA',
       status: 'COMPLETED',
       reference: 'PAYOUT-WV-94812',
       created_at: new Date(Date.now() - 86400000 * 2).toISOString()
     }
   ],
   wallets: [
-    { id: 'w_sn', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'SN', currency: 'XOF', available_amount: 1450000, pending_amount: 50000, frozen_amount: 0, is_frozen: false },
-    { id: 'w_ci', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CI', currency: 'XOF', available_amount: 450000, pending_amount: 0, frozen_amount: 0, is_frozen: false },
-    { id: 'w_bj', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'BJ', currency: 'XOF', available_amount: 280000, pending_amount: 15000, frozen_amount: 0, is_frozen: false },
-    { id: 'w_tg', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'TG', currency: 'XOF', available_amount: 120000, pending_amount: 0, frozen_amount: 0, is_frozen: false },
-    { id: 'w_cm', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CM', currency: 'XAF', available_amount: 85000, pending_amount: 0, frozen_amount: 0, is_frozen: false },
-    { id: 'w_cd', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CD', currency: 'CDF', available_amount: 150000, pending_amount: 0, frozen_amount: 0, is_frozen: false },
-    { id: 'w_us', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'US', currency: 'USD', available_amount: 250, pending_amount: 0, frozen_amount: 0, is_frozen: false },
-    { id: 'w_bf', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'BF', currency: 'XOF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_tg', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'TG', currency: 'XOF', available_amount: 80, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_xc', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'XC', currency: 'USD', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_zm', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'ZM', currency: 'ZMW', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_us_intl', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'US_INTL', currency: 'USD', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_us', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'US', currency: 'USD', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_ug', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'UG', currency: 'UGX', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_tz', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'TZ', currency: 'TZS', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_sn', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'SN', currency: 'XOF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_rw', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'RW', currency: 'RWF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_ng', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'NG', currency: 'NGN', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_ne', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'NE', currency: 'XOF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_mz', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'MZ', currency: 'MZN', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_mw', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'MW', currency: 'MWK', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
     { id: 'w_ml', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'ML', currency: 'XOF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_ke', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'KE', currency: 'KES', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_in', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'IN', currency: 'INR', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
     { id: 'w_gn', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'GN', currency: 'GNF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
-    { id: 'w_gh', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'GH', currency: 'GHS', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false }
+    { id: 'w_gh', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'GH', currency: 'GHS', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_ga', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'GA', currency: 'XAF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_cm', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CM', currency: 'XAF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_ci', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CI', currency: 'XOF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_cg', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CG', currency: 'XAF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_cd', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CD', currency: 'CDF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_bj', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'BJ', currency: 'XOF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_bf', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'BF', currency: 'XOF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false }
   ],
   ledger_movements: [
     { id: 'mov_1', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', type: 'COLLECTION', direction: 'CREDIT', country: 'SN', currency: 'XOF', amount: 50000, description: 'Encaissement Wave — Commande #CMD-84912', created_at: new Date(Date.now() - 3600000).toISOString() },
@@ -1761,26 +1776,40 @@ app.get('/api/v1/pricing/my-rates', (req, res) => {
 app.get('/api/v1/merchant/wallets', requireMerchantAuth, async (req, res) => {
   try {
     const merchantId = req.merchant.id;
-    let list = memoryDb.wallets.filter(w => w.merchant_id === merchantId);
 
-    // Si le marchand n'a pas encore de wallets initialisés, créer la liste par défaut
-    if (!list || list.length === 0) {
-      const defaultCountries = [
-        { country: 'SN', currency: 'XOF', available: parseFloat(req.merchant.balance_fcfa || 0), pending: 0, frozen: 0 },
-        { country: 'CI', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
-        { country: 'BJ', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
-        { country: 'TG', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
-        { country: 'CM', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
-        { country: 'CD', currency: 'CDF', available: 0, pending: 0, frozen: 0 },
-        { country: 'US', currency: 'USD', available: 0, pending: 0, frozen: 0 },
-        { country: 'BF', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
-        { country: 'ML', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
-        { country: 'GN', currency: 'GNF', available: 0, pending: 0, frozen: 0 },
-        { country: 'GH', currency: 'GHS', available: 0, pending: 0, frozen: 0 }
-      ];
+    const default25Countries = [
+      { country: 'TG', currency: 'XOF', available: 80, pending: 0, frozen: 0 },
+      { country: 'XC', currency: 'USD', available: 0, pending: 0, frozen: 0 },
+      { country: 'ZM', currency: 'ZMW', available: 0, pending: 0, frozen: 0 },
+      { country: 'US_INTL', currency: 'USD', available: 0, pending: 0, frozen: 0 },
+      { country: 'US', currency: 'USD', available: 0, pending: 0, frozen: 0 },
+      { country: 'UG', currency: 'UGX', available: 0, pending: 0, frozen: 0 },
+      { country: 'TZ', currency: 'TZS', available: 0, pending: 0, frozen: 0 },
+      { country: 'SN', currency: 'XOF', available: parseFloat(req.merchant.balance_fcfa || 0), pending: 0, frozen: 0 },
+      { country: 'RW', currency: 'RWF', available: 0, pending: 0, frozen: 0 },
+      { country: 'NG', currency: 'NGN', available: 0, pending: 0, frozen: 0 },
+      { country: 'NE', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+      { country: 'MZ', currency: 'MZN', available: 0, pending: 0, frozen: 0 },
+      { country: 'MW', currency: 'MWK', available: 0, pending: 0, frozen: 0 },
+      { country: 'ML', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+      { country: 'KE', currency: 'KES', available: 0, pending: 0, frozen: 0 },
+      { country: 'IN', currency: 'INR', available: 0, pending: 0, frozen: 0 },
+      { country: 'GN', currency: 'GNF', available: 0, pending: 0, frozen: 0 },
+      { country: 'GH', currency: 'GHS', available: 0, pending: 0, frozen: 0 },
+      { country: 'GA', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
+      { country: 'CM', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
+      { country: 'CI', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+      { country: 'CG', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
+      { country: 'CD', currency: 'CDF', available: 0, pending: 0, frozen: 0 },
+      { country: 'BJ', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+      { country: 'BF', currency: 'XOF', available: 0, pending: 0, frozen: 0 }
+    ];
 
-      defaultCountries.forEach(dc => {
-        const newW = {
+    // S'assurer que les 25 wallets existent pour ce marchand
+    default25Countries.forEach(dc => {
+      const existing = memoryDb.wallets.find(w => w.merchant_id === merchantId && w.country === dc.country);
+      if (!existing) {
+        memoryDb.wallets.push({
           id: `w_${dc.country.toLowerCase()}_${merchantId.slice(0, 8)}`,
           merchant_id: merchantId,
           country: dc.country,
@@ -1790,18 +1819,36 @@ app.get('/api/v1/merchant/wallets', requireMerchantAuth, async (req, res) => {
           frozen_amount: dc.frozen,
           is_frozen: false,
           updated_at: new Date().toISOString()
-        };
-        memoryDb.wallets.push(newW);
-      });
-
-      list = memoryDb.wallets.filter(w => w.merchant_id === merchantId);
-    } else {
-      // Synchroniser le portefeuille principal SN avec le solde marchand
-      const snWallet = list.find(w => w.country === 'SN');
-      if (snWallet) {
-        snWallet.available_amount = parseFloat(req.merchant.balance_fcfa || snWallet.available_amount || 0);
+        });
       }
+    });
+
+    let list = memoryDb.wallets.filter(w => w.merchant_id === merchantId);
+
+    // Synchroniser le portefeuille principal SN avec le solde marchand
+    const snWallet = list.find(w => w.country === 'SN');
+    if (snWallet && parseFloat(req.merchant.balance_fcfa || 0) > 0) {
+      snWallet.available_amount = parseFloat(req.merchant.balance_fcfa);
     }
+
+    // Ordre canonique exact observé sur SasPay Dashboard
+    const SASPAY_CANONICAL_ORDER = [
+      'TG', 'XC', 'ZM', 'US_INTL', 'US', 'UG', 'TZ', 'SN', 'RW',
+      'NG', 'NE', 'MZ', 'MW', 'ML', 'KE', 'IN', 'GN', 'GH', 'GA',
+      'CM', 'CI', 'CG', 'CD', 'BJ', 'BF'
+    ];
+
+    // Tri conforme SasPay : solde positif en tête, puis séquence canonique SasPay
+    list.sort((a, b) => {
+      const balA = parseFloat(a.available_amount || 0);
+      const balB = parseFloat(b.available_amount || 0);
+      if (balB > 0 && balA <= 0) return 1;
+      if (balA > 0 && balB <= 0) return -1;
+      if (balA > 0 && balB > 0) return balB - balA;
+      const idxA = SASPAY_CANONICAL_ORDER.indexOf(a.country);
+      const idxB = SASPAY_CANONICAL_ORDER.indexOf(b.country);
+      return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+    });
 
     res.json({
       success: true,
@@ -1923,7 +1970,7 @@ app.post('/api/v1/merchant/wallet/transfers', requireMerchantAuth, async (req, r
       });
     }
 
-    // Calcul de la table de conversion inter-devises
+    // Calcul de la table de conversion inter-devises complète
     const rates = {
       'XOF/XOF': 1.0,
       'XAF/XAF': 1.0,
@@ -1933,6 +1980,24 @@ app.post('/api/v1/merchant/wallet/transfers', requireMerchantAuth, async (req, r
       'XOF/USD': 1 / 605.0,
       'USD/XAF': 605.0,
       'XAF/USD': 1 / 605.0,
+      'ZMW/XOF': 23.5,
+      'XOF/ZMW': 1 / 23.5,
+      'UGX/XOF': 0.16,
+      'XOF/UGX': 6.25,
+      'TZS/XOF': 0.23,
+      'XOF/TZS': 4.35,
+      'RWF/XOF': 0.44,
+      'XOF/RWF': 2.27,
+      'NGN/XOF': 0.41,
+      'XOF/NGN': 2.44,
+      'MZN/XOF': 9.5,
+      'XOF/MZN': 0.105,
+      'MWK/XOF': 0.35,
+      'XOF/MWK': 2.85,
+      'KES/XOF': 4.65,
+      'XOF/KES': 0.215,
+      'INR/XOF': 7.2,
+      'XOF/INR': 0.138,
       'CDF/XOF': 0.22,
       'XOF/CDF': 4.54,
       'GNF/XOF': 0.07,
@@ -1941,8 +2006,15 @@ app.post('/api/v1/merchant/wallet/transfers', requireMerchantAuth, async (req, r
       'XOF/GHS': 0.025
     };
 
-    const pairKey = `${sourceWallet.currency}/${destWallet.currency}`;
-    const exchangeRate = rates[pairKey] || 1.0;
+    function computeRate(fromCur, toCur) {
+      if (fromCur === toCur) return 1.0;
+      if (rates[`${fromCur}/${toCur}`]) return rates[`${fromCur}/${toCur}`];
+      const toXof = rates[`${fromCur}/XOF`] || (rates[`XOF/${fromCur}`] ? 1 / rates[`XOF/${fromCur}`] : 1.0);
+      const fromXof = rates[`XOF/${toCur}`] || (rates[`${toCur}/XOF`] ? 1 / rates[`${toCur}/XOF`] : 1.0);
+      return toXof * fromXof;
+    }
+
+    const exchangeRate = computeRate(sourceWallet.currency, destWallet.currency);
     const grossConverted = parsedAmount * exchangeRate;
     const feeAmount = 0; // SasPay standard : 0% frais inter-wallets ou nominal
     const netConverted = Math.max(0, grossConverted - feeAmount);

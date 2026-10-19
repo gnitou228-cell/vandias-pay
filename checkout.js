@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Checkout Runtime State
 const CheckoutState = {
   currentScreen: 'form', // 'form', 'pending', 'success', 'failed'
-  merchant: 'Jeff Digital Inc.',
-  productTitle: 'Abonnement Canva Pro (1 an d\'accès complet)',
+  merchant: 'Commerçant VandiasPay',
+  productTitle: 'Commande sécurisée',
   amount: 5000,
   currency: 'FCFA',
   country: 'SN',
@@ -24,9 +24,9 @@ const CheckoutState = {
   flag: '🇸🇳',
   method: 'wave',
   payer: {
-    name: 'Amadou Diallo',
-    phone: '77 842 19 04',
-    email: 'amadou.diallo@gmail.com'
+    name: '',
+    phone: '',
+    email: ''
   },
   returnUrl: 'dashboard.html',
   countdownInterval: null,

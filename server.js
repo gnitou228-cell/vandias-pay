@@ -300,6 +300,32 @@ const memoryDb = {
       reference: 'PAYOUT-WV-94812',
       created_at: new Date(Date.now() - 86400000 * 2).toISOString()
     }
+  ],
+  wallets: [
+    { id: 'w_sn', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'SN', currency: 'XOF', available_amount: 1450000, pending_amount: 50000, frozen_amount: 0, is_frozen: false },
+    { id: 'w_ci', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CI', currency: 'XOF', available_amount: 450000, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_bj', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'BJ', currency: 'XOF', available_amount: 280000, pending_amount: 15000, frozen_amount: 0, is_frozen: false },
+    { id: 'w_tg', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'TG', currency: 'XOF', available_amount: 120000, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_cm', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CM', currency: 'XAF', available_amount: 85000, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_cd', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'CD', currency: 'CDF', available_amount: 150000, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_us', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'US', currency: 'USD', available_amount: 250, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_bf', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'BF', currency: 'XOF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_ml', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'ML', currency: 'XOF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_gn', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'GN', currency: 'GNF', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false },
+    { id: 'w_gh', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', country: 'GH', currency: 'GHS', available_amount: 0, pending_amount: 0, frozen_amount: 0, is_frozen: false }
+  ],
+  ledger_movements: [
+    { id: 'mov_1', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', type: 'COLLECTION', direction: 'CREDIT', country: 'SN', currency: 'XOF', amount: 50000, description: 'Encaissement Wave — Commande #CMD-84912', created_at: new Date(Date.now() - 3600000).toISOString() },
+    { id: 'mov_2', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', type: 'COLLECTION', direction: 'CREDIT', country: 'CI', currency: 'XOF', amount: 25000, description: 'Encaissement Orange Money CI — #CMD-84905', created_at: new Date(Date.now() - 7200000).toISOString() },
+    { id: 'mov_3', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', type: 'PAYOUT', direction: 'DEBIT', country: 'SN', currency: 'XOF', amount: 15000, description: 'Retrait Wave vers +221778421904', created_at: new Date(Date.now() - 14400000).toISOString() },
+    { id: 'mov_4', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', type: 'COLLECTION', direction: 'CREDIT', country: 'BJ', currency: 'XOF', amount: 35000, description: 'Encaissement MTN MoMo Bénin — #CMD-84880', created_at: new Date(Date.now() - 28800000).toISOString() },
+    { id: 'mov_5', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', type: 'TRANSFER_IN', direction: 'CREDIT', country: 'CI', currency: 'XOF', amount: 100000, description: 'Transfert depuis Sénégal (SN)', created_at: new Date(Date.now() - 43200000).toISOString() },
+    { id: 'mov_6', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', type: 'TRANSFER_OUT', direction: 'DEBIT', country: 'SN', currency: 'XOF', amount: 100000, description: 'Transfert vers Côte d\'Ivoire (CI)', created_at: new Date(Date.now() - 43200000).toISOString() },
+    { id: 'mov_7', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', type: 'COLLECTION', direction: 'CREDIT', country: 'US', currency: 'USD', amount: 120, description: 'Encaissement Carte Visa Diaspora — #CMD-84720', created_at: new Date(Date.now() - 86400000).toISOString() }
+  ],
+  wallet_transfers: [
+    { id: 'tr_1', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', from_country: 'SN', to_country: 'CI', from_currency: 'XOF', to_currency: 'XOF', from_amount: 100000, to_amount: 100000, exchange_rate: 1.0, fee_amount: 0, fee_percent_applied: 0, status: 'COMPLETED', created_at: new Date(Date.now() - 43200000).toISOString() },
+    { id: 'tr_2', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', from_country: 'US', to_country: 'SN', from_currency: 'USD', to_currency: 'XOF', from_amount: 50, to_amount: 30250, exchange_rate: 605.0, fee_amount: 0, fee_percent_applied: 0, status: 'COMPLETED', created_at: new Date(Date.now() - 90000000).toISOString() }
   ]
 };
 
@@ -1722,6 +1748,276 @@ app.get('/api/v1/pricing/my-rates', (req, res) => {
     success: true,
     data: defaultPricingRates
   });
+});
+
+// ========================================================
+// 6.c. WALLETS MULTI-DEVISES, LEDGER & TRANSFERTS (SASPAY STANDARD)
+// ========================================================
+
+/**
+ * GET /api/v1/merchant/wallets
+ * Portefeuilles multi-pays du marchand
+ */
+app.get('/api/v1/merchant/wallets', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    let list = memoryDb.wallets.filter(w => w.merchant_id === merchantId);
+
+    // Si le marchand n'a pas encore de wallets initialisés, créer la liste par défaut
+    if (!list || list.length === 0) {
+      const defaultCountries = [
+        { country: 'SN', currency: 'XOF', available: parseFloat(req.merchant.balance_fcfa || 0), pending: 0, frozen: 0 },
+        { country: 'CI', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+        { country: 'BJ', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+        { country: 'TG', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+        { country: 'CM', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
+        { country: 'CD', currency: 'CDF', available: 0, pending: 0, frozen: 0 },
+        { country: 'US', currency: 'USD', available: 0, pending: 0, frozen: 0 },
+        { country: 'BF', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+        { country: 'ML', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+        { country: 'GN', currency: 'GNF', available: 0, pending: 0, frozen: 0 },
+        { country: 'GH', currency: 'GHS', available: 0, pending: 0, frozen: 0 }
+      ];
+
+      defaultCountries.forEach(dc => {
+        const newW = {
+          id: `w_${dc.country.toLowerCase()}_${merchantId.slice(0, 8)}`,
+          merchant_id: merchantId,
+          country: dc.country,
+          currency: dc.currency,
+          available_amount: dc.available,
+          pending_amount: dc.pending,
+          frozen_amount: dc.frozen,
+          is_frozen: false,
+          updated_at: new Date().toISOString()
+        };
+        memoryDb.wallets.push(newW);
+      });
+
+      list = memoryDb.wallets.filter(w => w.merchant_id === merchantId);
+    } else {
+      // Synchroniser le portefeuille principal SN avec le solde marchand
+      const snWallet = list.find(w => w.country === 'SN');
+      if (snWallet) {
+        snWallet.available_amount = parseFloat(req.merchant.balance_fcfa || snWallet.available_amount || 0);
+      }
+    }
+
+    res.json({
+      success: true,
+      wallets: list
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/merchant/wallet/ledger
+ * Historique des mouvements de fonds (Encaissements, Retraits, Transferts, Frais)
+ */
+app.get('/api/v1/merchant/wallet/ledger', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { country, search, page = 1, limit = 10 } = req.query;
+
+    let movements = memoryDb.ledger_movements.filter(m => m.merchant_id === merchantId);
+
+    if (country) {
+      movements = movements.filter(m => m.country.toUpperCase() === country.toUpperCase());
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      movements = movements.filter(m =>
+        (m.description && m.description.toLowerCase().includes(q)) ||
+        (m.id && m.id.toLowerCase().includes(q)) ||
+        (m.type && m.type.toLowerCase().includes(q))
+      );
+    }
+
+    const total = movements.length;
+    const p = Math.max(1, parseInt(page) || 1);
+    const l = Math.max(1, parseInt(limit) || 10);
+    const startIndex = (p - 1) * l;
+    const paginated = movements.slice(startIndex, startIndex + l);
+
+    res.json({
+      success: true,
+      movements: paginated,
+      pagination: {
+        page: p,
+        limit: l,
+        total,
+        total_pages: Math.ceil(total / l) || 1
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/merchant/wallet/transfers
+ * Liste des transferts inter-wallets effectués
+ */
+app.get('/api/v1/merchant/wallet/transfers', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const transfers = memoryDb.wallet_transfers.filter(t => t.merchant_id === merchantId);
+    res.json({
+      success: true,
+      transfers
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/wallet/transfers
+ * Effectuer un transfert instantané entre deux portefeuilles avec conversion de devise
+ */
+app.post('/api/v1/merchant/wallet/transfers', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { from_country, to_country, amount } = req.body;
+
+    const parsedAmount = parseFloat(amount);
+    if (!from_country || !to_country || !parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Pays source, pays destination et montant valide supérieur à 0 requis.'
+      });
+    }
+
+    if (from_country.toUpperCase() === to_country.toUpperCase()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le pays de destination doit être différent du pays source.'
+      });
+    }
+
+    // Trouver les wallets
+    const sourceWallet = memoryDb.wallets.find(w => w.merchant_id === merchantId && w.country.toUpperCase() === from_country.toUpperCase());
+    const destWallet = memoryDb.wallets.find(w => w.merchant_id === merchantId && w.country.toUpperCase() === to_country.toUpperCase());
+
+    if (!sourceWallet) {
+      return res.status(404).json({ success: false, error: `Portefeuille source introuvable pour ${from_country}.` });
+    }
+    if (!destWallet) {
+      return res.status(404).json({ success: false, error: `Portefeuille de destination introuvable pour ${to_country}.` });
+    }
+
+    if (sourceWallet.is_frozen) {
+      return res.status(403).json({ success: false, error: 'Le portefeuille source est actuellement gelé.' });
+    }
+    if (destWallet.is_frozen) {
+      return res.status(403).json({ success: false, error: 'Le portefeuille de destination est actuellement gelé.' });
+    }
+
+    if (sourceWallet.available_amount < parsedAmount) {
+      return res.status(400).json({
+        success: false,
+        error: `Solde insuffisant dans le wallet ${from_country}. Disponible : ${sourceWallet.available_amount.toLocaleString('fr-FR')} ${sourceWallet.currency}.`
+      });
+    }
+
+    // Calcul de la table de conversion inter-devises
+    const rates = {
+      'XOF/XOF': 1.0,
+      'XAF/XAF': 1.0,
+      'XOF/XAF': 1.0, // Parité stricte FCFA UEMOA / CEMAC
+      'XAF/XOF': 1.0,
+      'USD/XOF': 605.0,
+      'XOF/USD': 1 / 605.0,
+      'USD/XAF': 605.0,
+      'XAF/USD': 1 / 605.0,
+      'CDF/XOF': 0.22,
+      'XOF/CDF': 4.54,
+      'GNF/XOF': 0.07,
+      'XOF/GNF': 14.28,
+      'GHS/XOF': 40.0,
+      'XOF/GHS': 0.025
+    };
+
+    const pairKey = `${sourceWallet.currency}/${destWallet.currency}`;
+    const exchangeRate = rates[pairKey] || 1.0;
+    const grossConverted = parsedAmount * exchangeRate;
+    const feeAmount = 0; // SasPay standard : 0% frais inter-wallets ou nominal
+    const netConverted = Math.max(0, grossConverted - feeAmount);
+
+    // Débit source et Crédit destination
+    sourceWallet.available_amount -= parsedAmount;
+    destWallet.available_amount += netConverted;
+    sourceWallet.updated_at = new Date().toISOString();
+    destWallet.updated_at = new Date().toISOString();
+
+    // Si la source ou la destination est le portefeuille principal SN (XOF), synchroniser req.merchant.balance_fcfa
+    if (sourceWallet.country === 'SN') {
+      req.merchant.balance_fcfa = sourceWallet.available_amount;
+    }
+    if (destWallet.country === 'SN') {
+      req.merchant.balance_fcfa = destWallet.available_amount;
+    }
+
+    // Enregistrement du transfert
+    const newTransfer = {
+      id: `tr_${Date.now().toString(36)}_${crypto.randomBytes(2).toString('hex')}`,
+      merchant_id: merchantId,
+      from_country: sourceWallet.country,
+      to_country: destWallet.country,
+      from_currency: sourceWallet.currency,
+      to_currency: destWallet.currency,
+      from_amount: parsedAmount,
+      to_amount: netConverted,
+      exchange_rate: exchangeRate,
+      fee_amount: feeAmount,
+      fee_percent_applied: 0,
+      status: 'COMPLETED',
+      created_at: new Date().toISOString()
+    };
+
+    memoryDb.wallet_transfers.unshift(newTransfer);
+
+    // Enregistrement des 2 mouvements dans le Grand Livre (Ledger)
+    const movOut = {
+      id: `mov_${Date.now()}_out`,
+      merchant_id: merchantId,
+      type: 'TRANSFER_OUT',
+      direction: 'DEBIT',
+      country: sourceWallet.country,
+      currency: sourceWallet.currency,
+      amount: parsedAmount,
+      description: `Transfert vers ${destWallet.country} (${netConverted.toLocaleString('fr-FR')} ${destWallet.currency})`,
+      created_at: new Date().toISOString()
+    };
+
+    const movIn = {
+      id: `mov_${Date.now()}_in`,
+      merchant_id: merchantId,
+      type: 'TRANSFER_IN',
+      direction: 'CREDIT',
+      country: destWallet.country,
+      currency: destWallet.currency,
+      amount: netConverted,
+      description: `Transfert reçu de ${sourceWallet.country} (${parsedAmount.toLocaleString('fr-FR')} ${sourceWallet.currency})`,
+      created_at: new Date().toISOString()
+    };
+
+    memoryDb.ledger_movements.unshift(movIn);
+    memoryDb.ledger_movements.unshift(movOut);
+
+    res.status(201).json({
+      success: true,
+      message: `Transfert de ${parsedAmount.toLocaleString('fr-FR')} ${sourceWallet.currency} vers le wallet ${destWallet.country} réussi !`,
+      transfer: newTransfer,
+      source_wallet: sourceWallet,
+      dest_wallet: destWallet
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // ========================================================

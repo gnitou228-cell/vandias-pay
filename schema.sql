@@ -129,6 +129,68 @@ CREATE INDEX IF NOT EXISTS idx_payouts_merchant ON public.payouts(merchant_id);
 CREATE INDEX IF NOT EXISTS idx_payouts_status ON public.payouts(status);
 
 -- ========================================================
+-- 5.b. TABLE DES WALLETS MULTI-PAYS (WALLETS)
+-- Un portefeuille par pays avec solde disponible, en attente et gelé
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.wallets (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+    country VARCHAR(5) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    available_amount NUMERIC(15, 2) DEFAULT 0.00 NOT NULL,
+    pending_amount NUMERIC(15, 2) DEFAULT 0.00 NOT NULL,
+    frozen_amount NUMERIC(15, 2) DEFAULT 0.00 NOT NULL,
+    is_frozen BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    CONSTRAINT uq_merchant_country UNIQUE(merchant_id, country)
+);
+
+CREATE INDEX IF NOT EXISTS idx_wallets_merchant ON public.wallets(merchant_id);
+
+-- ========================================================
+-- 5.c. TABLE DU GRAND LIVRE DES MOUVEMENTS (LEDGER_MOVEMENTS)
+-- Historique unifié : encaissements, retraits, transferts, frais
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.ledger_movements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+    type VARCHAR(30) NOT NULL CHECK (type IN ('COLLECTION', 'PAYOUT', 'TRANSFER_IN', 'TRANSFER_OUT', 'FEE', 'ADJUSTMENT', 'REVERSAL')),
+    direction VARCHAR(10) NOT NULL CHECK (direction IN ('CREDIT', 'DEBIT')),
+    country VARCHAR(5) NOT NULL,
+    currency VARCHAR(10) NOT NULL,
+    amount NUMERIC(15, 2) NOT NULL CHECK (amount >= 0),
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ledger_merchant ON public.ledger_movements(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_ledger_country ON public.ledger_movements(country);
+CREATE INDEX IF NOT EXISTS idx_ledger_type ON public.ledger_movements(type);
+
+-- ========================================================
+-- 5.d. TABLE DES TRANSFERTS INTER-WALLETS (WALLET_TRANSFERS)
+-- Transferts instantanés de pays à pays avec conversion de devise
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.wallet_transfers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+    from_country VARCHAR(5) NOT NULL,
+    to_country VARCHAR(5) NOT NULL,
+    from_currency VARCHAR(10) NOT NULL,
+    to_currency VARCHAR(10) NOT NULL,
+    from_amount NUMERIC(15, 2) NOT NULL CHECK (from_amount > 0),
+    to_amount NUMERIC(15, 2) NOT NULL CHECK (to_amount >= 0),
+    exchange_rate NUMERIC(12, 6) DEFAULT 1.0 NOT NULL,
+    fee_amount NUMERIC(15, 2) DEFAULT 0.00 NOT NULL,
+    fee_percent_applied NUMERIC(5, 2) DEFAULT 0.00 NOT NULL,
+    status VARCHAR(20) DEFAULT 'COMPLETED' NOT NULL CHECK (status IN ('COMPLETED', 'PENDING', 'REJECTED')),
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_wallet_transfers_merchant ON public.wallet_transfers(merchant_id);
+
+-- ========================================================
 -- 6. FONCTIONS ET DÉCLENCHEURS AUTOMATIQUES (TRIGGERS)
 -- Mise à jour automatique de la colonne updated_at
 -- ========================================================
@@ -168,6 +230,9 @@ ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payment_links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payouts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ledger_movements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.wallet_transfers ENABLE ROW LEVEL SECURITY;
 
 -- Politique générale : Service Role Bypass (permet au backend server.js d'accéder à tout en toute sécurité)
 CREATE POLICY "Service role has full access to merchants" ON public.merchants FOR ALL USING (true);
@@ -175,6 +240,9 @@ CREATE POLICY "Service role has full access to api_keys" ON public.api_keys FOR 
 CREATE POLICY "Service role has full access to payment_links" ON public.payment_links FOR ALL USING (true);
 CREATE POLICY "Service role has full access to transactions" ON public.transactions FOR ALL USING (true);
 CREATE POLICY "Service role has full access to payouts" ON public.payouts FOR ALL USING (true);
+CREATE POLICY "Service role has full access to wallets" ON public.wallets FOR ALL USING (true);
+CREATE POLICY "Service role has full access to ledger_movements" ON public.ledger_movements FOR ALL USING (true);
+CREATE POLICY "Service role has full access to wallet_transfers" ON public.wallet_transfers FOR ALL USING (true);
 
 -- ========================================================
 -- 8. DONNÉES DE DÉMONSTRATION INITIALES (DEMO SEED)

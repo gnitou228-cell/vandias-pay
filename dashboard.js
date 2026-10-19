@@ -41,7 +41,15 @@ const VPState = {
   ],
   pricingRates: [],
   settings: null,
-  activeSettingsSubTab: 'kyc'
+  activeSettingsSubTab: 'kyc',
+  walletsList: [],
+  ledgerMovements: [],
+  walletTransfers: [],
+  ledgerCountryFilter: '',
+  ledgerSearchFilter: '',
+  ledgerPage: 1,
+  ledgerLimit: 10,
+  ledgerTotalPages: 1
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -55,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPricingSection();
   initSettingsSubTabs();
   initAllSettingsForms();
+  initWalletSection();
 
   // Vérification de la session et chargement dynamique
   if (VPState.token) {
@@ -207,6 +216,11 @@ function renderAllDashboardElements() {
 
   // 12. Paramètres avancés (100% conforme SasPay)
   loadAndRenderSettings();
+
+  // 13. Wallets multi-devises, mouvements ledger et transferts (100% conforme SasPay)
+  loadAndRenderWallets();
+  loadAndRenderWalletLedger();
+  loadAndRenderWalletTransfers();
 }
 
 /* ========================================================
@@ -460,8 +474,47 @@ function renderCustomersList() {
 }
 
 /* ========================================================
-   5. WALLETS MULTI-DEVISES
+   5. WALLETS MULTI-DEVISES, LEDGER & TRANSFERTS (100% CONFORME SASPAY)
    ======================================================== */
+
+const REGION_NAMES = new Intl.DisplayNames(['fr'], { type: 'region' });
+
+function getCountryFlag(code) {
+  if (!code || code.length !== 2) return '';
+  if (code.toUpperCase() === 'US') return '🇺🇸';
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)));
+}
+
+function getCountryName(code) {
+  if (!code || code.length !== 2) return code || '';
+  if (code.toUpperCase() === 'US') return 'International (USD)';
+  try {
+    return REGION_NAMES.of(code.toUpperCase()) || code;
+  } catch {
+    return code;
+  }
+}
+
+function formatWalletMoney(amount, currency = 'XOF') {
+  return `${new Intl.NumberFormat('fr-FR').format(Math.abs(amount || 0))} ${currency}`;
+}
+
+const WALLET_EXCHANGE_RATES = {
+  'XOF/XOF': 1.0,
+  'XAF/XAF': 1.0,
+  'XOF/XAF': 1.0,
+  'XAF/XOF': 1.0,
+  'USD/XOF': 605.0,
+  'XOF/USD': 1 / 605.0,
+  'USD/XAF': 605.0,
+  'XAF/USD': 1 / 605.0,
+  'CDF/XOF': 0.22,
+  'XOF/CDF': 4.54,
+  'GNF/XOF': 0.07,
+  'XOF/GNF': 14.28,
+  'GHS/XOF': 40.0,
+  'XOF/GHS': 0.025
+};
 
 function renderDetailedWallets() {
   const container = document.getElementById('allWalletsDetailedGrid');
@@ -484,11 +537,564 @@ function renderDetailedWallets() {
       </div>
       <div class="pt-3 border-t border-[#F0F2F9] flex items-center justify-between text-xs">
         <button class="text-[#5846F6] font-bold hover:underline" onclick="showToast('Dépôt', 'Option de rechargement disponible.');">Dépôt</button>
-        <button class="text-slate-500 font-medium hover:text-[#111827]" onclick="openModal('modalPayoutQuick')">Transférer</button>
+        <button class="text-slate-500 font-medium hover:text-[#111827]" onclick="openWalletTransferModal()">Transférer</button>
       </div>
     `;
     container.appendChild(card);
   });
+}
+
+async function loadAndRenderWallets() {
+  const grid = document.getElementById('walletCardsGrid');
+  const merchantNameEl = document.getElementById('walletMerchantName');
+  if (merchantNameEl && VPState.merchant) {
+    merchantNameEl.textContent = VPState.merchant.business_name || 'ton entreprise';
+  }
+
+  try {
+    const res = await fetch('/api/v1/merchant/wallets', {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.wallets)) return;
+
+    VPState.walletsList = data.wallets;
+
+    // Trier : portefeuilles avec solde disponible > 0 en tête, puis alphabétique
+    const sorted = [...data.wallets].sort((a, b) => {
+      const balA = parseFloat(a.available_amount || 0);
+      const balB = parseFloat(b.available_amount || 0);
+      if (balB !== balA) return balB - balA;
+      return a.country.localeCompare(b.country);
+    });
+
+    if (grid) {
+      grid.innerHTML = '';
+      sorted.forEach(w => {
+        const flag = getCountryFlag(w.country);
+        const name = getCountryName(w.country);
+        const isFrozen = w.is_frozen === true;
+        const available = parseFloat(w.available_amount || 0);
+        const pending = parseFloat(w.pending_amount || 0);
+        const frozen = parseFloat(w.frozen_amount || 0);
+
+        const card = document.createElement('div');
+        card.className = 'rounded-2xl border border-violet-900/8 bg-white p-5 shadow-sm space-y-4 hover:border-violet-300 transition-all';
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">${flag}</span>
+              <span class="text-xs sm:text-sm font-bold text-[#111827]">${name}</span>
+            </div>
+            ${isFrozen ? '<span class="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600">Gelé</span>' : ''}
+          </div>
+          <div>
+            <p class="text-[11px] font-medium text-[#6B7280]">Disponible</p>
+            <p class="text-2xl font-black tracking-tight text-[#111827] font-mono mt-0.5">${formatWalletMoney(available, w.currency)}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1 border-t border-[#F0F2F9]">
+            <div class="rounded-xl bg-violet-50/50 p-2.5">
+              <span class="text-[10px] font-medium text-[#6B7280] block">En attente</span>
+              <p class="text-xs font-bold text-[#111827] font-mono mt-0.5">${formatWalletMoney(pending, w.currency)}</p>
+            </div>
+            <div class="rounded-xl bg-violet-50/50 p-2.5">
+              <span class="text-[10px] font-medium text-[#6B7280] block">Gelé (litige)</span>
+              <p class="text-xs font-bold ${frozen > 0 ? 'text-rose-600' : 'text-[#111827]'} font-mono mt-0.5">${formatWalletMoney(frozen, w.currency)}</p>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Mettre à jour les filtres pays
+    populateWalletCountryFilter(data.wallets);
+  } catch (err) {
+    console.error('Erreur chargement wallets:', err);
+  }
+}
+
+function populateWalletCountryFilter(wallets) {
+  const select = document.getElementById('walletLedgerCountrySelect');
+  if (!select) return;
+
+  const currentVal = select.value;
+  select.innerHTML = '<option value="">Tous les pays</option>';
+
+  const countries = Array.from(new Set(wallets.map(w => w.country))).sort();
+  countries.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = `${getCountryFlag(c)} ${getCountryName(c)}`;
+    if (c === currentVal) opt.selected = true;
+    select.appendChild(opt);
+  });
+}
+
+async function loadAndRenderWalletLedger() {
+  const tbody = document.getElementById('walletLedgerTableBody');
+  const countInfo = document.getElementById('walletLedgerCountInfo');
+  const paginationContainer = document.getElementById('walletLedgerPaginationBtns');
+  if (!tbody) return;
+
+  try {
+    const params = new URLSearchParams();
+    if (VPState.ledgerCountryFilter) params.append('country', VPState.ledgerCountryFilter);
+    if (VPState.ledgerSearchFilter) params.append('search', VPState.ledgerSearchFilter);
+    params.append('page', VPState.ledgerPage || 1);
+    params.append('limit', VPState.ledgerLimit || 10);
+
+    const res = await fetch(`/api/v1/merchant/wallet/ledger?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.success) return;
+
+    VPState.ledgerMovements = data.movements || [];
+    const total = data.pagination?.total || 0;
+    const totalPages = data.pagination?.total_pages || 1;
+    VPState.ledgerTotalPages = totalPages;
+
+    if (countInfo) {
+      const startIndex = total === 0 ? 0 : ((VPState.ledgerPage - 1) * VPState.ledgerLimit) + 1;
+      const endIndex = Math.min(VPState.ledgerPage * VPState.ledgerLimit, total);
+      countInfo.textContent = `Affichage de ${startIndex} à ${endIndex} sur ${total} mouvement${total > 1 ? 's' : ''}`;
+    }
+
+    tbody.innerHTML = '';
+    if (VPState.ledgerMovements.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
+            <div class="flex flex-col items-center justify-center">
+              <span class="text-xl mb-1">📜</span>
+              <span class="font-semibold text-[#111827]">Aucun mouvement trouvé</span>
+              <span class="text-[11px] text-slate-400 mt-0.5">Aucun flux financier ne correspond à vos filtres.</span>
+            </div>
+          </td>
+        </tr>
+      `;
+    } else {
+      VPState.ledgerMovements.forEach(m => {
+        const isCredit = m.direction === 'CREDIT';
+        const typeLabels = {
+          'COLLECTION': 'Encaissement',
+          'PAYOUT': 'Retrait',
+          'TRANSFER_IN': 'Transfert entrant',
+          'TRANSFER_OUT': 'Transfert sortant',
+          'FEE': 'Frais de service',
+          'ADJUSTMENT': 'Ajustement',
+          'REVERSAL': 'Régularisation'
+        };
+        const typeLabel = typeLabels[m.type] || m.type;
+
+        let typeIcon = isCredit
+          ? `<span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 font-bold text-xs">↓</span>`
+          : `<span class="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-600 font-bold text-xs">↑</span>`;
+
+        if (m.type === 'ADJUSTMENT') {
+          typeIcon = `<span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-600 font-bold text-xs">↕</span>`;
+        }
+
+        const dateStr = formatTxDate(m.created_at);
+        const flag = getCountryFlag(m.country);
+        const countryName = getCountryName(m.country);
+        const sign = isCredit ? '+' : '-';
+        const amountColor = isCredit ? 'text-emerald-600' : 'text-rose-600';
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-[#F8F9FD] transition-colors';
+        tr.innerHTML = `
+          <td class="py-3 px-3">
+            <div class="flex items-center gap-2.5">
+              ${typeIcon}
+              <span class="font-semibold text-[#111827] text-xs">${typeLabel}</span>
+            </div>
+          </td>
+          <td class="py-3 px-3 font-medium text-[#111827]">
+            <span class="mr-1">${flag}</span> ${countryName}
+          </td>
+          <td class="py-3 px-3 text-slate-600 max-w-xs truncate" title="${m.description || ''}">
+            ${m.description || 'Opération'}
+          </td>
+          <td class="py-3 px-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+            ${dateStr}
+          </td>
+          <td class="py-3 px-3 text-right font-mono font-bold text-xs ${amountColor} whitespace-nowrap">
+            ${sign}${formatWalletMoney(m.amount, m.currency)}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    if (paginationContainer) {
+      paginationContainer.innerHTML = '';
+      if (totalPages > 1) {
+        const prevBtn = document.createElement('button');
+        prevBtn.className = `px-2.5 py-1 rounded-lg border border-[#ECEEF6] bg-white text-xs font-semibold ${VPState.ledgerPage > 1 ? 'hover:bg-slate-50 text-[#111827]' : 'text-slate-300 cursor-not-allowed'}`;
+        prevBtn.textContent = '←';
+        prevBtn.disabled = VPState.ledgerPage <= 1;
+        prevBtn.onclick = () => {
+          if (VPState.ledgerPage > 1) {
+            VPState.ledgerPage--;
+            loadAndRenderWalletLedger();
+          }
+        };
+        paginationContainer.appendChild(prevBtn);
+
+        for (let i = 1; i <= totalPages; i++) {
+          const pageBtn = document.createElement('button');
+          const isCurr = i === VPState.ledgerPage;
+          pageBtn.className = `px-2.5 py-1 rounded-lg text-xs font-semibold ${isCurr ? 'bg-[#5846F6] text-white shadow-sm' : 'border border-[#ECEEF6] bg-white text-[#111827] hover:bg-slate-50'}`;
+          pageBtn.textContent = i;
+          pageBtn.onclick = () => {
+            VPState.ledgerPage = i;
+            loadAndRenderWalletLedger();
+          };
+          paginationContainer.appendChild(pageBtn);
+        }
+
+        const nextBtn = document.createElement('button');
+        nextBtn.className = `px-2.5 py-1 rounded-lg border border-[#ECEEF6] bg-white text-xs font-semibold ${VPState.ledgerPage < totalPages ? 'hover:bg-slate-50 text-[#111827]' : 'text-slate-300 cursor-not-allowed'}`;
+        nextBtn.textContent = '→';
+        nextBtn.disabled = VPState.ledgerPage >= totalPages;
+        nextBtn.onclick = () => {
+          if (VPState.ledgerPage < totalPages) {
+            VPState.ledgerPage++;
+            loadAndRenderWalletLedger();
+          }
+        };
+        paginationContainer.appendChild(nextBtn);
+      }
+    }
+  } catch (err) {
+    console.error('Erreur chargement ledger wallet:', err);
+  }
+}
+
+async function loadAndRenderWalletTransfers() {
+  const tbody = document.getElementById('walletTransfersTableBody');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/v1/merchant/wallet/transfers', {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.success) return;
+
+    VPState.walletTransfers = data.transfers || [];
+    tbody.innerHTML = '';
+
+    if (VPState.walletTransfers.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="py-8 text-center text-slate-400 text-xs">
+            <div class="flex flex-col items-center justify-center">
+              <span class="text-xl mb-1">🔁</span>
+              <span class="font-semibold text-[#111827]">Aucun transfert entre wallets</span>
+              <span class="text-[11px] text-slate-400 mt-0.5">Utilisez le bouton "Transférer entre wallets" pour déplacer vos fonds d'un pays à l'autre.</span>
+            </div>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    VPState.walletTransfers.forEach(t => {
+      const fromFlag = getCountryFlag(t.from_country);
+      const toFlag = getCountryFlag(t.to_country);
+      const fromName = getCountryName(t.from_country);
+      const toName = getCountryName(t.to_country);
+
+      let statusBadge = `<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">Terminé</span>`;
+      if (t.status === 'PENDING') {
+        statusBadge = `<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700">En cours</span>`;
+      } else if (t.status === 'REJECTED') {
+        statusBadge = `<span class="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700">Rejeté</span>`;
+      }
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-[#F8F9FD] transition-colors';
+      tr.innerHTML = `
+        <td class="py-3 px-3">
+          <div class="flex items-center gap-1.5 font-bold text-[#111827] text-xs">
+            <span>${fromFlag} ${fromName}</span>
+            <span class="text-slate-400">→</span>
+            <span>${toFlag} ${toName}</span>
+          </div>
+        </td>
+        <td class="py-3 px-3 font-mono font-bold text-xs text-[#111827]">
+          ${formatWalletMoney(t.from_amount, t.from_currency)} <span class="text-slate-400 font-normal">→</span> ${formatWalletMoney(t.to_amount, t.to_currency)}
+        </td>
+        <td class="py-3 px-3">
+          ${statusBadge}
+        </td>
+        <td class="py-3 px-3 text-right">
+          <button type="button" onclick="openWalletTransferDetailModal('${t.id}')" class="text-xs font-semibold text-[#5846F6] hover:underline">
+            Détail
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Erreur chargement transferts:', err);
+  }
+}
+
+function openWalletTransferModal() {
+  const fromSelect = document.getElementById('transferFromCountry');
+  const toSelect = document.getElementById('transferToCountry');
+  const amountInput = document.getElementById('transferAmountInput');
+
+  if (!fromSelect || !toSelect) return;
+
+  fromSelect.innerHTML = '<option value="" disabled selected>Choisir un pays source</option>';
+  toSelect.innerHTML = '<option value="" disabled selected>Choisir un pays de destination</option>';
+
+  const wallets = VPState.walletsList || [];
+  const sourceWallets = wallets.filter(w => parseFloat(w.available_amount || 0) > 0 && !w.is_frozen);
+  if (sourceWallets.length === 0) {
+    showToast('Information', 'Aucun portefeuille avec des fonds disponibles pour initier un transfert.');
+    return;
+  }
+
+  sourceWallets.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.country;
+    opt.textContent = `${getCountryFlag(w.country)} ${getCountryName(w.country)} (${formatWalletMoney(w.available_amount, w.currency)})`;
+    fromSelect.appendChild(opt);
+  });
+
+  fromSelect.selectedIndex = 1;
+  const initialSourceCountry = fromSelect.value;
+  populateTransferDestinationOptions(initialSourceCountry);
+
+  if (amountInput) amountInput.value = '';
+  updateTransferEstimate();
+  openModal('modalWalletTransfer');
+}
+
+function populateTransferDestinationOptions(sourceCountry) {
+  const toSelect = document.getElementById('transferToCountry');
+  if (!toSelect) return;
+
+  toSelect.innerHTML = '<option value="" disabled selected>Choisir un pays de destination</option>';
+  const wallets = VPState.walletsList || [];
+
+  wallets.filter(w => w.country !== sourceCountry && !w.is_frozen).forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.country;
+    opt.textContent = `${getCountryFlag(w.country)} ${getCountryName(w.country)} (${w.currency})`;
+    toSelect.appendChild(opt);
+  });
+
+  if (toSelect.options.length > 1) {
+    toSelect.selectedIndex = 1;
+  }
+}
+
+function updateTransferEstimate() {
+  const fromSelect = document.getElementById('transferFromCountry');
+  const toSelect = document.getElementById('transferToCountry');
+  const amountInput = document.getElementById('transferAmountInput');
+  const currLabel = document.getElementById('transferSourceCurrencyLabel');
+  const estimateEl = document.getElementById('transferConversionEstimate');
+
+  if (!fromSelect || !toSelect || !amountInput || !estimateEl) return;
+
+  const fromCountry = fromSelect.value;
+  const toCountry = toSelect.value;
+  const amount = parseFloat(amountInput.value || 0);
+
+  const sourceW = (VPState.walletsList || []).find(w => w.country === fromCountry);
+  const destW = (VPState.walletsList || []).find(w => w.country === toCountry);
+
+  if (currLabel) {
+    currLabel.textContent = sourceW ? `(${sourceW.currency})` : '';
+  }
+
+  if (!sourceW || !destW || amount <= 0) {
+    estimateEl.classList.add('hidden');
+    return;
+  }
+
+  const pairKey = `${sourceW.currency}/${destW.currency}`;
+  const rate = WALLET_EXCHANGE_RATES[pairKey] || 1.0;
+  const converted = amount * rate;
+
+  estimateEl.classList.remove('hidden');
+  estimateEl.innerHTML = `
+    ≈ <span class="font-bold text-[#111827]">${formatWalletMoney(converted, destW.currency)}</span> reçu
+    <span class="text-slate-400 text-[11px] block mt-0.5">Taux de conversion : 1 ${sourceW.currency} = ${rate} ${destW.currency}</span>
+  `;
+}
+
+function openWalletTransferDetailModal(transferId) {
+  const t = (VPState.walletTransfers || []).find(x => x.id === transferId);
+  if (!t) return;
+
+  const routeEl = document.getElementById('transferDetailRoute');
+  const listEl = document.getElementById('transferDetailList');
+
+  if (routeEl) {
+    routeEl.innerHTML = `
+      ${getCountryFlag(t.from_country)} ${getCountryName(t.from_country)}
+      <span class="text-slate-400">→</span>
+      ${getCountryFlag(t.to_country)} ${getCountryName(t.to_country)}
+    `;
+  }
+
+  if (listEl) {
+    const grossAmount = t.from_amount * (t.exchange_rate || 1.0);
+    const dateFormatted = formatTxDate(t.created_at);
+
+    listEl.innerHTML = `
+      <div class="py-3 flex items-center justify-between">
+        <span class="text-slate-500">Montant envoyé</span>
+        <span class="font-bold text-[#111827] font-mono">${formatWalletMoney(t.from_amount, t.from_currency)}</span>
+      </div>
+      <div class="py-3 flex items-center justify-between">
+        <span class="text-slate-500">Taux de change appliqué</span>
+        <span class="font-semibold text-[#111827] font-mono text-xs">1 ${t.from_currency} = ${t.exchange_rate} ${t.to_currency}</span>
+      </div>
+      <div class="py-3 flex items-center justify-between">
+        <span class="text-slate-500">Montant converti brut</span>
+        <span class="font-bold text-[#111827] font-mono">${formatWalletMoney(grossAmount, t.to_currency)}</span>
+      </div>
+      <div class="py-3 flex items-center justify-between">
+        <span class="text-slate-500">Frais inter-wallets</span>
+        <span class="font-bold text-emerald-600 font-mono">0 ${t.to_currency} (Gratuit)</span>
+      </div>
+      <div class="py-3 flex items-center justify-between bg-violet-50/40 p-3 rounded-2xl">
+        <span class="font-bold text-[#111827]">Montant net crédité</span>
+        <span class="font-black text-emerald-600 font-mono text-base">${formatWalletMoney(t.to_amount, t.to_currency)}</span>
+      </div>
+      <div class="py-3 flex items-center justify-between">
+        <span class="text-slate-500">Statut</span>
+        <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">Terminé</span>
+      </div>
+      <div class="py-3 flex items-center justify-between">
+        <span class="text-slate-500">Date & heure</span>
+        <span class="text-slate-700 font-mono text-xs">${dateFormatted}</span>
+      </div>
+      <div class="py-3 flex items-center justify-between">
+        <span class="text-slate-500">Référence</span>
+        <span class="font-mono text-slate-400 text-[11px]">${t.id}</span>
+      </div>
+    `;
+  }
+
+  openModal('modalWalletTransferDetail');
+}
+
+function initWalletSection() {
+  const searchInput = document.getElementById('walletLedgerSearchInput');
+  const countrySelect = document.getElementById('walletLedgerCountrySelect');
+  const fromSelect = document.getElementById('transferFromCountry');
+  const toSelect = document.getElementById('transferToCountry');
+  const amountInput = document.getElementById('transferAmountInput');
+  const formTransfer = document.getElementById('formWalletTransfer');
+
+  if (searchInput) {
+    let debounceTimer = null;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        VPState.ledgerSearchFilter = e.target.value;
+        VPState.ledgerPage = 1;
+        loadAndRenderWalletLedger();
+      }, 300);
+    });
+  }
+
+  if (countrySelect) {
+    countrySelect.addEventListener('change', (e) => {
+      VPState.ledgerCountryFilter = e.target.value;
+      VPState.ledgerPage = 1;
+      loadAndRenderWalletLedger();
+    });
+  }
+
+  if (fromSelect) {
+    fromSelect.addEventListener('change', (e) => {
+      populateTransferDestinationOptions(e.target.value);
+      updateTransferEstimate();
+    });
+  }
+
+  if (toSelect) {
+    toSelect.addEventListener('change', () => {
+      updateTransferEstimate();
+    });
+  }
+
+  if (amountInput) {
+    amountInput.addEventListener('input', () => {
+      updateTransferEstimate();
+    });
+  }
+
+  if (formTransfer) {
+    formTransfer.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const from_country = fromSelect ? fromSelect.value : '';
+      const to_country = toSelect ? toSelect.value : '';
+      const amount = amountInput ? parseFloat(amountInput.value) : 0;
+      const submitBtn = document.getElementById('btnSubmitWalletTransfer');
+
+      if (!from_country || !to_country || isNaN(amount) || amount <= 0) {
+        showToast('Erreur', 'Veuillez renseigner tous les champs avec un montant valide.');
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Transfert en cours...';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/wallet/transfers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ from_country, to_country, amount })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          closeModal('modalWalletTransfer');
+          showToast('Transfert réussi !', data.message);
+
+          await loadAndRenderWallets();
+          await loadAndRenderWalletLedger();
+          await loadAndRenderWalletTransfers();
+
+          if (VPState.merchant && data.source_wallet && data.source_wallet.country === 'SN') {
+            VPState.merchant.balance_fcfa = data.source_wallet.available_amount;
+            const xofEl = document.getElementById('xofWalletBalance');
+            if (xofEl) xofEl.textContent = parseFloat(data.source_wallet.available_amount).toLocaleString('fr-FR');
+          }
+        } else {
+          showToast('Erreur de transfert', data.error || 'Impossible d\'effectuer le transfert.');
+        }
+      } catch (err) {
+        showToast('Erreur réseau', err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Transférer';
+        }
+      }
+    });
+  }
 }
 
 /* ========================================================
@@ -647,6 +1253,12 @@ function switchTab(tabKey) {
       sec.classList.remove('active');
     }
   });
+
+  if (tabKey === 'wallet') {
+    loadAndRenderWallets();
+    loadAndRenderWalletLedger();
+    loadAndRenderWalletTransfers();
+  }
 
   closeMobileDrawer();
   closeProfileDropdown();

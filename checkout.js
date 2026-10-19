@@ -40,32 +40,7 @@ function formatCurrency(amount, currency = 'FCFA') {
   return new Intl.NumberFormat('fr-FR').format(amount) + ' ' + currency;
 }
 
-/* ========================================================
-   1. PARSE URL QUERY PARAMETERS (CUSTOM PAYMENT LINKS)
-   ======================================================== */
-function initCheckoutParams() {
-  const urlParams = new URLSearchParams(window.location.search);
-
-  if (urlParams.get('merchant')) {
-    CheckoutState.merchant = urlParams.get('merchant');
-  }
-  if (urlParams.get('amount')) {
-    const parsedAmount = parseInt(urlParams.get('amount'), 10);
-    if (!isNaN(parsedAmount) && parsedAmount > 0) {
-      CheckoutState.amount = parsedAmount;
-    }
-  }
-  if (urlParams.get('currency')) {
-    CheckoutState.currency = urlParams.get('currency');
-  }
-  if (urlParams.get('item') || urlParams.get('product')) {
-    CheckoutState.productTitle = urlParams.get('item') || urlParams.get('product');
-  }
-  if (urlParams.get('return_url')) {
-    CheckoutState.returnUrl = urlParams.get('return_url');
-  }
-
-  // Update DOM with URL values
+function applyCheckoutDOM() {
   const merchantEl = document.getElementById('checkoutMerchantName');
   const amountEl = document.getElementById('checkoutAmountDisplay');
   const currencyEl = document.getElementById('checkoutCurrencyDisplay');
@@ -83,10 +58,62 @@ function initCheckoutParams() {
   if (summaryItemEl) summaryItemEl.textContent = CheckoutState.productTitle;
   if (summaryUnitPriceEl) summaryUnitPriceEl.textContent = formatCurrency(CheckoutState.amount, CheckoutState.currency);
   if (summaryOrderRefEl) {
-    summaryOrderRefEl.textContent = `CMD-VP-${Math.floor(Math.random() * 89999 + 10000)}`;
+    summaryOrderRefEl.textContent = CheckoutState.sessionId ? `CMD-VP-${CheckoutState.sessionId.slice(-6).toUpperCase()}` : `CMD-VP-${Math.floor(Math.random() * 89999 + 10000)}`;
   }
 
   updatePayButtonText();
+}
+
+/* ========================================================
+   1. PARSE URL QUERY PARAMETERS & ASYNC API FETCH
+   ======================================================== */
+async function initCheckoutParams() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get('session_id') || urlParams.get('session') || urlParams.get('link') || urlParams.get('id');
+
+  if (sessionId) {
+    CheckoutState.sessionId = sessionId;
+    try {
+      const res = await fetch(`/api/v1/pay/${encodeURIComponent(sessionId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.session) {
+          const s = data.session;
+          if (s.amount) CheckoutState.amount = parseFloat(s.amount);
+          if (s.currency) CheckoutState.currency = (s.currency === 'XOF' ? 'FCFA' : s.currency);
+          if (s.title) CheckoutState.productTitle = s.title;
+          if (s.merchant_name) CheckoutState.merchant = s.merchant_name;
+          if (s.redirect_url) CheckoutState.returnUrl = s.redirect_url;
+          if (s.customer && s.customer.phone) {
+            CheckoutState.payer.phone = s.customer.phone;
+            const phoneInput = document.getElementById('payerPhone');
+            if (phoneInput) phoneInput.value = s.customer.phone;
+          }
+          if (s.customer && s.customer.name) {
+            CheckoutState.payer.name = s.customer.name;
+            const nameInput = document.getElementById('payerName');
+            if (nameInput) nameInput.value = s.customer.name;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('API /pay/:id fallback to URL search params:', err);
+    }
+  }
+
+  // Fallback URL overrides
+  if (urlParams.get('merchant')) CheckoutState.merchant = urlParams.get('merchant');
+  if (urlParams.get('amount')) {
+    const parsed = parseInt(urlParams.get('amount'), 10);
+    if (!isNaN(parsed) && parsed > 0) CheckoutState.amount = parsed;
+  }
+  if (urlParams.get('currency')) CheckoutState.currency = urlParams.get('currency');
+  if (urlParams.get('item') || urlParams.get('product')) {
+    CheckoutState.productTitle = urlParams.get('item') || urlParams.get('product');
+  }
+  if (urlParams.get('return_url')) CheckoutState.returnUrl = urlParams.get('return_url');
+
+  applyCheckoutDOM();
 }
 
 /* ========================================================
@@ -369,38 +396,42 @@ function startPendingValidation() {
   // Synchronize with Backend API and Auto-simulate successful verification
   setTimeout(async () => {
     if (CheckoutState.currentScreen === 'pending') {
+      let receiptData = null;
       try {
         const urlParams = new URLSearchParams(window.location.search);
-        const sessionId = urlParams.get('session') || urlParams.get('link') || 'demo';
-        const res = await fetch(`/api/v1/pay/${encodeURIComponent(sessionId)}/process`, {
+        const targetId = CheckoutState.sessionId || urlParams.get('session_id') || urlParams.get('session') || urlParams.get('link') || urlParams.get('id') || 'demo';
+        
+        const res = await fetch(`/api/v1/pay/${encodeURIComponent(targetId)}/process`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            payment_method: CheckoutState.method,
-            customer_phone: CheckoutState.payer.phone,
+            payment_method: (CheckoutState.method || 'WAVE').toUpperCase(),
+            customer_phone: `${CheckoutState.prefix} ${CheckoutState.payer.phone}`,
             customer_name: CheckoutState.payer.name,
             customer_email: CheckoutState.payer.email
           })
         });
         const data = await res.json();
         if (data && data.receipt) {
+          receiptData = data.receipt;
           CheckoutState.lastReceipt = data.receipt;
         }
       } catch (err) {
         console.warn('API sync fallback active:', err);
       }
-      triggerPaymentSuccess();
+      triggerPaymentSuccess(receiptData);
     }
-  }, 4000);
+  }, 3500);
 }
 
-function triggerPaymentSuccess() {
+function triggerPaymentSuccess(receipt = null) {
   if (CheckoutState.countdownInterval) clearInterval(CheckoutState.countdownInterval);
   CheckoutState.currentScreen = 'success';
   showScreen('screenSuccess');
 
-  const randomTxId = `tx_live_${Math.random().toString(36).substring(2, 9)}`;
-  const randomRef = `${CheckoutState.method.toUpperCase().substring(0, 3)}-SN-${Math.floor(Math.random() * 899999 + 100000)}`;
+  const finalTxId = receipt?.id || `tx_live_${Math.random().toString(36).substring(2, 10)}`;
+  const finalRef = receipt?.operator_reference || `${CheckoutState.method.toUpperCase().substring(0, 3)}-SN-${Math.floor(Math.random() * 899999 + 100000)}`;
+  const finalMerchant = receipt?.merchant_name || CheckoutState.merchant;
 
   const amountEl = document.getElementById('successPaidAmount');
   const txIdEl = document.getElementById('successTxId');
@@ -412,16 +443,16 @@ function triggerPaymentSuccess() {
   const returnBtn = document.getElementById('btnReturnToMerchant');
 
   if (amountEl) amountEl.textContent = formatCurrency(CheckoutState.amount, CheckoutState.currency);
-  if (txIdEl) txIdEl.textContent = randomTxId;
-  if (refEl) refEl.textContent = randomRef;
+  if (txIdEl) txIdEl.textContent = finalTxId;
+  if (refEl) refEl.textContent = finalRef;
   if (methodEl) methodEl.textContent = methodDetails[CheckoutState.method]?.name || 'Wave';
   if (dateEl) {
     const now = new Date();
     dateEl.textContent = `${now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}, ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
   }
   if (emailEl) emailEl.textContent = CheckoutState.payer.email;
-  if (merchantEl) merchantEl.textContent = CheckoutState.merchant;
-  if (returnBtn) returnBtn.href = CheckoutState.returnUrl;
+  if (merchantEl) merchantEl.textContent = finalMerchant;
+  if (returnBtn) returnBtn.href = CheckoutState.returnUrl || 'dashboard.html';
 
   // Auto redirect countdown
   CheckoutState.autoRedirectSeconds = 10;
@@ -433,7 +464,7 @@ function triggerPaymentSuccess() {
     if (redirectDisplay) redirectDisplay.textContent = CheckoutState.autoRedirectSeconds;
     if (CheckoutState.autoRedirectSeconds <= 0) {
       clearInterval(CheckoutState.autoRedirectInterval);
-      window.location.href = CheckoutState.returnUrl;
+      window.location.href = CheckoutState.returnUrl || 'dashboard.html';
     }
   }, 1000);
 }

@@ -171,12 +171,12 @@
     <!-- Bottom User Pill -->
     <div class="p-3 border-t border-[#F0F2F9] m-2 rounded-2xl bg-[#F9FAFC] border">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white font-bold text-sm flex items-center justify-center">
+        <div id="sidebarAvatarLetter" class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white font-bold text-sm flex items-center justify-center">
           G
         </div>
         <div class="flex flex-col truncate">
-          <span class="text-xs font-bold text-[#111827] truncate">Gnitou</span>
-          <span class="text-[10px] text-[#6B7280] truncate">VANDIAS PAY</span>
+          <span id="sidebarMerchantName" class="text-xs font-bold text-[#111827] truncate">Marchand</span>
+          <span id="sidebarMerchantSub" class="text-[10px] text-[#6B7280] truncate">VANDIAS PAY</span>
         </div>
       </div>
     </div>
@@ -213,27 +213,27 @@
           <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500"></span>
         </button>
 
-        <!-- Profile Button Trigger (Avatar G Gnitou v) -->
+        <!-- Profile Button Trigger -->
         <button id="profileDropdownBtn" class="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-[#ECEEF6]">
-          <div class="w-8 h-8 rounded-full bg-[#6366F1] text-white font-bold text-xs flex items-center justify-center shadow-sm">
+          <div id="topbarAvatarLetter" class="w-8 h-8 rounded-full bg-[#6366F1] text-white font-bold text-xs flex items-center justify-center shadow-sm">
             G
           </div>
-          <span class="text-xs sm:text-sm font-bold text-[#111827]">Gnitou</span>
+          <span id="topbarMerchantName" class="text-xs sm:text-sm font-bold text-[#111827]">Marchand</span>
           <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" id="profileChevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
 
         <!-- ====================================================
-             MENU DÉROULANT PROFIL (EXACT COMME LA CAPTURE D'ÉCRAN 3)
+             MENU DÉROULANT PROFIL (DYNAMIQUE)
              ==================================================== -->
-        <div id="profileDropdownMenu" class="hidden absolute right-0 top-12 w-60 bg-white rounded-2xl border border-[#ECEEF6] shadow-xl p-3 z-50 animate-fade-in">
+        <div id="profileDropdownMenu" class="hidden absolute right-0 top-12 w-64 bg-white rounded-2xl border border-[#ECEEF6] shadow-xl p-3 z-50 animate-fade-in">
           <!-- Profile Info Header -->
           <div class="flex items-center gap-3 p-2 pb-3 border-b border-[#F0F2F9]">
-            <div class="w-10 h-10 rounded-2xl bg-[#6366F1] text-white font-bold text-sm flex items-center justify-center shadow-sm">
+            <div id="menuAvatarLetter" class="w-10 h-10 rounded-2xl bg-[#6366F1] text-white font-bold text-sm flex items-center justify-center shadow-sm">
               G
             </div>
             <div class="flex flex-col truncate">
-              <span class="text-xs font-bold text-[#111827]">Gnitou</span>
-              <span class="text-[11px] text-[#6B7280] truncate">gnitou866@gmail.com</span>
+              <span id="menuMerchantName" class="text-xs font-bold text-[#111827] truncate">Marchand</span>
+              <span id="menuMerchantEmail" class="text-[11px] text-[#6B7280] truncate">chargement...</span>
             </div>
           </div>
 
@@ -343,7 +343,7 @@
                   <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase">XOF</span>
                   <span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-[#5846F6] font-semibold">UEMOA</span>
                 </div>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">80</span>
+                <span id="xofWalletBalance" class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
               </div>
 
               <!-- RWF (Rwanda) -->
@@ -423,111 +423,9 @@
               </button>
             </div>
 
-            <!-- Liste des transactions exactes (conformes aux captures) -->
+            <!-- Liste des transactions dynamiques ou état vide -->
             <div class="space-y-3" id="recentTxList">
-              
-              <!-- Transaction 1 : 983f6ce... +5 USD Réussi -->
-              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 font-bold flex items-center justify-center text-sm shadow-sm">
-                    +
-                  </div>
-                  <div>
-                    <span class="text-xs font-mono font-bold text-[#111827] block">983f6ce1059746b2b4...</span>
-                    <span class="text-[10px] text-slate-400">18 oct., 23:50</span>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="text-xs font-bold text-emerald-600 block font-mono">+5 USD</span>
-                  <span class="text-[10px] font-semibold text-emerald-500">Réussi</span>
-                </div>
-              </div>
-
-              <!-- Transaction 2 : d5d6276... +9983 CDF Échoué -->
-              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center text-sm shadow-sm">
-                    +
-                  </div>
-                  <div>
-                    <span class="text-xs font-mono font-bold text-[#111827] block">d5d62768b3de4e...</span>
-                    <span class="text-[10px] text-slate-400">18 oct., 23:38</span>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="text-xs font-bold text-slate-600 block font-mono">+9983 CDF</span>
-                  <span class="text-[10px] font-semibold text-rose-500">Échoué</span>
-                </div>
-              </div>
-
-              <!-- Transaction 3 : 54260b5... +7900 XOF Échoué -->
-              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center text-sm shadow-sm">
-                    +
-                  </div>
-                  <div>
-                    <span class="text-xs font-mono font-bold text-[#111827] block">54260b5ebd934...</span>
-                    <span class="text-[10px] text-slate-400">10 oct., 17:58</span>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="text-xs font-bold text-slate-600 block font-mono">+7900 XOF</span>
-                  <span class="text-[10px] font-semibold text-rose-500">Échoué</span>
-                </div>
-              </div>
-
-              <!-- Transaction 4 : e0abd62... +5000 CDF Réussi -->
-              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 font-bold flex items-center justify-center text-sm shadow-sm">
-                    +
-                  </div>
-                  <div>
-                    <span class="text-xs font-mono font-bold text-[#111827] block">e0abd62d74ae4...</span>
-                    <span class="text-[10px] text-slate-400">30 sept., 08:22</span>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="text-xs font-bold text-emerald-600 block font-mono">+5000 CDF</span>
-                  <span class="text-[10px] font-semibold text-emerald-500">Réussi</span>
-                </div>
-              </div>
-
-              <!-- Transaction 5 : 97931ad... +5000 CDF Échoué -->
-              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center text-sm shadow-sm">
-                    +
-                  </div>
-                  <div>
-                    <span class="text-xs font-mono font-bold text-[#111827] block">97931add9f2d44...</span>
-                    <span class="text-[10px] text-slate-400">30 sept., 08:18</span>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="text-xs font-bold text-slate-600 block font-mono">+5000 CDF</span>
-                  <span class="text-[10px] font-semibold text-rose-500">Échoué</span>
-                </div>
-              </div>
-
-              <!-- Transaction 6 : a524b01... +2000 XOF Échoué -->
-              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center text-sm shadow-sm">
-                    +
-                  </div>
-                  <div>
-                    <span class="text-xs font-mono font-bold text-[#111827] block">a524b01b88c249...</span>
-                    <span class="text-[10px] text-slate-400">30 sept., 04:48</span>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="text-xs font-bold text-slate-600 block font-mono">+2000 XOF</span>
-                  <span class="text-[10px] font-semibold text-rose-500">Échoué</span>
-                </div>
-              </div>
-
+              <!-- Dynamically populated by dashboard.js (live transactions or elegant empty state) -->
             </div>
 
           </div>
@@ -726,8 +624,8 @@
           <div>
             <label class="text-xs font-bold text-[#111827] block mb-1">Clé Publique (Publishable Key)</label>
             <div class="flex items-center gap-2">
-              <input type="text" readonly value="pk_live_vandias_9x7a28kb4f1c" class="flex-1 bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
-              <button class="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700" onclick="navigator.clipboard.writeText('pk_live_vandias_9x7a28kb4f1c'); showToast('Copié !', 'Clé publique copiée.');">
+              <input type="text" id="devPublicKeyInput" readonly value="pk_live_vdp_..." class="flex-1 bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+              <button id="btnCopyPublicKey" class="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors">
                 Copier
               </button>
             </div>
@@ -736,11 +634,11 @@
           <div>
             <label class="text-xs font-bold text-[#111827] block mb-1">Clé Secrète (Secret Key)</label>
             <div class="flex items-center gap-2">
-              <input type="password" id="devSecretKeyInput" readonly value="sk_live_vandias_99182aa83021bf" class="flex-1 bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
-              <button class="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700" onclick="toggleSecretKey()">
+              <input type="password" id="devSecretKeyInput" readonly value="sk_live_vdp_..." class="flex-1 bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+              <button id="btnToggleSecretKey" class="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors" onclick="toggleSecretKey()">
                 Afficher
               </button>
-              <button class="px-3.5 py-2.5 rounded-2xl bg-[#5846F6] text-white text-xs font-bold shadow-sm" onclick="navigator.clipboard.writeText('sk_live_vandias_99182aa83021bf'); showToast('Copié !', 'Clé secrète copiée.');">
+              <button id="btnCopySecretKey" class="px-3.5 py-2.5 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-sm transition-colors">
                 Copier
               </button>
             </div>
@@ -760,15 +658,15 @@
         <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm space-y-4 max-w-2xl">
           <div>
             <label class="text-xs font-bold text-[#111827] block mb-1">URL de votre Webhook (Endpoint HTTPS)</label>
-            <input type="url" value="https://api.votre-saas.com/webhooks/vandiaspay" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+            <input type="url" id="webhookUrlInput" placeholder="https://api.votre-saas.com/webhooks/vandiaspay" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
           </div>
 
           <div>
             <label class="text-xs font-bold text-[#111827] block mb-1">Secret de signature HMAC (X-VandiasPay-Signature)</label>
-            <input type="text" readonly value="whsec_884920bcf10a8274d7e" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono text-slate-500">
+            <input type="text" id="webhookSecretInput" readonly value="whsec_..." class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono text-slate-500">
           </div>
 
-          <button class="px-5 py-2.5 rounded-2xl bg-[#5846F6] text-white text-xs font-bold shadow-md shadow-purple-500/25" onclick="showToast('Sauvegardé !', 'URL webhook mise à jour avec succès.')">
+          <button id="btnSaveWebhook" class="px-5 py-2.5 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/25 transition-all">
             Enregistrer le Webhook
           </button>
         </div>
@@ -889,20 +787,25 @@
         <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm max-w-xl space-y-4">
           <div>
             <label class="text-xs font-bold text-[#111827] block mb-1">Nom du Marchand / Entreprise</label>
-            <input type="text" value="VANDIA IA" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827]">
+            <input type="text" id="settingsBusinessName" value="" placeholder="Nom de votre entreprise" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827]">
           </div>
 
           <div>
             <label class="text-xs font-bold text-[#111827] block mb-1">Email Propriétaire</label>
-            <input type="email" value="gnitou866@gmail.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827]">
+            <input type="email" id="settingsOwnerEmail" readonly value="" placeholder="email@marchand.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827] cursor-not-allowed">
           </div>
 
-          <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center gap-2.5 text-xs text-emerald-800 font-semibold">
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Téléphone de contact Mobile Money</label>
+            <input type="tel" id="settingsPhone" value="" placeholder="+221 77 000 00 00" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827]">
+          </div>
+
+          <div id="settingsKycBadge" class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center gap-2.5 text-xs text-emerald-800 font-semibold">
             <span class="text-emerald-500 text-base">✓</span>
-            <span>Compte Vérifié Niveau 2 (Plafond illimité activé)</span>
+            <span id="settingsKycText">Compte Marchand Actif & Vérifié</span>
           </div>
 
-          <button class="px-5 py-2.5 rounded-2xl bg-[#5846F6] text-white text-xs font-bold shadow-md shadow-purple-500/25" onclick="showToast('Sauvegardé !', 'Profil mis à jour.')">
+          <button id="btnSaveSettings" class="px-5 py-2.5 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/25 transition-all">
             Sauvegarder les modifications
           </button>
         </div>
@@ -983,6 +886,77 @@
           Transférer instantanément
         </button>
       </div>
+    </div>
+  <!-- ========================================================
+       MODAL : AUTHENTIFICATION MARCHAND (CONNEXION & INSCRIPTION)
+       ======================================================== -->
+  <div id="modalAuth" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-[#ECEEF6] space-y-5">
+      
+      <!-- Modal Header -->
+      <div class="text-center">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 mb-2">
+          <span class="w-2 h-2 rounded-full bg-[#5846F6]"></span>
+          <span class="text-[11px] font-bold text-[#5846F6]">Espace Marchand Sécurisé</span>
+        </div>
+        <h2 class="text-xl sm:text-2xl font-black text-[#111827]" id="authModalTitle">Connexion au Dashboard</h2>
+        <p class="text-xs text-[#6B7280] mt-1" id="authModalSubtitle">Accédez à vos wallets, liens de paiement et clés API.</p>
+      </div>
+
+      <!-- Auth Tabs: Connexion vs Inscription -->
+      <div class="flex p-1 bg-[#F4F6FC] rounded-2xl border border-[#ECEEF6]">
+        <button id="authTabLogin" type="button" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white text-[#111827] shadow-sm">
+          Connexion
+        </button>
+        <button id="authTabRegister" type="button" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all text-[#6B7280] hover:text-[#111827]">
+          Nouveau Marchand
+        </button>
+      </div>
+
+      <!-- Formulaire Connexion -->
+      <form id="authLoginForm" class="space-y-3.5">
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Email professionnel</label>
+          <input type="email" id="loginEmail" required placeholder="nom@entreprise.com" value="demo@vandiaspay.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827] outline-none focus:border-[#5846F6]">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Mot de passe</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••" value="vandias2026" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827] outline-none focus:border-[#5846F6]">
+        </div>
+        <button type="submit" id="btnSubmitLogin" class="w-full py-3 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all">
+          Se connecter
+        </button>
+        
+        <div class="pt-2 border-t border-[#F0F2F9] text-center">
+          <button type="button" id="btnQuickDemoLogin" class="text-xs font-semibold text-[#5846F6] hover:underline">
+            ⚡ Connexion instantanée avec le compte démo
+          </button>
+        </div>
+      </form>
+
+      <!-- Formulaire Inscription Nouveau Marchand -->
+      <form id="authRegisterForm" class="space-y-3 hidden">
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Nom commercial / Entreprise *</label>
+          <input type="text" id="regBusinessName" required placeholder="Ex: Dakar E-Shop SARL" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827] outline-none focus:border-[#5846F6]">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Email *</label>
+          <input type="email" id="regEmail" required placeholder="contact@dakar-eshop.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827] outline-none focus:border-[#5846F6]">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Numéro Mobile Money de réception</label>
+          <input type="tel" id="regPhone" placeholder="+221 77 000 00 00" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827] outline-none focus:border-[#5846F6]">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Mot de passe sécurisé *</label>
+          <input type="password" id="regPassword" required minlength="6" placeholder="Min. 6 caractères" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827] outline-none focus:border-[#5846F6]">
+        </div>
+        <button type="submit" id="btnSubmitRegister" class="w-full py-3 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all">
+          Créer mon compte marchand (Solde 0 FCFA)
+        </button>
+      </form>
+
     </div>
   </div>
 

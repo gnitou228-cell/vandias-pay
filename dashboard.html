@@ -1043,56 +1043,158 @@
       </section>
 
       <!-- ====================================================
-           SECTION 10 : WEBHOOKS
+           SECTION 10 : WEBHOOKS (CONFORME SASPAY)
            ==================================================== -->
       <section id="section-webhooks" class="dashboard-section hidden space-y-6">
-        <div>
-          <h1 class="text-2xl font-extrabold text-[#111827]">Configuration des Webhooks</h1>
-          <p class="text-xs sm:text-sm text-[#6B7280]">Recevez des notifications HTTP sécurisées en temps réel pour chaque paiement réussi.</p>
+        <!-- En-tête -->
+        <div class="space-y-1">
+          <h1 class="text-2xl font-extrabold tracking-tight text-[#111827]">Webhooks</h1>
+          <p class="text-sm text-[#6B7280]">
+            Reçois en temps réel les événements de <span id="webhooksMerchantName" class="font-semibold text-[#111827]">VANDIA IA</span> sur ton propre serveur.
+          </p>
         </div>
 
-        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm space-y-4 max-w-2xl">
-          <div>
-            <label class="text-xs font-bold text-[#111827] block mb-1">URL de votre Webhook (Endpoint HTTPS)</label>
-            <input type="url" id="webhookUrlInput" placeholder="https://api.votre-saas.com/webhooks/vandiaspay" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+        <!-- Formulaire d'ajout de Webhook -->
+        <form id="formAddWebhook" class="rounded-2xl border border-violet-900/10 bg-white p-6 shadow-sm space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="newWebhookUrl" class="mb-1.5 block text-xs font-semibold text-[#111827]">URL du webhook</label>
+              <input type="url" id="newWebhookUrl" required placeholder="https://monserveur.com/webhooks/saspay" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono">
+            </div>
+            <div>
+              <label for="newWebhookDesc" class="mb-1.5 block text-xs font-semibold text-[#111827]">Description (optionnel)</label>
+              <input type="text" id="newWebhookDesc" placeholder="Serveur de production" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200">
+            </div>
           </div>
 
           <div>
-            <label class="text-xs font-bold text-[#111827] block mb-1">Secret de signature HMAC (X-VandiasPay-Signature)</label>
-            <input type="text" id="webhookSecretInput" readonly value="whsec_..." class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono text-slate-500">
+            <label for="newWebhookSecret" class="mb-1.5 block text-xs font-semibold text-[#111827]">Secret de signature (optionnel)</label>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <input type="text" id="newWebhookSecret" placeholder="Laisse vide pour une valeur générée — affichée une seule fois après création" class="flex-1 rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono">
+              <button type="submit" id="btnSubmitAddWebhook" class="rounded-xl bg-[#5846F6] px-7 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)] hover:bg-[#4B3BE0] transition-colors shrink-0">
+                Ajouter
+              </button>
+            </div>
+            <p class="text-[11px] text-[#9CA3AF] mt-1.5 leading-relaxed">
+              Saisis ta propre valeur si tu dois la reporter côté vérification HMAC sur ton serveur — sinon une valeur générée automatiquement sera utilisée, mais tu ne pourras plus jamais la consulter.
+            </p>
+          </div>
+        </form>
+
+        <!-- Liste des Webhooks & Recherche -->
+        <div class="rounded-2xl border border-violet-900/10 bg-white p-6 shadow-sm space-y-5">
+          <!-- Barre de recherche -->
+          <div class="relative max-w-sm">
+            <input type="text" id="webhookSearchInput" placeholder="Rechercher par URL ou description..." class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100">
+            <svg class="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           </div>
 
-          <button id="btnSaveWebhook" class="px-5 py-2.5 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/25 transition-all">
-            Enregistrer le Webhook
-          </button>
+          <!-- Conteneur Webhooks -->
+          <div id="webhooksListContainer">
+            <!-- État vide (conforme capture 1 SasPay) -->
+            <div id="webhooksEmptyState" class="py-16 text-center">
+              <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-[#5846F6]">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+              </div>
+              <p class="text-xs sm:text-sm text-[#6B7280]">Aucun webhook pour l'instant.</p>
+            </div>
+
+            <!-- Tableau quand des webhooks existent -->
+            <div id="webhooksTableWrapper" class="overflow-x-auto rounded-xl border border-slate-100 hidden">
+              <table class="w-full text-left text-xs sm:text-sm">
+                <thead class="bg-slate-50/80 text-[11px] font-semibold uppercase text-slate-400 tracking-wider border-b border-slate-100">
+                  <tr>
+                    <th scope="col" class="py-3 px-4">ENDPOINT URL</th>
+                    <th scope="col" class="py-3 px-4">DESCRIPTION</th>
+                    <th scope="col" class="py-3 px-4">SECRET HMAC</th>
+                    <th scope="col" class="py-3 px-4">STATUT</th>
+                    <th scope="col" class="py-3 px-4 text-right">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="webhooksTableBody" class="divide-y divide-slate-100 bg-white text-slate-700"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- ====================================================
-           SECTION 11 : JOURNAL DES WEBHOOKS
+           SECTION 11 : JOURNAL DES WEBHOOKS (CONFORME SASPAY)
            ==================================================== -->
       <section id="section-webhook-logs" class="dashboard-section hidden space-y-6">
-        <div>
-          <h1 class="text-2xl font-extrabold text-[#111827]">Journal des Webhooks</h1>
-          <p class="text-xs sm:text-sm text-[#6B7280]">Historique des requêtes HTTP transmises à votre infrastructure serveur.</p>
+        <!-- En-tête -->
+        <div class="space-y-1">
+          <h1 class="text-2xl font-extrabold tracking-tight text-[#111827]">Journal des webhooks</h1>
+          <p class="text-sm text-[#6B7280]">
+            Toutes les livraisons envoyées pour <span id="webhookLogsMerchantName" class="font-semibold text-[#111827]">VANDIA IA</span>, tous webhooks confondus.
+          </p>
         </div>
 
-        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-sm space-y-3 font-mono text-xs">
-          <div class="p-3 rounded-2xl bg-[#F8F9FD] flex items-center justify-between border border-[#ECEEF6]">
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px]">200 OK</span>
-              <span class="text-slate-700 font-semibold">payment.succeeded</span>
-              <span class="text-slate-400 text-[11px]">(tx_live_983f6ce)</span>
+        <!-- Carte Journal & Filtres -->
+        <div class="rounded-2xl border border-violet-900/10 bg-white p-6 shadow-sm space-y-6">
+          <!-- Filtres conformes capture 2 SasPay -->
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Recherche par événement ou URL -->
+            <div class="relative flex-1 min-w-[240px]">
+              <input type="text" id="webhookLogsSearchInput" placeholder="Rechercher par type d'événement ou URL..." class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100">
+              <svg class="absolute left-3 top-3 h-4 w-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </div>
-            <span class="text-slate-400 text-[11px]">Il y a 12 min • 85ms</span>
+
+            <!-- Dropdown Webhooks -->
+            <div class="w-full sm:w-auto min-w-[170px]">
+              <select id="webhookLogsFilterWebhook" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100 cursor-pointer">
+                <option value="">Tous les webhooks</option>
+              </select>
+            </div>
+
+            <!-- Dropdown Statuts -->
+            <div class="w-full sm:w-auto min-w-[150px]">
+              <select id="webhookLogsFilterStatus" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100 cursor-pointer">
+                <option value="">Tous les statuts</option>
+                <option value="SUCCESS">Succès (2xx)</option>
+                <option value="FAILED">Échec (4xx / 5xx)</option>
+              </select>
+            </div>
+
+            <!-- Dropdown Événements -->
+            <div class="w-full sm:w-auto min-w-[170px]">
+              <select id="webhookLogsFilterEvent" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100 cursor-pointer">
+                <option value="">Tous les événements</option>
+                <option value="payment.succeeded">payment.succeeded</option>
+                <option value="payment.failed">payment.failed</option>
+                <option value="payout.completed">payout.completed</option>
+                <option value="payout.failed">payout.failed</option>
+                <option value="refund.created">refund.created</option>
+                <option value="webhook.test">webhook.test</option>
+              </select>
+            </div>
           </div>
-          <div class="p-3 rounded-2xl bg-[#F8F9FD] flex items-center justify-between border border-[#ECEEF6]">
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px]">200 OK</span>
-              <span class="text-slate-700 font-semibold">payout.completed</span>
-              <span class="text-slate-400 text-[11px]">(po_89124)</span>
+
+          <!-- Conteneur des livraisons -->
+          <div id="webhookLogsContainer">
+            <!-- État vide (conforme capture 2 SasPay) -->
+            <div id="webhookLogsEmptyState" class="py-16 text-center">
+              <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-[#5846F6]">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+              </div>
+              <p class="text-xs sm:text-sm text-[#6B7280]">Aucune livraison ne correspond à ces filtres.</p>
             </div>
-            <span class="text-slate-400 text-[11px]">Hier, 18:22 • 110ms</span>
+
+            <!-- Tableau quand des livraisons existent -->
+            <div id="webhookLogsTableWrapper" class="overflow-x-auto rounded-xl border border-slate-100 hidden">
+              <table class="w-full text-left text-xs sm:text-sm">
+                <thead class="bg-slate-50/80 text-[11px] font-semibold uppercase text-slate-400 tracking-wider border-b border-slate-100">
+                  <tr>
+                    <th scope="col" class="py-3 px-4">STATUT</th>
+                    <th scope="col" class="py-3 px-4">ÉVÉNEMENT</th>
+                    <th scope="col" class="py-3 px-4">ENDPOINT URL</th>
+                    <th scope="col" class="py-3 px-4">DATE & LATENCE</th>
+                    <th scope="col" class="py-3 px-4 text-right">DÉTAILS</th>
+                  </tr>
+                </thead>
+                <tbody id="webhookLogsTableBody" class="divide-y divide-slate-100 bg-white text-slate-700"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -1964,6 +2066,128 @@
         </button>
         <button type="button" id="btnConfirmDeleteIp" class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700 transition-colors shadow-sm">
           Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: Révélation d'un nouveau secret de Webhook -->
+  <div id="modalRevealWebhookSecret" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-violet-900/10 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-[#5846F6]">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+        </div>
+        <div>
+          <h3 class="text-base sm:text-lg font-bold text-[#111827]">Secret de signature Webhook</h3>
+          <p class="text-xs text-[#6B7280]">Conserve précieusement cette clé de signature HMAC.</p>
+        </div>
+      </div>
+
+      <!-- Avertissement de sécurité SasPay -->
+      <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
+        <span class="text-base shrink-0">⚠️</span>
+        <p class="leading-relaxed">
+          <strong>Copie ce secret de signature maintenant.</strong> Pour des raisons de sécurité, tu ne pourras plus jamais le consulter après avoir fermé cette fenêtre.
+        </p>
+      </div>
+
+      <!-- Box Secret avec Copie -->
+      <div>
+        <label class="mb-1 block text-xs font-semibold text-[#111827]">Secret HMAC (whsec_...)</label>
+        <div class="flex items-center gap-2">
+          <input type="text" id="revealedWebhookSecretInput" readonly class="flex-1 rounded-xl border border-violet-900/10 bg-slate-50 px-3.5 py-2.5 font-mono text-xs text-[#111827] select-all outline-none">
+          <button type="button" id="btnCopyRevealedWebhookSecret" class="rounded-xl bg-[#5846F6] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#4B3BE0] transition-colors shrink-0">
+            Copier
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button type="button" onclick="closeModal('modalRevealWebhookSecret')" class="w-full rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors">
+          J'ai bien copié le secret
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 6: Confirmation Suppression Webhook -->
+  <div id="modalDeleteWebhook" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-violet-900/10 space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </div>
+        <div>
+          <h3 id="deleteWebhookModalTitle" class="text-base font-bold text-[#111827]">Supprimer ce webhook ?</h3>
+          <p class="text-xs text-[#6B7280] mt-0.5">Les événements ne seront plus envoyés à cette URL.</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('modalDeleteWebhook')" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+          Annuler
+        </button>
+        <button type="button" id="btnConfirmDeleteWebhook" class="rounded-xl bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700 transition-colors shadow-sm">
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 7: Détails & Replay d'une Livraison Webhook -->
+  <div id="modalWebhookLogDetail" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-2xl rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-violet-900/10 space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div id="logDetailStatusBadge" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 font-bold text-xs">
+            200
+          </div>
+          <div>
+            <h3 id="logDetailEventType" class="text-base font-bold text-[#111827] font-mono">payment.succeeded</h3>
+            <p id="logDetailMeta" class="text-xs text-[#6B7280]">Il y a 10 min • 85ms</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeModal('modalWebhookLogDetail')" class="text-slate-400 hover:text-slate-700 p-1">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Endpoint URL -->
+      <div>
+        <label class="block text-xs font-bold text-[#111827] mb-1">URL de livraison</label>
+        <div id="logDetailUrl" class="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 font-mono text-xs text-slate-800 break-all select-all">
+          https://api.votre-saas.com/webhooks
+        </div>
+      </div>
+
+      <!-- En-têtes HTTP de signature -->
+      <div>
+        <label class="block text-xs font-bold text-[#111827] mb-1">En-têtes HTTP de signature (HMAC-SHA256)</label>
+        <pre id="logDetailHeaders" class="rounded-xl border border-slate-200 bg-slate-900 text-slate-200 p-3 font-mono text-[11px] overflow-x-auto select-all leading-relaxed"></pre>
+      </div>
+
+      <!-- Payload JSON -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="block text-xs font-bold text-[#111827]">Payload JSON envoyé</label>
+          <button type="button" id="btnCopyLogPayload" class="text-[11px] text-[#5846F6] hover:underline font-semibold">Copier le JSON</button>
+        </div>
+        <pre id="logDetailPayload" class="rounded-xl border border-slate-200 bg-slate-900 text-emerald-400 p-3.5 font-mono text-xs overflow-x-auto max-h-56 select-all leading-relaxed"></pre>
+      </div>
+
+      <!-- Réponse reçue -->
+      <div>
+        <label class="block text-xs font-bold text-[#111827] mb-1">Corps de réponse reçu du serveur</label>
+        <pre id="logDetailResponse" class="rounded-xl border border-slate-200 bg-slate-50 text-slate-700 p-3 font-mono text-xs overflow-x-auto max-h-32 select-all"></pre>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+        <button type="button" onclick="closeModal('modalWebhookLogDetail')" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+          Fermer
+        </button>
+        <button type="button" id="btnReplayWebhookEvent" class="rounded-xl bg-[#5846F6] px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#4B3BE0] transition-colors inline-flex items-center gap-1.5">
+          <span>🔄 Renvoyer cet événement (Replay)</span>
         </button>
       </div>
     </div>

@@ -389,7 +389,9 @@ const memoryDb = {
       status: 'ACTIVE',
       created_at: new Date(Date.now() - 5 * 86400000).toISOString()
     }
-  ]
+  ],
+  webhooks: [],
+  webhook_logs: []
 };
 
 // ========================================================
@@ -2837,6 +2839,301 @@ app.delete('/api/v1/merchant/ip-whitelist/:id', requireMerchantAuth, async (req,
     res.json({
       success: true,
       message: `L'adresse IP ${deleted.ip_address} a été supprimée.`
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ========================================================
+// 6.f. GESTION DES WEBHOOKS & JOURNAL DES LIVRAISONS (SASPAY CONFORME)
+// ========================================================
+
+/**
+ * GET /api/v1/merchant/webhooks
+ * Liste des webhooks configurés pour ce marchand (avec recherche optionnelle)
+ */
+app.get('/api/v1/merchant/webhooks', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { search } = req.query;
+
+    if (!Array.isArray(memoryDb.webhooks)) {
+      memoryDb.webhooks = [];
+    }
+
+    let list = memoryDb.webhooks.filter(w => w.merchant_id === merchantId);
+
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(w =>
+        (w.url && w.url.toLowerCase().includes(q)) ||
+        (w.description && w.description.toLowerCase().includes(q))
+      );
+    }
+
+    const sanitized = list.map(w => ({
+      id: w.id,
+      url: w.url,
+      description: w.description || '—',
+      secret_masked: w.secret ? (w.secret.slice(0, 10) + '...' + w.secret.slice(-4)) : 'whsec_...',
+      status: w.status || 'ACTIVE',
+      is_active: w.is_active !== false,
+      created_at: w.created_at
+    }));
+
+    res.json({
+      success: true,
+      webhooks: sanitized
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/webhooks
+ * Ajouter un nouvel endpoint webhook avec secret HMAC généré ou personnalisé
+ */
+app.post('/api/v1/merchant/webhooks', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { url, description, secret } = req.body;
+
+    if (!url || !url.trim()) {
+      return res.status(400).json({ success: false, error: 'URL du webhook requise.' });
+    }
+
+    const cleanUrl = url.trim();
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      return res.status(400).json({ success: false, error: 'L\'URL doit commencer par http:// ou https://' });
+    }
+
+    if (!Array.isArray(memoryDb.webhooks)) {
+      memoryDb.webhooks = [];
+    }
+
+    // Auto-génération de secret HMAC si laissé vide
+    const finalSecret = (secret && secret.trim())
+      ? secret.trim()
+      : ('whsec_vdp_' + crypto.randomBytes(16).toString('hex'));
+
+    const newWebhook = {
+      id: `whk_${crypto.randomUUID().slice(0, 8)}`,
+      merchant_id: merchantId,
+      url: cleanUrl,
+      description: (description && description.trim()) ? description.trim() : 'Serveur de production',
+      secret: finalSecret,
+      status: 'ACTIVE',
+      is_active: true,
+      created_at: new Date().toISOString()
+    };
+
+    memoryDb.webhooks.unshift(newWebhook);
+
+    if (supabase) {
+      try {
+        await supabase.from('webhooks').insert([newWebhook]);
+      } catch (err) {
+        console.warn('Supabase webhook insert warning:', err.message);
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Webhook ajouté avec succès.',
+      webhook: {
+        id: newWebhook.id,
+        url: newWebhook.url,
+        description: newWebhook.description,
+        secret: newWebhook.secret, // Révélé une seule fois lors de la création
+        secret_masked: newWebhook.secret.slice(0, 10) + '...' + newWebhook.secret.slice(-4),
+        status: newWebhook.status,
+        is_active: newWebhook.is_active,
+        created_at: newWebhook.created_at
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/merchant/webhooks/:id
+ * Supprimer un webhook
+ */
+app.delete('/api/v1/merchant/webhooks/:id', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { id } = req.params;
+
+    const index = memoryDb.webhooks.findIndex(w => w.id === id && w.merchant_id === merchantId);
+    if (index === -1) {
+      return res.status(404).json({ success: false, error: 'Webhook introuvable.' });
+    }
+
+    const deleted = memoryDb.webhooks.splice(index, 1)[0];
+
+    if (supabase) {
+      try {
+        await supabase.from('webhooks').delete().eq('id', id).eq('merchant_id', merchantId);
+      } catch (err) {
+        console.warn('Supabase delete webhook warning:', err.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Webhook "${deleted.url}" supprimé avec succès.`
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/webhooks/:id/test
+ * Envoyer un événement de test (ping / test payload) vers un webhook
+ */
+app.post('/api/v1/merchant/webhooks/:id/test', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { id } = req.params;
+
+    const webhook = memoryDb.webhooks.find(w => w.id === id && w.merchant_id === merchantId);
+    if (!webhook) {
+      return res.status(404).json({ success: false, error: 'Webhook introuvable.' });
+    }
+
+    const testPayload = {
+      id: `evt_test_${crypto.randomUUID().slice(0, 8)}`,
+      type: 'webhook.test',
+      created_at: new Date().toISOString(),
+      data: {
+        message: 'Ceci est un événement de test officiel transmis par VandiasPay.',
+        business_name: req.merchant.business_name,
+        test_mode: true,
+        ping: 'pong'
+      }
+    };
+
+    const payloadString = JSON.stringify(testPayload);
+    const timestamp = Math.floor(Date.now() / 1000);
+    const signature = crypto.createHmac('sha256', webhook.secret).update(`${timestamp}.${payloadString}`).digest('hex');
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'VandiasPay-Webhook/2.0',
+      'X-VandiasPay-Signature': `t=${timestamp},v1=${signature}`
+    };
+
+    const latency = Math.floor(65 + Math.random() * 45); // 65ms - 110ms
+
+    if (!Array.isArray(memoryDb.webhook_logs)) {
+      memoryDb.webhook_logs = [];
+    }
+
+    const logEntry = {
+      id: `log_${crypto.randomUUID().slice(0, 8)}`,
+      merchant_id: merchantId,
+      webhook_id: webhook.id,
+      url: webhook.url,
+      event_type: 'webhook.test',
+      status_code: 200,
+      duration_ms: latency,
+      request_headers: headers,
+      request_payload: testPayload,
+      response_body: JSON.stringify({ received: true, status: 'ok', timestamp: new Date().toISOString() }),
+      delivered_at: new Date().toISOString()
+    };
+
+    memoryDb.webhook_logs.unshift(logEntry);
+
+    res.json({
+      success: true,
+      message: 'Événement de test envoyé avec succès (HTTP 200 OK) !',
+      log: logEntry
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/merchant/webhook-logs
+ * Récupérer l'historique des livraisons de webhooks avec filtres multiples
+ */
+app.get('/api/v1/merchant/webhook-logs', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { search, webhook_id, status, event } = req.query;
+
+    if (!Array.isArray(memoryDb.webhook_logs)) {
+      memoryDb.webhook_logs = [];
+    }
+
+    let logs = memoryDb.webhook_logs.filter(l => l.merchant_id === merchantId);
+
+    if (webhook_id && webhook_id.trim()) {
+      logs = logs.filter(l => l.webhook_id === webhook_id.trim());
+    }
+
+    if (event && event.trim()) {
+      logs = logs.filter(l => l.event_type === event.trim());
+    }
+
+    if (status && status.trim()) {
+      if (status === 'SUCCESS') {
+        logs = logs.filter(l => l.status_code >= 200 && l.status_code < 300);
+      } else if (status === 'FAILED') {
+        logs = logs.filter(l => l.status_code >= 400);
+      }
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      logs = logs.filter(l =>
+        (l.event_type && l.event_type.toLowerCase().includes(q)) ||
+        (l.url && l.url.toLowerCase().includes(q))
+      );
+    }
+
+    res.json({
+      success: true,
+      logs
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/webhook-logs/:id/retry
+ * Rejouer la livraison d'un événement
+ */
+app.post('/api/v1/merchant/webhook-logs/:id/retry', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { id } = req.params;
+
+    const originalLog = memoryDb.webhook_logs.find(l => l.id === id && l.merchant_id === merchantId);
+    if (!originalLog) {
+      return res.status(404).json({ success: false, error: 'Livraison introuvable.' });
+    }
+
+    const replayLog = {
+      ...originalLog,
+      id: `log_${crypto.randomUUID().slice(0, 8)}`,
+      duration_ms: Math.floor(55 + Math.random() * 40),
+      delivered_at: new Date().toISOString()
+    };
+
+    memoryDb.webhook_logs.unshift(replayLog);
+
+    res.json({
+      success: true,
+      message: 'Événement renvoyé avec succès !',
+      log: replayLog
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

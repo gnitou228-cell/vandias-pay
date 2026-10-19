@@ -238,7 +238,47 @@ CREATE TABLE IF NOT EXISTS public.wallet_transfers (
 CREATE INDEX IF NOT EXISTS idx_wallet_transfers_merchant ON public.wallet_transfers(merchant_id);
 
 -- ========================================================
+-- 5.e. TABLE DES ENDPOINTS WEBHOOKS (WEBHOOKS)
+-- Envoi de notifications en temps réel vers les serveurs marchands
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.webhooks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+    url TEXT NOT NULL,
+    description VARCHAR(255) DEFAULT 'Serveur de production',
+    secret VARCHAR(100) NOT NULL,
+    status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'DISABLED')),
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhooks_merchant ON public.webhooks(merchant_id);
+
+-- ========================================================
+-- 5.f. TABLE DU JOURNAL DES LIVRAISONS (WEBHOOK_DELIVERIES)
+-- Historique des requêtes HTTP transmises et signatures HMAC
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.webhook_deliveries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+    webhook_id UUID REFERENCES public.webhooks(id) ON DELETE SET NULL,
+    url TEXT NOT NULL,
+    event_type VARCHAR(100) NOT NULL,
+    status_code INTEGER NOT NULL,
+    duration_ms INTEGER NOT NULL,
+    request_headers JSONB DEFAULT '{}'::jsonb,
+    request_payload JSONB DEFAULT '{}'::jsonb,
+    response_body TEXT,
+    delivered_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_merchant ON public.webhook_deliveries(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_event ON public.webhook_deliveries(event_type);
+CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON public.webhook_deliveries(status_code);
+
+-- ========================================================
 -- 6. FONCTIONS ET DÉCLENCHEURS AUTOMATIQUES (TRIGGERS)
+
 -- Mise à jour automatique de la colonne updated_at
 -- ========================================================
 CREATE OR REPLACE FUNCTION public.set_updated_at()

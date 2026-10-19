@@ -80,7 +80,16 @@ const VPState = {
   devKeySearchQuery: '',
   keyIdToRevoke: null,
   keyIdToDelete: null,
-  ipIdToDelete: null
+  ipIdToDelete: null,
+  webhooksList: [],
+  webhookLogsList: [],
+  webhookSearchQuery: '',
+  webhookLogsSearchQuery: '',
+  webhookLogsFilterWebhook: '',
+  webhookLogsFilterStatus: '',
+  webhookLogsFilterEvent: '',
+  webhookIdToDelete: null,
+  selectedWebhookLog: null
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -97,6 +106,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   initWalletSection();
   initPayoutsSection();
   initDeveloperSection();
+  initWebhooksSection();
+  initWebhookLogsSection();
 
   // Vérification de la session et chargement dynamique
   if (VPState.token) {
@@ -216,11 +227,13 @@ function renderAllDashboardElements() {
   loadAndRenderApiKeys(VPState.devKeySearchQuery);
   loadAndRenderIpWhitelist();
 
-  // 6. Webhooks
-  const webhookUrlInput = document.getElementById('webhookUrlInput');
-  const webhookSecretInput = document.getElementById('webhookSecretInput');
-  if (webhookUrlInput) webhookUrlInput.value = m.webhook_url || '';
-  if (webhookSecretInput) webhookSecretInput.value = m.webhook_secret || 'whsec_sample';
+  // 6. Webhooks & Journal des Webhooks (100% conforme SasPay)
+  const webhooksMerchantName = document.getElementById('webhooksMerchantName');
+  if (webhooksMerchantName) webhooksMerchantName.textContent = m.business_name || 'VANDIA IA';
+  const webhookLogsMerchantName = document.getElementById('webhookLogsMerchantName');
+  if (webhookLogsMerchantName) webhookLogsMerchantName.textContent = m.business_name || 'VANDIA IA';
+  loadAndRenderWebhooks(VPState.webhookSearchQuery);
+  loadAndRenderWebhookLogs();
 
   // 7. Paramètres de l'entreprise
   const settingsNameInput = document.getElementById('settingsBusinessName');
@@ -2201,8 +2214,414 @@ async function confirmDeleteIp() {
 }
 
 /* ========================================================
-   6. GESTION DES MODALS D'AUTHENTIFICATION & INSCRIPTION
+   5.d. SECTIONS WEBHOOKS & JOURNAL DES WEBHOOKS (100% CONFORME SASPAY)
    ======================================================== */
+
+function initWebhooksSection() {
+  // Formulaire d'ajout de Webhook
+  const formAddWebhook = document.getElementById('formAddWebhook');
+  if (formAddWebhook) {
+    formAddWebhook.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = document.getElementById('newWebhookUrl')?.value || '';
+      const desc = document.getElementById('newWebhookDesc')?.value || '';
+      const secret = document.getElementById('newWebhookSecret')?.value || '';
+      const submitBtn = document.getElementById('btnSubmitAddWebhook');
+
+      if (!url.trim()) {
+        showToast('Erreur', 'Veuillez saisir une URL de webhook valide.');
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Ajout...';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/webhooks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ url: url.trim(), description: desc.trim(), secret: secret.trim() })
+        });
+        const data = await res.json();
+
+        if (data.success && data.webhook) {
+          // Affichage du secret révélé dans la modale de sécurité
+          const secretInput = document.getElementById('revealedWebhookSecretInput');
+          if (secretInput) {
+            secretInput.value = data.webhook.secret;
+          }
+          openModal('modalRevealWebhookSecret');
+
+          formAddWebhook.reset();
+          showToast('Webhook configuré !', 'Votre URL a été enregistrée avec succès.');
+          loadAndRenderWebhooks(VPState.webhookSearchQuery);
+        } else {
+          showToast('Erreur', data.error || 'Impossible d\'ajouter ce webhook.');
+        }
+      } catch (err) {
+        showToast('Erreur réseau', err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Ajouter';
+        }
+      }
+    });
+  }
+
+  // Copier le secret révélé
+  const btnCopySecret = document.getElementById('btnCopyRevealedWebhookSecret');
+  if (btnCopySecret) {
+    btnCopySecret.addEventListener('click', () => {
+      const secretInput = document.getElementById('revealedWebhookSecretInput');
+      if (secretInput && secretInput.value) {
+        navigator.clipboard.writeText(secretInput.value);
+        showToast('Copié !', 'Secret HMAC copié dans le presse-papier.');
+      }
+    });
+  }
+
+  // Recherche Webhooks
+  const searchInput = document.getElementById('webhookSearchInput');
+  if (searchInput) {
+    let debounceTimer;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        VPState.webhookSearchQuery = e.target.value.trim();
+        loadAndRenderWebhooks(VPState.webhookSearchQuery);
+      }, 250);
+    });
+  }
+
+  // Confirmation suppression Webhook
+  const btnConfirmDelete = document.getElementById('btnConfirmDeleteWebhook');
+  if (btnConfirmDelete) {
+    btnConfirmDelete.addEventListener('click', confirmDeleteWebhook);
+  }
+}
+
+async function loadAndRenderWebhooks(search = '') {
+  const emptyState = document.getElementById('webhooksEmptyState');
+  const tableWrapper = document.getElementById('webhooksTableWrapper');
+  const tbody = document.getElementById('webhooksTableBody');
+  if (!tbody || !emptyState || !tableWrapper) return;
+
+  try {
+    const url = search ? `/api/v1/merchant/webhooks?search=${encodeURIComponent(search)}` : '/api/v1/merchant/webhooks';
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.webhooks)) return;
+
+    VPState.webhooksList = data.webhooks;
+
+    // Mettre à jour le dropdown de filtre dans le Journal des webhooks
+    const filterSelect = document.getElementById('webhookLogsFilterWebhook');
+    if (filterSelect) {
+      const currentVal = filterSelect.value;
+      filterSelect.innerHTML = `<option value="">Tous les webhooks</option>` +
+        VPState.webhooksList.map(w => `<option value="${w.id}">${w.description || w.url}</option>`).join('');
+      filterSelect.value = currentVal;
+    }
+
+    if (VPState.webhooksList.length === 0) {
+      emptyState.classList.remove('hidden');
+      tableWrapper.classList.add('hidden');
+      return;
+    }
+
+    emptyState.classList.add('hidden');
+    tableWrapper.classList.remove('hidden');
+    tbody.innerHTML = '';
+
+    VPState.webhooksList.forEach(w => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-[#F9FAFC] transition-colors';
+      tr.innerHTML = `
+        <td class="py-3.5 px-4">
+          <div class="flex items-center gap-2.5">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-[#5846F6]">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            </span>
+            <span class="font-mono font-bold text-xs text-[#111827] select-all">${w.url}</span>
+          </div>
+        </td>
+        <td class="py-3.5 px-4 text-xs text-slate-600 font-medium">
+          ${w.description || '—'}
+        </td>
+        <td class="py-3.5 px-4 font-mono text-[11px] text-slate-400 select-all">
+          ${w.secret_masked || 'whsec_...'}
+        </td>
+        <td class="py-3.5 px-4">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-600">Actif</span>
+        </td>
+        <td class="py-3.5 px-4 text-right">
+          <div class="inline-flex items-center justify-end gap-2.5">
+            <button type="button" class="rounded-lg border border-violet-200 bg-violet-50/60 px-2.5 py-1 text-xs font-semibold text-[#5846F6] hover:bg-violet-100 transition-colors inline-flex items-center gap-1" onclick="testWebhook('${w.id}')">
+              <span>⚡ Tester</span>
+            </button>
+            <button type="button" class="text-slate-400 hover:text-rose-600 transition-colors p-1" onclick="openDeleteWebhookModal('${w.id}', '${w.url.replace(/'/g, "\\'")}')" title="Supprimer">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Erreur chargement webhooks:', err);
+  }
+}
+
+function openDeleteWebhookModal(id, url) {
+  VPState.webhookIdToDelete = id;
+  const title = document.getElementById('deleteWebhookModalTitle');
+  if (title) title.textContent = `Supprimer le webhook "${url}" ?`;
+  openModal('modalDeleteWebhook');
+}
+
+async function confirmDeleteWebhook() {
+  if (!VPState.webhookIdToDelete) return;
+
+  try {
+    const res = await fetch(`/api/v1/merchant/webhooks/${VPState.webhookIdToDelete}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('Webhook supprimé', 'L\'endpoint a bien été retiré.');
+      closeModal('modalDeleteWebhook');
+      loadAndRenderWebhooks(VPState.webhookSearchQuery);
+    } else {
+      showToast('Erreur', data.error || 'Impossible de supprimer ce webhook.');
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
+}
+
+async function testWebhook(id) {
+  try {
+    showToast('Envoi du test...', 'Transmission d\'un événement ping...');
+    const res = await fetch(`/api/v1/merchant/webhooks/${id}/test`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('Test réussi (200 OK)', `Latence : ${data.log?.duration_ms || 85}ms.`);
+      loadAndRenderWebhookLogs();
+    } else {
+      showToast('Échec du test', data.error || 'Le serveur n\'a pas répondu correctement.');
+    }
+  } catch (err) {
+    showToast('Erreur de test', err.message);
+  }
+}
+
+function initWebhookLogsSection() {
+  // Recherche
+  const searchInput = document.getElementById('webhookLogsSearchInput');
+  if (searchInput) {
+    let debounceTimer;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        VPState.webhookLogsSearchQuery = e.target.value.trim();
+        loadAndRenderWebhookLogs();
+      }, 250);
+    });
+  }
+
+  // Filtre Webhook
+  const filterWebhook = document.getElementById('webhookLogsFilterWebhook');
+  if (filterWebhook) {
+    filterWebhook.addEventListener('change', (e) => {
+      VPState.webhookLogsFilterWebhook = e.target.value;
+      loadAndRenderWebhookLogs();
+    });
+  }
+
+  // Filtre Statut
+  const filterStatus = document.getElementById('webhookLogsFilterStatus');
+  if (filterStatus) {
+    filterStatus.addEventListener('change', (e) => {
+      VPState.webhookLogsFilterStatus = e.target.value;
+      loadAndRenderWebhookLogs();
+    });
+  }
+
+  // Filtre Événement
+  const filterEvent = document.getElementById('webhookLogsFilterEvent');
+  if (filterEvent) {
+    filterEvent.addEventListener('change', (e) => {
+      VPState.webhookLogsFilterEvent = e.target.value;
+      loadAndRenderWebhookLogs();
+    });
+  }
+
+  // Bouton Copier le payload JSON
+  const btnCopyPayload = document.getElementById('btnCopyLogPayload');
+  if (btnCopyPayload) {
+    btnCopyPayload.addEventListener('click', () => {
+      const payloadEl = document.getElementById('logDetailPayload');
+      if (payloadEl) {
+        navigator.clipboard.writeText(payloadEl.textContent);
+        showToast('Copié !', 'Payload JSON copié dans le presse-papier.');
+      }
+    });
+  }
+
+  // Bouton Replay de l'événement
+  const btnReplay = document.getElementById('btnReplayWebhookEvent');
+  if (btnReplay) {
+    btnReplay.addEventListener('click', async () => {
+      if (!VPState.selectedWebhookLog) return;
+      try {
+        btnReplay.disabled = true;
+        btnReplay.textContent = 'Envoi...';
+
+        const res = await fetch(`/api/v1/merchant/webhook-logs/${VPState.selectedWebhookLog.id}/retry`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${VPState.token}` }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast('Événement renvoyé !', 'La requête a été rejouée avec succès.');
+          closeModal('modalWebhookLogDetail');
+          loadAndRenderWebhookLogs();
+        } else {
+          showToast('Erreur', data.error || 'Impossible de renvoyer l\'événement.');
+        }
+      } catch (err) {
+        showToast('Erreur réseau', err.message);
+      } finally {
+        btnReplay.disabled = false;
+        btnReplay.textContent = '🔄 Renvoyer cet événement (Replay)';
+      }
+    });
+  }
+}
+
+async function loadAndRenderWebhookLogs() {
+  const emptyState = document.getElementById('webhookLogsEmptyState');
+  const tableWrapper = document.getElementById('webhookLogsTableWrapper');
+  const tbody = document.getElementById('webhookLogsTableBody');
+  if (!tbody || !emptyState || !tableWrapper) return;
+
+  try {
+    const params = new URLSearchParams();
+    if (VPState.webhookLogsSearchQuery) params.append('search', VPState.webhookLogsSearchQuery);
+    if (VPState.webhookLogsFilterWebhook) params.append('webhook_id', VPState.webhookLogsFilterWebhook);
+    if (VPState.webhookLogsFilterStatus) params.append('status', VPState.webhookLogsFilterStatus);
+    if (VPState.webhookLogsFilterEvent) params.append('event', VPState.webhookLogsFilterEvent);
+
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`/api/v1/merchant/webhook-logs${queryStr}`, {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.logs)) return;
+
+    VPState.webhookLogsList = data.logs;
+
+    if (VPState.webhookLogsList.length === 0) {
+      emptyState.classList.remove('hidden');
+      tableWrapper.classList.add('hidden');
+      return;
+    }
+
+    emptyState.classList.add('hidden');
+    tableWrapper.classList.remove('hidden');
+    tbody.innerHTML = '';
+
+    VPState.webhookLogsList.forEach(log => {
+      const isSuccess = log.status_code >= 200 && log.status_code < 300;
+      const statusClass = isSuccess ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600';
+      const statusText = isSuccess ? `${log.status_code} OK` : `${log.status_code} Erreur`;
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-[#F9FAFC] transition-colors';
+      tr.innerHTML = `
+        <td class="py-3.5 px-4">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold font-mono ${statusClass}">
+            ${statusText}
+          </span>
+        </td>
+        <td class="py-3.5 px-4 font-mono font-bold text-xs text-[#111827]">
+          ${log.event_type}
+        </td>
+        <td class="py-3.5 px-4 font-mono text-xs text-slate-500 max-w-[220px] truncate" title="${log.url}">
+          ${log.url}
+        </td>
+        <td class="py-3.5 px-4 text-xs text-slate-400">
+          ${formatShortDate(log.delivered_at)} • <span class="font-mono">${log.duration_ms || 80}ms</span>
+        </td>
+        <td class="py-3.5 px-4 text-right">
+          <button type="button" class="text-xs font-semibold text-[#5846F6] hover:underline" onclick='openWebhookLogDetailModal(${JSON.stringify(log).replace(/'/g, "&apos;")})'>
+            Détails
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Erreur chargement logs webhooks:', err);
+  }
+}
+
+function openWebhookLogDetailModal(log) {
+  VPState.selectedWebhookLog = log;
+  const isSuccess = log.status_code >= 200 && log.status_code < 300;
+
+  const badge = document.getElementById('logDetailStatusBadge');
+  if (badge) {
+    badge.textContent = log.status_code;
+    badge.className = `flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${isSuccess ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'} font-bold text-xs font-mono`;
+  }
+
+  const eventType = document.getElementById('logDetailEventType');
+  if (eventType) eventType.textContent = log.event_type;
+
+  const meta = document.getElementById('logDetailMeta');
+  if (meta) meta.textContent = `${formatShortDate(log.delivered_at)} • ${log.duration_ms || 80}ms de latence`;
+
+  const urlEl = document.getElementById('logDetailUrl');
+  if (urlEl) urlEl.textContent = log.url;
+
+  const headersEl = document.getElementById('logDetailHeaders');
+  if (headersEl) {
+    const hdrs = log.request_headers || {};
+    headersEl.textContent = Object.entries(hdrs).map(([k, v]) => `${k}: ${v}`).join('\n');
+  }
+
+  const payloadEl = document.getElementById('logDetailPayload');
+  if (payloadEl) {
+    payloadEl.textContent = JSON.stringify(log.request_payload || {}, null, 2);
+  }
+
+  const responseEl = document.getElementById('logDetailResponse');
+  if (responseEl) {
+    responseEl.textContent = log.response_body || '{"received": true}';
+  }
+
+  openModal('modalWebhookLogDetail');
+}
 
 function initAuthModalEvents() {
   const tabLogin = document.getElementById('authTabLogin');
@@ -2410,6 +2829,14 @@ function switchTab(tabKey) {
   if (tabKey === 'developer') {
     loadAndRenderApiKeys(VPState.devKeySearchQuery);
     loadAndRenderIpWhitelist();
+  }
+
+  if (tabKey === 'webhooks') {
+    loadAndRenderWebhooks(VPState.webhookSearchQuery);
+  }
+
+  if (tabKey === 'webhook-logs') {
+    loadAndRenderWebhookLogs();
   }
 
   closeMobileDrawer();

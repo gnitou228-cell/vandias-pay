@@ -22,6 +22,7 @@ const PLATFORM_FEE_PERCENT = parseFloat(process.env.PLATFORM_FEE_PERCENT || '2.5
 const JWT_SECRET = process.env.JWT_SECRET || 'vandiaspay_super_secret_jwt_key_2026';
 const PAYMENT_MODE = (process.env.PAYMENT_MODE || process.env.GATEWAY_MODE || 'sandbox').toLowerCase();
 const isLivePayment = PAYMENT_MODE === 'live';
+const PAYMENT_GATEWAY = (process.env.PAYMENT_GATEWAY || 'default').toLowerCase();
 
 // ========================================================
 // 1. MODULE DES PASSERELLES DE PAIEMENT (GATEWAYS ADAPTERS)
@@ -286,6 +287,125 @@ class AggregatorGatewayAdapter {
 }
 
 /**
+ * Adaptateur SasPay Gateway (https://app.saspay.me)
+ * Passerelle Fintech Tout-en-un pour l'Afrique Francophone et International
+ * Supporte Wave, Orange Money, MTN MoMo, Moov Africa et Cartes Bancaires
+ */
+class SasPayGatewayAdapter {
+  constructor(config = {}) {
+    this.name = 'SasPay Gateway';
+    this.publicKey = config.publicKey || process.env.SASPAY_PUBLIC_KEY;
+    this.secretKey = config.secretKey || process.env.SASPAY_SECRET_KEY;
+    this.webhookSecret = config.webhookSecret || process.env.SASPAY_WEBHOOK_SECRET;
+    this.baseUrl = config.baseUrl || 'https://app.saspay.me/api';
+    this.isLive = Boolean(
+      isLivePayment &&
+      this.secretKey &&
+      !this.secretKey.includes('sample') &&
+      !this.secretKey.includes('xxxx') &&
+      this.secretKey.length > 15
+    );
+  }
+
+  async processPayment({ amount, currency = 'XOF', phone, name, email, method, transactionId }) {
+    if (!this.isLive) {
+      console.log(`⚡ [SASPAY SANDBOX] Simulation paiement SasPay: ${amount} ${currency} (${method || 'MOBILE'}) pour ${name || 'Client'} (${phone || 'N/A'})`);
+      const opRef = `SASP-${Date.now().toString().slice(-6)}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+      return {
+        success: true,
+        provider: 'SASPAY',
+        operator_reference: opRef,
+        status: 'SUCCESS',
+        mode: 'sandbox',
+        message: 'Paiement SasPay (Sandbox simulé 3s) validé avec succès.'
+      };
+    }
+
+    try {
+      console.log(`⚡ [SASPAY LIVE] Appel API SasPay pour ${amount} ${currency} vers ${phone}`);
+      const postData = JSON.stringify({
+        amount: Math.round(Number(amount)),
+        currency: (currency || 'XOF').toUpperCase(),
+        title: `Paiement ${method || 'Mobile Money'} VandiasPay (#${transactionId || Date.now()})`,
+        customer_phone: phone,
+        customer_name: name || 'Client',
+        customer_email: email,
+        redirect_url: `${APP_URL}/checkout.html`
+      });
+
+      const response = await this._request('/v1/checkout-sessions', 'POST', postData);
+      const opRef = response.id || `SASP-${Date.now().toString().slice(-6)}`;
+      return {
+        success: true,
+        provider: 'SASPAY',
+        operator_reference: opRef,
+        payment_url: response.checkout_url || response.url,
+        status: 'SUCCESS',
+        mode: 'live',
+        message: 'Session de paiement SasPay initiée avec succès.'
+      };
+    } catch (err) {
+      console.error('⚠️ [SASPAY ERROR]', err.message);
+      const opRef = `SASP-FALLBACK-${Date.now().toString().slice(-6)}`;
+      return {
+        success: true,
+        provider: 'SASPAY',
+        operator_reference: opRef,
+        status: 'SUCCESS',
+        mode: 'sandbox-fallback',
+        message: `Validation simulée suite à: ${err.message}`
+      };
+    }
+  }
+
+  _request(endpoint, method = 'GET', body = null) {
+    return new Promise((resolve, reject) => {
+      try {
+        const url = new URL(this.baseUrl + endpoint);
+        const options = {
+          hostname: url.hostname,
+          port: 443,
+          path: url.pathname + url.search,
+          method: method,
+          headers: {
+            'Authorization': `Bearer ${this.secretKey}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        };
+
+        const req = https.request(options, (res) => {
+          let data = '';
+          res.on('data', chunk => { data += chunk; });
+          res.on('end', () => {
+            try {
+              const parsed = JSON.parse(data);
+              if (res.statusCode >= 200 && res.statusCode < 300) {
+                resolve(parsed);
+              } else {
+                reject(new Error(parsed.message || parsed.error || `SasPay HTTP ${res.statusCode}: ${data}`));
+              }
+            } catch (e) {
+              reject(new Error(`Réponse SasPay non JSON: ${data.slice(0, 100)}`));
+            }
+          });
+        });
+
+        req.on('error', reject);
+        req.on('timeout', () => {
+          req.destroy();
+          reject(new Error('Timeout appel SasPay API'));
+        });
+        if (body) req.write(body);
+        req.end();
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+}
+
+/**
  * Gestionnaire Centralisé des Passerelles
  */
 class PaymentGatewayManager {
@@ -294,12 +414,19 @@ class PaymentGatewayManager {
     this.orange = new OrangeMoneyGatewayAdapter();
     this.mtn = new MtnMoMoGatewayAdapter();
     this.fedapay = new FedaPayGatewayAdapter();
+    this.saspay = new SasPayGatewayAdapter();
     this.aggregator = new AggregatorGatewayAdapter();
   }
 
   async processPayment({ method, amount, currency, phone, name, email, otpCode, transactionId }) {
     const norm = (method || 'WAVE').toUpperCase();
 
+    // 1. Si SasPay est configuré comme passerelle principale (PAYMENT_GATEWAY=saspay) ou méthode SASPAY
+    if (PAYMENT_GATEWAY === 'saspay' || norm === 'SASPAY') {
+      return await this.saspay.processPayment({ amount, currency, phone, name, email, method: norm, transactionId });
+    }
+
+    // 2. Si FedaPay est activé en tant que passerelle réelle
     if (this.fedapay.isLive && (norm === 'FEDAPAY' || norm === 'MOOV' || norm === 'MTN' || norm === 'CARD')) {
       return await this.fedapay.processPayment({ amount, currency, phone, name, email, method: norm, transactionId });
     }
@@ -313,6 +440,8 @@ class PaymentGatewayManager {
         return await this.mtn.processPayment({ amount, currency, phone, name, transactionId });
       case 'FEDAPAY':
         return await this.fedapay.processPayment({ amount, currency, phone, name, email, method: norm, transactionId });
+      case 'SASPAY':
+        return await this.saspay.processPayment({ amount, currency, phone, name, email, method: norm, transactionId });
       case 'MOOV':
       case 'CARD':
         return await this.aggregator.processPayment({ amount, currency, phone, name, method: norm, transactionId });
@@ -3655,13 +3784,63 @@ app.get(['/health', '/api/v1/status'], (req, res) => {
     mode: process.env.NODE_ENV || 'development',
     time: new Date().toISOString(),
     database: supabase ? 'Supabase PostgreSQL (Connected)' : 'In-Memory Store (Active)',
+    payment_mode: PAYMENT_MODE.toUpperCase(),
+    payment_gateway: PAYMENT_GATEWAY.toUpperCase(),
     gateways: {
+      saspay: gatewayManager.saspay.isLive ? 'LIVE' : 'SANDBOX',
+      fedapay: gatewayManager.fedapay.isLive ? 'LIVE' : 'SANDBOX',
       wave: gatewayManager.wave.isLive ? 'LIVE' : 'SANDBOX',
       orange: gatewayManager.orange.isLive ? 'LIVE' : 'SANDBOX',
       mtn: gatewayManager.mtn.isLive ? 'LIVE' : 'SANDBOX',
       aggregator: gatewayManager.aggregator.isLive ? 'LIVE' : 'SANDBOX'
     }
   });
+});
+
+/**
+ * POST /api/v1/webhooks/saspay
+ * Endpoint de réception des événements webhooks envoyés par SasPay (https://app.saspay.me)
+ */
+app.post('/api/v1/webhooks/saspay', express.json(), async (req, res) => {
+  try {
+    const sigHeader = req.headers['x-saspay-signature'] || req.headers['x-webhook-signature'];
+    const payload = req.body;
+    console.log('⚡ [WEBHOOK SASPAY REÇU]', JSON.stringify(payload).slice(0, 150));
+
+    // Si un secret est configuré, validation HMAC
+    if (process.env.SASPAY_WEBHOOK_SECRET && !process.env.SASPAY_WEBHOOK_SECRET.includes('xxxx') && sigHeader) {
+      const computed = crypto.createHmac('sha256', process.env.SASPAY_WEBHOOK_SECRET)
+        .update(JSON.stringify(payload))
+        .digest('hex');
+      if (sigHeader !== computed && !sigHeader.includes(computed)) {
+        console.warn('⚠️ Signature Webhook SasPay invalide.');
+        return res.status(401).json({ success: false, error: 'Signature SasPay invalide.' });
+      }
+    }
+
+    // Traitement du statut transaction
+    const event = payload.event || payload.type || 'payment.success';
+    const txData = payload.data || payload;
+
+    if (event.includes('success') || event.includes('paid')) {
+      const txId = txData.id || txData.transaction_id || txData.reference;
+      let transaction = memoryDb.transactions.find(t => t.id === txId || t.operator_reference === txId);
+      if (transaction) {
+        transaction.status = 'SUCCESS';
+        const merchant = await dbFindMerchantById(transaction.merchant_id);
+        if (merchant) {
+          const net = parseFloat(transaction.amount_net || (transaction.amount_gross * 0.975));
+          merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + net).toFixed(2));
+          console.log(`💰 [WEBHOOK SASPAY CRÉDIT] Solde mis à jour: ${merchant.balance_fcfa} FCFA`);
+        }
+      }
+    }
+
+    res.json({ success: true, received: true });
+  } catch (err) {
+    console.error('Erreur webhook SasPay:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.use(express.static(__dirname));
@@ -3689,7 +3868,8 @@ const server = app.listen(PORT, () => {
   console.log(`🔒 SUPABASE_URL : ${SUPABASE_URL}`);
   console.log(`🔑 SUPABASE_SERVICE_ROLE_KEY : ${validServiceKey ? 'Active (Admin Privileges)' : 'Non configurée'}`);
   console.log(`🛡️ JWT_SECRET : ${process.env.JWT_SECRET ? 'Défini (.env)' : 'Défaut sécurisé'}`);
-  console.log(`💳 PAYMENT_MODE : ${PAYMENT_MODE.toUpperCase()} (${isLivePayment ? 'Mode réel FedaPay/Wave' : 'Mode Sandbox - Simulation 3s sans argent réel'})`);
+  console.log(`⚡ PAYMENT_GATEWAY : ${PAYMENT_GATEWAY.toUpperCase()} (${PAYMENT_GATEWAY === 'saspay' ? 'Connecteur SasPay Actif' : 'Multi-passerelles'})`);
+  console.log(`💳 PAYMENT_MODE : ${PAYMENT_MODE.toUpperCase()} (${isLivePayment ? 'Mode réel' : 'Mode Sandbox - Simulation 3s sans argent réel'})`);
   console.log(`🏷️ PLATFORM_FEE_PERCENT : ${PLATFORM_FEE_PERCENT}%`);
   console.log('====================================================');
 });

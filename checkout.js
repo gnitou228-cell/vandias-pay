@@ -393,7 +393,7 @@ function startPendingValidation() {
     }
   }, 1000);
 
-  // Synchronize with Backend API and Auto-simulate successful verification
+  // Synchronisation avec le Backend API et simulation de validation après 3 secondes (Mode Sandbox)
   setTimeout(async () => {
     if (CheckoutState.currentScreen === 'pending') {
       let receiptData = null;
@@ -412,6 +412,13 @@ function startPendingValidation() {
           })
         });
         const data = await res.json();
+        
+        // Si FedaPay retourne une URL de paiement live, rediriger vers la passerelle réelle
+        if (data && data.payment_url && data.mode === 'live') {
+          window.location.href = data.payment_url;
+          return;
+        }
+
         if (data && data.receipt) {
           receiptData = data.receipt;
           CheckoutState.lastReceipt = data.receipt;
@@ -421,7 +428,7 @@ function startPendingValidation() {
       }
       triggerPaymentSuccess(receiptData);
     }
-  }, 3500);
+  }, 3000);
 }
 
 function triggerPaymentSuccess(receipt = null) {

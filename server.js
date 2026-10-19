@@ -20,6 +20,8 @@ const PORT = process.env.PORT || 3000;
 const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
 const PLATFORM_FEE_PERCENT = parseFloat(process.env.PLATFORM_FEE_PERCENT || '2.5');
 const JWT_SECRET = process.env.JWT_SECRET || 'vandiaspay_super_secret_jwt_key_2026';
+const PAYMENT_MODE = (process.env.PAYMENT_MODE || process.env.GATEWAY_MODE || 'sandbox').toLowerCase();
+const isLivePayment = PAYMENT_MODE === 'live';
 
 // ========================================================
 // 1. MODULE DES PASSERELLES DE PAIEMENT (GATEWAYS ADAPTERS)
@@ -36,7 +38,7 @@ class WaveGatewayAdapter {
     this.apiKey = config.apiKey || process.env.WAVE_API_KEY;
     this.apiSecret = config.apiSecret || process.env.WAVE_API_SECRET;
     this.baseUrl = config.baseUrl || process.env.WAVE_BASE_URL || 'https://api.wave.com';
-    this.isLive = Boolean(this.apiKey && !this.apiKey.includes('sample') && this.apiKey.trim().length > 10);
+    this.isLive = Boolean(isLivePayment && this.apiKey && !this.apiKey.includes('sample') && !this.apiKey.includes('xxxx') && this.apiKey.trim().length > 10);
   }
 
   async processPayment({ amount, currency, phone, name, transactionId }) {
@@ -67,7 +69,7 @@ class OrangeMoneyGatewayAdapter {
     this.clientId = config.clientId || process.env.ORANGE_MONEY_CLIENT_ID;
     this.clientSecret = config.clientSecret || process.env.ORANGE_MONEY_CLIENT_SECRET;
     this.merchantKey = config.merchantKey || process.env.ORANGE_MONEY_MERCHANT_KEY;
-    this.isLive = Boolean(this.clientId && !this.clientId.includes('sample') && this.clientId.trim().length > 10);
+    this.isLive = Boolean(isLivePayment && this.clientId && !this.clientId.includes('sample') && !this.clientId.includes('xxxx') && this.clientId.trim().length > 10);
   }
 
   async processPayment({ amount, currency, phone, name, otpCode, transactionId }) {
@@ -98,7 +100,7 @@ class MtnMoMoGatewayAdapter {
     this.apiUser = config.apiUser || process.env.MTN_MOMO_API_USER;
     this.apiKey = config.apiKey || process.env.MTN_MOMO_API_KEY;
     this.environment = config.environment || process.env.MTN_MOMO_ENVIRONMENT || 'sandbox';
-    this.isLive = Boolean(this.subscriptionKey && !this.subscriptionKey.includes('sample') && this.subscriptionKey.trim().length > 10);
+    this.isLive = Boolean(isLivePayment && this.subscriptionKey && !this.subscriptionKey.includes('sample') && !this.subscriptionKey.includes('xxxx') && this.subscriptionKey.trim().length > 10);
   }
 
   async processPayment({ amount, currency, phone, name, transactionId }) {
@@ -133,6 +135,7 @@ class FedaPayGatewayAdapter {
       ? 'https://api.fedapay.com/v1'
       : 'https://sandbox-api.fedapay.com/v1';
     this.isLive = Boolean(
+      this.mode === 'live' &&
       this.secretKey &&
       !this.secretKey.includes('sample') &&
       !this.secretKey.includes('xxxx') &&
@@ -253,10 +256,11 @@ class AggregatorGatewayAdapter {
     this.cinetPayKey = config.cinetPayKey || process.env.CINPAY_API_KEY;
     this.cinetPaySiteId = config.cinetPaySiteId || process.env.CINPAY_SITE_ID;
     this.fedaPayKey = config.fedaPayKey || process.env.FEDAPAY_SECRET_KEY;
-    this.fedaPayEnv = config.fedaPayEnv || process.env.PAYMENT_MODE || process.env.FEDAPAY_ENVIRONMENT || 'sandbox';
     this.isLive = Boolean(
-      (this.cinetPayKey && !this.cinetPayKey.includes('sample')) ||
-      (this.fedaPayKey && !this.fedaPayKey.includes('sample') && !this.fedaPayKey.includes('xxxx'))
+      isLivePayment && (
+        (this.cinetPayKey && !this.cinetPayKey.includes('sample')) ||
+        (this.fedaPayKey && !this.fedaPayKey.includes('sample') && !this.fedaPayKey.includes('xxxx'))
+      )
     );
   }
 
@@ -3521,7 +3525,7 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
         customer_email: customer_email || 'client@email.com',
         payment_method: methodUpper,
         status: 'PENDING',
-        mode: 'live',
+        mode: isLivePayment ? 'live' : 'sandbox',
         redirect_url: link ? link.redirect_url : '/index.html',
         created_at: new Date().toISOString()
       };
@@ -3552,12 +3556,14 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
     transaction.operator_reference = gatewayResult.operator_reference;
     transaction.updated_at = new Date().toISOString();
 
-    // 4. Incrémentation du solde réel du marchand (Net = 97.5%)
-    if (merchant && transaction.mode === 'live') {
+    // 4. Incrémentation du solde réel du marchand (Net = 100% - 2.5% de commission)
+    // Fonctionne en Sandbox (pour validation du flux de A à Z) et en Live
+    if (merchant) {
       const netAmount = parseFloat(transaction.amount_net || 0);
       merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + netAmount).toFixed(2));
+      console.log(`💰 [SOLDE CRÉDITÉ] Marchand "${merchant.business_name}": +${netAmount} FCFA (Frais déduits: ${transaction.fee_platform} FCFA) -> Solde: ${merchant.balance_fcfa} FCFA`);
 
-      // Mise à jour de la base de données Supabase
+      // Mise à jour de la base de données Supabase si connectée
       if (supabase) {
         try {
           await supabase
@@ -3679,6 +3685,12 @@ const server = app.listen(PORT, () => {
   console.log(`🛍️ Landing Page : ${APP_URL}/index.html`);
   console.log(`📊 Dashboard : ${APP_URL}/dashboard.html`);
   console.log(`💳 Checkout : ${APP_URL}/checkout.html`);
+  console.log('----------------------------------------------------');
+  console.log(`🔒 SUPABASE_URL : ${SUPABASE_URL}`);
+  console.log(`🔑 SUPABASE_SERVICE_ROLE_KEY : ${validServiceKey ? 'Active (Admin Privileges)' : 'Non configurée'}`);
+  console.log(`🛡️ JWT_SECRET : ${process.env.JWT_SECRET ? 'Défini (.env)' : 'Défaut sécurisé'}`);
+  console.log(`💳 PAYMENT_MODE : ${PAYMENT_MODE.toUpperCase()} (${isLivePayment ? 'Mode réel FedaPay/Wave' : 'Mode Sandbox - Simulation 3s sans argent réel'})`);
+  console.log(`🏷️ PLATFORM_FEE_PERCENT : ${PLATFORM_FEE_PERCENT}%`);
   console.log('====================================================');
 });
 

@@ -322,15 +322,21 @@ class SasPayGatewayAdapter {
     }
 
     try {
-      console.log(`⚡ [SASPAY LIVE] Appel API SasPay pour ${amount} ${currency} vers ${phone}`);
+      console.log(`⚡ [SASPAY LIVE] Appel API SasPay pour ${amount} ${currency} vers ${phone} (Méthode: ${method})`);
       const postData = JSON.stringify({
         amount: Math.round(Number(amount)),
         currency: (currency || 'XOF').toUpperCase(),
         title: `Paiement ${method || 'Mobile Money'} VandiasPay (#${transactionId || Date.now()})`,
         customer_phone: phone,
         customer_name: name || 'Client',
-        customer_email: email,
-        redirect_url: `${APP_URL}/checkout.html`
+        customer_email: email || 'client@vandiaspay.com',
+        payment_method: (method || 'wave').toLowerCase(),
+        callback_url: `${APP_URL}/api/v1/webhooks/saspay`,
+        redirect_url: `${APP_URL}/checkout.html?session=${transactionId}&status=success`,
+        metadata: {
+          vandias_transaction_id: transactionId,
+          gateway: 'saspay'
+        }
       });
 
       const response = await this._request('/v1/checkout-sessions', 'POST', postData);
@@ -339,8 +345,8 @@ class SasPayGatewayAdapter {
         success: true,
         provider: 'SASPAY',
         operator_reference: opRef,
-        payment_url: response.checkout_url || response.url,
-        status: 'SUCCESS',
+        payment_url: response.checkout_url || response.url || response.payment_url,
+        status: response.status || 'PENDING',
         mode: 'live',
         message: 'Session de paiement SasPay initiée avec succès.'
       };
@@ -860,7 +866,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Vandias-Key']
 }));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Middleware d'authentification Marchand (Dashboard - Bearer JWT)
@@ -3801,44 +3812,112 @@ app.get(['/health', '/api/v1/status'], (req, res) => {
  * POST /api/v1/webhooks/saspay
  * Endpoint de réception des événements webhooks envoyés par SasPay (https://app.saspay.me)
  */
-app.post('/api/v1/webhooks/saspay', express.json(), async (req, res) => {
+app.post('/api/v1/webhooks/saspay', async (req, res) => {
   try {
-    const sigHeader = req.headers['x-saspay-signature'] || req.headers['x-webhook-signature'];
-    const payload = req.body;
-    console.log('⚡ [WEBHOOK SASPAY REÇU]', JSON.stringify(payload).slice(0, 150));
+    const sigHeader = req.headers['x-saspay-signature'] || req.headers['x-webhook-signature'] || req.headers['x-signature'];
+    const rawPayload = req.rawBody || JSON.stringify(req.body);
+    const payload = req.body || {};
 
-    // Si un secret est configuré, validation HMAC
-    if (process.env.SASPAY_WEBHOOK_SECRET && !process.env.SASPAY_WEBHOOK_SECRET.includes('xxxx') && sigHeader) {
-      const computed = crypto.createHmac('sha256', process.env.SASPAY_WEBHOOK_SECRET)
-        .update(JSON.stringify(payload))
+    console.log('⚡ [WEBHOOK SASPAY REÇU]', JSON.stringify(payload).slice(0, 200));
+
+    // 1. Vérification de la signature HMAC SHA-256 avec SASPAY_WEBHOOK_SECRET
+    const secret = process.env.SASPAY_WEBHOOK_SECRET;
+    if (secret && !secret.includes('xxxx') && sigHeader) {
+      const computed = crypto.createHmac('sha256', secret)
+        .update(rawPayload)
         .digest('hex');
-      if (sigHeader !== computed && !sigHeader.includes(computed)) {
-        console.warn('⚠️ Signature Webhook SasPay invalide.');
-        return res.status(401).json({ success: false, error: 'Signature SasPay invalide.' });
+
+      // Nettoyer si format t=timestamp,v1=signature
+      let cleanSig = sigHeader;
+      if (sigHeader.includes('v1=')) {
+        const match = sigHeader.match(/v1=([a-f0-9]+)/i);
+        if (match) cleanSig = match[1];
       }
+
+      if (cleanSig !== computed && !sigHeader.includes(computed)) {
+        console.warn('⚠️ Signature Webhook SasPay invalide. Reçu:', sigHeader, 'Attendu:', computed);
+        return res.status(401).json({ success: false, error: 'Signature Webhook SasPay invalide.' });
+      }
+      console.log('🛡️ Signature Webhook SasPay vérifiée avec succès (HMAC-SHA256).');
     }
 
-    // Traitement du statut transaction
+    // 2. Traitement du statut transaction
     const event = payload.event || payload.type || 'payment.success';
     const txData = payload.data || payload;
 
-    if (event.includes('success') || event.includes('paid')) {
-      const txId = txData.id || txData.transaction_id || txData.reference;
+    if (event.includes('success') || event.includes('paid') || event.includes('completed')) {
+      const txId = txData.metadata?.vandias_transaction_id || txData.id || txData.transaction_id || txData.reference;
+      
+      // Recherche de la transaction dans memoryDb ou Supabase
       let transaction = memoryDb.transactions.find(t => t.id === txId || t.operator_reference === txId);
+      if (!transaction && supabase) {
+        try {
+          const { data } = await supabase.from('transactions').select('*').or(`id.eq.${txId},operator_reference.eq.${txId}`).maybeSingle();
+          if (data) transaction = data;
+        } catch {}
+      }
+
       if (transaction) {
+        // Validation et calcul des frais de 2.5%
+        const amountGross = parseFloat(transaction.amount_gross || txData.amount || 5000);
+        const fee = parseFloat(((amountGross * PLATFORM_FEE_PERCENT) / 100).toFixed(2));
+        const net = parseFloat((amountGross - fee).toFixed(2));
+
         transaction.status = 'SUCCESS';
+        transaction.fee_platform = fee;
+        transaction.amount_net = net;
+        transaction.operator_reference = txData.id || txData.reference || transaction.operator_reference;
+        transaction.updated_at = new Date().toISOString();
+
+        // Crédit du solde marchand
         const merchant = await dbFindMerchantById(transaction.merchant_id);
         if (merchant) {
-          const net = parseFloat(transaction.amount_net || (transaction.amount_gross * 0.975));
-          merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + net).toFixed(2));
-          console.log(`💰 [WEBHOOK SASPAY CRÉDIT] Solde mis à jour: ${merchant.balance_fcfa} FCFA`);
+          const initialBal = parseFloat(merchant.balance_fcfa || 0);
+          merchant.balance_fcfa = parseFloat((initialBal + net).toFixed(2));
+          console.log(`💰 [WEBHOOK SASPAY SUCCÈS] Marchand "${merchant.business_name}": +${net} FCFA (Commission ${PLATFORM_FEE_PERCENT}%: ${fee} FCFA) -> Nouveau Solde: ${merchant.balance_fcfa} FCFA`);
+
+          // Mise à jour de la base de données Supabase
+          if (supabase) {
+            try {
+              await supabase
+                .from('merchants')
+                .update({ balance_fcfa: merchant.balance_fcfa })
+                .eq('id', merchant.id);
+
+              await supabase
+                .from('transactions')
+                .upsert([transaction]);
+
+              console.log('✅ Solde marchand et transaction synchronisés dans Supabase Cloud.');
+            } catch (err) {
+              console.warn('⚠️ Synchronisation Supabase webhook warning:', err.message);
+            }
+          }
+
+          // Déclencher le webhook configuré par le marchand
+          if (merchant.webhook_url) {
+            const clientWebhookData = {
+              event: 'payment.success',
+              transaction_id: transaction.id,
+              amount: transaction.amount_gross,
+              fee: transaction.fee_platform,
+              net: transaction.amount_net,
+              currency: transaction.currency || 'XOF',
+              payment_method: transaction.payment_method || 'SASPAY',
+              operator_reference: transaction.operator_reference,
+              timestamp: Math.floor(Date.now() / 1000)
+            };
+            dispatchWebhook(merchant.webhook_url, merchant.webhook_secret, 'payment.success', clientWebhookData).catch(() => {});
+          }
         }
+      } else {
+        console.warn(`ℹ️ Webhook SasPay: Transaction "${txId}" non trouvée en base.`);
       }
     }
 
-    res.json({ success: true, received: true });
+    res.json({ success: true, received: true, event });
   } catch (err) {
-    console.error('Erreur webhook SasPay:', err);
+    console.error('❌ Erreur webhook SasPay:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });

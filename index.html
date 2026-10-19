@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VANDIAS PAY API — La Couche de Paiement Tout-en-un pour 25+ Pays en Afrique</title>
+  <meta name="description" content="Encaissez facilement via Wave, Orange Money, MTN MoMo, Moov Africa et Cartes Bancaires avec une API moderne et des Liens de paiement instantanés.">
+  <meta name="keywords" content="passerelle de paiement afrique, vandias pay, wave api, orange money api, mtn momo api, fintech afrique, paiement en ligne senegal cote d'ivoire rdc cameroun">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="VANDIAS PAY API — Encaissez partout en Afrique dans 25+ pays">
+  <meta property="og:description" content="Connectez Wave, Orange Money, MTN, Moov et Carte Bancaire à votre application en 5 minutes. 2.5% par transaction, 0 FCFA de frais fixes.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN with VANDIAS PURPLE configuration -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            serif: ['Fraunces', 'Georgia', 'serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            vp: {
+              purple: '#5846F6',
+              purpleHover: '#4B3BE0',
+              purpleLight: '#EEF0FD',
+              cyan: '#06B6D4',
+              bg: '#F8F9FD',
+              card: '#FFFFFF',
+              border: '#ECEEF6',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235846F6'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+</head>
+<body class="bg-[#F8F9FD] text-[#0F172A] antialiased selection:bg-[#5846F6] selection:text-white">
+
+  <!-- Background Glow & Grid Elements (Unified Purple SaaS Theme) -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="glow-orb glow-top-left"></div>
+    <div class="glow-orb glow-top-right"></div>
+    <div class="glow-orb glow-center"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <!-- ========================================================
+       1. NAVIGATION BAR (CLEAN LIGHT SAAS LOOK)
+       ======================================================== -->
+  <header class="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 py-4 transition-all duration-300" id="mainHeader">
+    <div class="max-w-7xl mx-auto">
+      <nav class="nav-glass px-5 py-3 rounded-2xl flex items-center justify-between border border-[#ECEEF6] shadow-md backdrop-blur-xl bg-white/85">
+        <!-- Logo -->
+        <a href="#" class="flex items-center gap-3 group" aria-label="VandiasPay API Accueil">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#5846F6] via-[#7C6EF8] to-[#06B6D4] flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
+            <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-xl font-extrabold tracking-tight text-[#0F172A] flex items-center gap-1.5">
+              VANDIAS PAY <span class="text-xs px-2 py-0.5 rounded-full bg-[#EEF0FD] text-[#5846F6] border border-[#D4D7F5] font-mono font-semibold">API</span>
+            </span>
+            <span class="text-[10px] text-slate-500 font-medium tracking-wider uppercase -mt-0.5">Fintech Gateway • 25+ Pays</span>
+          </div>
+        </a>
+
+        <!-- Desktop Menu Links -->
+        <div class="hidden md:flex items-center gap-8">
+          <a href="#features" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">Fonctionnalités</a>
+          <a href="#developers" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">Développeurs</a>
+          <a href="#calculator" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">Calculateur</a>
+          <a href="#pricing" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">Tarifs</a>
+          <a href="#faq" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">FAQ</a>
+          <a href="checkout.html" class="nav-link text-sm font-bold text-[#5846F6] hover:text-[#4B3BE0] transition-colors flex items-center gap-1.5">
+            <span>Démo Checkout</span>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#EEF0FD] text-[#5846F6] border border-[#D4D7F5]">Live</span>
+          </a>
+        </div>
+
+        <!-- Right Action Buttons -->
+        <div class="hidden md:flex items-center gap-3">
+          <a href="dashboard.html" class="text-sm font-semibold text-slate-700 hover:text-[#0F172A] transition-colors px-3 py-2">
+            Connexion
+          </a>
+          <a href="dashboard.html" class="btn-primary relative group overflow-hidden px-5 py-2.5 rounded-xl font-semibold text-sm text-white flex items-center gap-2 shadow-md shadow-purple-500/25">
+            <span class="relative z-10 flex items-center gap-2">
+              Accéder au Dashboard
+              <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </span>
+            <div class="btn-glow"></div>
+          </a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button id="mobileMenuBtn" class="md:hidden p-2 rounded-xl text-slate-600 hover:text-[#0F172A] hover:bg-slate-100 transition-colors focus:outline-none" aria-label="Ouvrir le menu">
+          <svg id="menuIconOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+          </svg>
+          <svg id="menuIconClose" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Mobile Menu Drawer -->
+    <div id="mobileMenu" class="md:hidden max-w-7xl mx-auto mt-2 hidden transition-all duration-300">
+      <div class="bg-white/95 border border-[#ECEEF6] rounded-2xl p-6 backdrop-blur-2xl shadow-xl flex flex-col gap-4 text-slate-700">
+        <a href="#features" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Fonctionnalités</a>
+        <a href="#developers" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Développeurs & API</a>
+        <a href="#calculator" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Calculateur de Frais</a>
+        <a href="#pricing" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Tarifs Transparents</a>
+        <a href="#faq" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Foire Aux Questions</a>
+        <a href="checkout.html" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Page de Checkout Hébergée ↗</a>
+        <a href="dashboard.html" class="mobile-nav-link text-[#5846F6] font-bold py-2 border-b border-slate-100 flex items-center justify-between">
+          <span>Tableau de Bord Marchand</span>
+          <span>→</span>
+        </a>
+        <div class="pt-4 flex flex-col gap-3">
+          <a href="dashboard.html" class="w-full text-center py-2.5 rounded-xl border border-slate-200 text-slate-800 font-medium hover:bg-slate-50">Connexion Dashboard</a>
+          <a href="dashboard.html" class="w-full text-center py-3 rounded-xl bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] text-white font-semibold shadow-md shadow-purple-500/25">Accéder au Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10 pt-28 md:pt-36">
+
+    <!-- ========================================================
+         2. HERO SECTION
+         ======================================================== -->
+    <section class="relative px-4 sm:px-6 lg:px-8 pt-6 pb-20 md:pb-32 overflow-hidden">
+      <div class="max-w-7xl mx-auto">
+        <!-- Hero Top Badge -->
+        <div class="flex justify-center mb-6">
+          <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs sm:text-sm font-semibold shadow-sm animate-fade-in">
+            <span class="flex h-2 w-2 rounded-full bg-[#5846F6] animate-ping"></span>
+            <span>⚡ VANDIAS PAY :</span>
+            <span class="font-normal text-slate-700">La couche de paiement tout-en-un pour 25+ pays en Afrique</span>
+            <span class="hidden sm:inline-block text-slate-300">|</span>
+            <span class="hidden sm:inline-block text-[#5846F6] hover:underline cursor-pointer">v2.4 Disponible →</span>
+          </div>
+        </div>
+
+        <!-- Main Title & Tagline -->
+        <div class="text-center max-w-4xl mx-auto mb-8">
+          <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#0F172A] tracking-tight leading-[1.14]">
+            Encaissez partout en Afrique avec <br class="hidden sm:inline"/>
+            <span class="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-[#5846F6] via-[#7C6EF8] to-[#4338CA] text-[1.08em] pr-1">une seule API</span> 
+            et des liens instantanés.
+          </h1>
+          <p class="mt-6 text-lg sm:text-xl text-[#475569] font-normal max-w-2xl mx-auto leading-relaxed">
+            Connectez <strong class="text-[#0F172A] font-semibold">Wave</strong>, <strong class="text-[#0F172A] font-semibold">Orange Money</strong>, <strong class="text-[#0F172A] font-semibold">MTN MoMo</strong>, <strong class="text-[#0F172A] font-semibold">Moov</strong> et <strong class="text-[#0F172A] font-semibold">Carte Bancaire</strong> à votre application ou boutique en 5 minutes. Zéro frais d'inscription, versements instantanés.
+          </p>
+
+          <!-- Hero CTAs -->
+          <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">
+            <a href="dashboard.html" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-[#5846F6] via-[#6366F1] to-[#7C6EF8] hover:from-[#4B3BE0] hover:to-[#6D5EFA] text-white font-bold text-base shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-3 group">
+              <span>Ouvrir mon Dashboard Marchand</span>
+              <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+            <a href="checkout.html" class="w-full sm:w-auto px-7 py-4 rounded-xl bg-white hover:bg-slate-50 text-[#1E293B] font-semibold text-base border border-[#ECEEF6] hover:border-[#5846F6]/40 shadow-sm transition-all duration-300 flex items-center justify-center gap-2.5 group">
+              <svg class="w-5 h-5 text-[#5846F6] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+              <span>Tester le Checkout Hébergé</span>
+            </a>
+          </div>
+
+          <!-- Micro guarantees -->
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500 font-medium">
+            <span class="flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-[#5846F6]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              Sans carte bancaire requise
+            </span>
+            <span class="flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-[#5846F6]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              Wallets dans 25+ pays
+            </span>
+            <span class="hidden sm:flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-[#5846F6]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              Conforme UEMOA & CEMAC
+            </span>
+          </div>
+        </div>
+
+        <!-- ====================================================
+             DYNAMIC HERO VISUAL: 2 PANELS (CHECKOUT + CODE EDITOR)
+             ==================================================== -->
+        <div class="mt-14 relative" id="interactive-demo">
+          <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-purple-500/15 via-indigo-500/10 to-cyan-500/10 blur-2xl opacity-60"></div>
+          
+          <div class="relative grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            
+            <!-- PANEL GAUCHE : CHECKOUT MOBILE INTERACTIF (CLEAN WHITE CARD) -->
+            <div class="lg:col-span-5 bg-white border border-[#ECEEF6] rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col justify-between">
+              <div>
+                <!-- Checkout Header -->
+                <div class="flex items-center justify-between pb-4 border-b border-[#ECEEF6]">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] font-bold text-sm">
+                      🛍️
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-bold text-[#0F172A]">Boutique Dakar Style</h4>
+                      <p class="text-[11px] text-slate-500">Paiement sécurisé par VandiasPay</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="text-xs text-slate-500 block">Total à payer</span>
+                    <span class="text-base font-extrabold text-[#0F172A]" id="heroOrderAmount">5 000 FCFA</span>
+                  </div>
+                </div>
+
+                <!-- Simulation notice -->
+                <div class="my-4 px-3 py-2 rounded-xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-between">
+                  <span class="text-xs text-[#5846F6] flex items-center gap-1.5 font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-[#5846F6] animate-pulse"></span>
+                    Simulateur de Checkout en Direct
+                  </span>
+                  <span class="text-[10px] text-[#5846F6] font-mono">Testez un clic 👇</span>
+                </div>
+
+                <!-- Operator Selector Radio/Buttons -->
+                <div class="space-y-2.5">
+                  <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block">Sélectionnez votre moyen de paiement</label>
+                  
+                  <!-- Wave -->
+                  <div class="payment-method-item active p-3 rounded-xl border border-[#5846F6] bg-[#EEF0FD] cursor-pointer transition-all flex items-center justify-between" data-method="wave" data-fee="Gratuit">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-lg bg-[#1BA2FF] flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+                      </div>
+                      <div>
+                        <div class="text-sm font-bold text-[#0F172A] flex items-center gap-2">
+                          Wave Mobile Money
+                          <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-800 font-semibold">1% ou 0F</span>
+                        </div>
+                        <span class="text-[11px] text-slate-500">Sénégal, Côte d'Ivoire, Mali</span>
+                      </div>
+                    </div>
+                    <div class="custom-radio w-5 h-5 rounded-full border-2 border-[#5846F6] flex items-center justify-center">
+                      <div class="w-2.5 h-2.5 rounded-full bg-[#5846F6] radio-dot"></div>
+                    </div>
+                  </div>
+
+                  <!-- Orange Money -->
+                  <div class="payment-method-item p-3 rounded-xl border border-[#ECEEF6] bg-[#F8F9FD] hover:bg-[#F1F3F9] cursor-pointer transition-all flex items-center justify-between" data-method="orange" data-fee="Gratuit">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-lg bg-[#FF7900] flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                        <span class="font-black text-[13px] tracking-tighter">OM</span>
+                      </div>
+                      <div>
+                        <div class="text-sm font-bold text-[#0F172A] flex items-center gap-2">
+                          Orange Money
+                          <span class="text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-semibold">Instantané</span>
+                        </div>
+                        <span class="text-[11px] text-slate-500">SN, CI, CM, ML, BF, GN</span>
+                      </div>
+                    </div>
+                    <div class="custom-radio w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                      <div class="w-2.5 h-2.5 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                    </div>
+                  </div>
+
+                  <!-- MTN MoMo -->
+                  <div class="payment-method-item p-3 rounded-xl border border-[#ECEEF6] bg-[#F8F9FD] hover:bg-[#F1F3F9] cursor-pointer transition-all flex items-center justify-between" data-method="mtn" data-fee="Gratuit">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-lg bg-[#FFCC00] flex items-center justify-center text-black font-extrabold text-[12px] shadow-sm">
+                        MoMo
+                      </div>
+                      <div>
+                        <div class="text-sm font-bold text-[#0F172A] flex items-center gap-2">
+                          MTN Mobile Money
+                          <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">Populaire</span>
+                        </div>
+                        <span class="text-[11px] text-slate-500">CI, CM, BJ, GH, RW</span>
+                      </div>
+                    </div>
+                    <div class="custom-radio w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                      <div class="w-2.5 h-2.5 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                    </div>
+                  </div>
+
+                  <!-- Carte Bancaire -->
+                  <div class="payment-method-item p-3 rounded-xl border border-[#ECEEF6] bg-[#F8F9FD] hover:bg-[#F1F3F9] cursor-pointer transition-all flex items-center justify-between" data-method="card" data-fee="3D Secure">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-[#0F172A] font-bold text-xs shadow-sm">
+                        💳
+                      </div>
+                      <div>
+                        <div class="text-sm font-bold text-[#0F172A] flex items-center gap-2">
+                          Carte VISA / Mastercard
+                        </div>
+                        <span class="text-[11px] text-slate-500">Afrique & International</span>
+                      </div>
+                    </div>
+                    <div class="custom-radio w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                      <div class="w-2.5 h-2.5 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Phone number / detail field -->
+                <div class="mt-4" id="phoneInputContainer">
+                  <label class="text-[11px] text-slate-600 font-medium block mb-1.5">Numéro de téléphone mobile</label>
+                  <div class="flex items-center rounded-xl bg-[#F8F9FD] border border-[#ECEEF6] px-3 py-2 text-sm text-[#0F172A] focus-within:border-[#5846F6] transition-colors">
+                    <span class="text-slate-500 font-mono text-xs pr-2 border-r border-slate-200 mr-2 flex items-center gap-1">
+                      <span>🇸🇳</span> +221
+                    </span>
+                    <input type="tel" id="simulatedPhone" value="77 842 19 04" class="bg-transparent border-none outline-none text-[#0F172A] w-full font-mono text-sm" placeholder="77 XXX XX XX">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pay CTA Button -->
+              <div class="mt-5 pt-3 border-t border-[#ECEEF6]">
+                <button id="heroPayBtn" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] hover:from-[#4B3BE0] hover:to-[#6D5EFA] text-white font-bold text-sm shadow-md shadow-purple-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                  <span id="heroPayBtnText">Payer 5 000 FCFA avec Wave</span>
+                  <svg id="heroPayBtnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </button>
+                <div id="checkoutSuccessMessage" class="hidden mt-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs text-center font-medium animate-fade-in">
+                  🎉 Paiement validé instantanément ! Webhook envoyé en 120ms.
+                </div>
+                <div class="mt-2.5 flex items-center justify-center gap-3 text-[10px] text-slate-500">
+                  <span class="flex items-center gap-1">🔒 Chiffrement SSL 256-bit</span>
+                  <span>•</span>
+                  <span>⚡ Sans redirection complexe</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANEL DROIT : ÉDITEUR DE CODE CONTRASTÉ & MODERNE (STRIPE STYLE) -->
+            <div class="lg:col-span-7 bg-[#0B0F19] border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between overflow-hidden relative">
+              <div class="code-editor-top flex items-center justify-between pb-3.5 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                  <div class="flex gap-1.5">
+                    <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-purple-500/80 inline-block"></span>
+                  </div>
+                  <span class="ml-3 text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-[#7C6EF8]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm16 16V5H5v14h14z"/></svg>
+                    checkout-session.js
+                  </span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping"></span>
+                    VandiasPay SDK v2.4
+                  </span>
+                  <button id="copyHeroCodeBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-mono flex items-center gap-1.5 transition-colors" title="Copier le code">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    <span id="copyHeroCodeText">Copier</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Code Content with Rich Syntax Highlighting -->
+              <div class="my-4 font-mono text-xs sm:text-sm leading-relaxed overflow-x-auto text-slate-300">
+                <pre class="syntax-highlighted"><code><span class="text-slate-500">// 1. Initialisez le client VandiasPay avec votre clé secrète</span>
+<span class="text-purple-400">import</span> { VandiasPay } <span class="text-purple-400">from</span> <span class="text-purple-300">'@vandiaspay/node'</span>;
+<span class="text-indigo-300">const</span> client = <span class="text-indigo-300">new</span> <span class="text-teal-400">VandiasPay</span>(<span class="text-purple-300">process.env.VANDIASPAY_SECRET_KEY</span>);
+
+<span class="text-slate-500">// 2. Créez une session multi-pays (25+ devises supportées)</span>
+<span class="text-indigo-300">const</span> session = <span class="text-purple-400">await</span> client.sessions.<span class="text-teal-400">createPaymentSession</span>({
+  <span class="text-sky-300">amount</span>: <span class="text-amber-300">5000</span>, <span class="text-slate-500">// 5 000 FCFA</span>
+  <span class="text-sky-300">currency</span>: <span class="text-purple-300">'XOF'</span>,
+  <span class="text-sky-300">methods</span>: [<span class="text-purple-300">'wave'</span>, <span class="text-purple-300">'orange_money'</span>, <span class="text-purple-300">'mtn_momo'</span>, <span class="text-purple-300">'card'</span>],
+  <span class="text-sky-300">customer</span>: {
+    <span class="text-sky-300">name</span>: <span class="text-purple-300">'Amadou Diallo'</span>,
+    <span class="text-sky-300">phone</span>: <span class="text-purple-300">'+221778421904'</span>
+  },
+  <span class="text-sky-300">success_url</span>: <span class="text-purple-300">'https://votreboutique.com/success'</span>,
+  <span class="text-sky-300">webhook_url</span>: <span class="text-purple-300">'https://api.votreboutique.com/webhooks/pay'</span>
+});
+
+<span class="text-slate-500">// Redirigez vers la page de paiement sécurisée</span>
+console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'URL de paiement :'</span>, session.payment_url);</code></pre>
+              </div>
+
+              <!-- Terminal Response Output Preview -->
+              <div class="mt-2 rounded-2xl bg-[#060810] border border-slate-800 p-3.5">
+                <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1.5 pb-1 border-b border-white/5">
+                  <span class="flex items-center gap-1.5 text-purple-400 font-bold">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    200 OK — Réponse API en 85ms
+                  </span>
+                  <span class="text-slate-500 font-mono">id: sess_vdp_9x7a28k</span>
+                </div>
+                <div class="font-mono text-[11px] text-slate-300 flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <span>status: <span class="text-purple-300">"ready"</span></span>
+                  <span>url: <span class="text-sky-400 underline decoration-sky-500/40">checkout.html?session=sess_vdp_9x7a28k</span></span>
+                  <span>payout: <span class="text-emerald-400">"instant_ready"</span></span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         3. BANDEAU DE CONFIANCE & OPÉRATEURS SUPPORTÉS
+         ======================================================== -->
+    <section class="border-y border-[#ECEEF6] bg-white py-12 relative overflow-hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <p class="text-center text-xs font-bold tracking-widest uppercase text-slate-500 mb-8">
+          COMPATIBLE AVEC TOUS VOS MOYENS DE PAIEMENT PRÉFÉRÉS DANS 25+ PAYS EN AFRIQUE
+        </p>
+
+        <!-- Operator Logos Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6 items-center justify-items-center">
+          
+          <!-- Wave -->
+          <div class="operator-badge group w-full py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-[#1BA2FF] flex items-center justify-center text-white font-bold text-xs shadow-sm">
+              <span class="text-xs">🌊</span>
+            </div>
+            <span class="font-bold text-[#0F172A] text-sm tracking-tight group-hover:text-[#5846F6] transition-colors">Wave</span>
+          </div>
+
+          <!-- Orange Money -->
+          <div class="operator-badge group w-full py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-[#FF7900] flex items-center justify-center text-white font-black text-xs shadow-sm">
+              OM
+            </div>
+            <span class="font-bold text-[#0F172A] text-sm tracking-tight group-hover:text-orange-600 transition-colors">Orange Money</span>
+          </div>
+
+          <!-- MTN MoMo -->
+          <div class="operator-badge group w-full py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-[#FFCC00] flex items-center justify-center text-black font-black text-xs shadow-sm">
+              M
+            </div>
+            <span class="font-bold text-[#0F172A] text-sm tracking-tight group-hover:text-amber-600 transition-colors">MTN MoMo</span>
+          </div>
+
+          <!-- Moov Africa -->
+          <div class="operator-badge group w-full py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-gradient-to-r from-blue-600 to-orange-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
+              MV
+            </div>
+            <span class="font-bold text-[#0F172A] text-sm tracking-tight group-hover:text-blue-600 transition-colors">Moov Africa</span>
+          </div>
+
+          <!-- VISA -->
+          <div class="operator-badge group w-full py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2.5">
+            <span class="font-black italic text-lg tracking-wider text-blue-700">VISA</span>
+          </div>
+
+          <!-- Mastercard -->
+          <div class="operator-badge group w-full py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2.5">
+            <div class="flex -space-x-2">
+              <span class="w-4 h-4 rounded-full bg-rose-500 inline-block"></span>
+              <span class="w-4 h-4 rounded-full bg-amber-500/90 inline-block"></span>
+            </div>
+            <span class="font-bold text-[#0F172A] text-xs tracking-tight">Mastercard</span>
+          </div>
+
+        </div>
+
+        <!-- Trust Metrics -->
+        <div class="mt-12 pt-8 border-t border-[#ECEEF6] grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-[#5846F6] tracking-tight">25+</div>
+            <div class="text-xs sm:text-sm text-slate-500 mt-1 font-semibold">Pays & Devises gérés</div>
+          </div>
+          <div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-[#5846F6] tracking-tight">99.98%</div>
+            <div class="text-xs sm:text-sm text-slate-500 mt-1 font-semibold">Disponibilité garantie</div>
+          </div>
+          <div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-[#5846F6] tracking-tight">&lt; 1 sec</div>
+            <div class="text-xs sm:text-sm text-slate-500 mt-1 font-semibold">Confirmation de transaction</div>
+          </div>
+          <div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-[#5846F6] tracking-tight">0 FCFA</div>
+            <div class="text-xs sm:text-sm text-slate-500 mt-1 font-semibold">Frais fixes ou d'inscription</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         4. BENTO GRID DES FONCTIONNALITÉS
+         ======================================================== -->
+    <section id="features" class="py-24 sm:py-32 relative bg-[#F8F9FD]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+            Tout pour développer vos ventes
+          </div>
+          <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0F172A] tracking-tight">
+            Conçu pour la vitesse, la fiabilité et la <span class="font-serif italic font-normal text-[#5846F6]">croissance</span>.
+          </h2>
+          <p class="mt-4 text-base sm:text-lg text-slate-600">
+            Une infrastructure pensée pour unifier les paiements africains : Mobile Money, multidevises (XOF, XAF, CDF, USD, NGN) et liquidités immédiates.
+          </p>
+        </div>
+
+        <!-- Bento Grid Structure -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+          
+          <!-- Card 1: Liens de Paiement Sans Coder (Large 7 cols) -->
+          <div class="md:col-span-7 bento-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between group overflow-hidden relative">
+            <div class="relative z-10">
+              <div class="w-12 h-12 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] mb-6 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+              </div>
+              <h3 class="text-2xl font-bold text-[#0F172A] mb-2">Liens de Paiement Sans Coder</h3>
+              <p class="text-slate-600 text-sm leading-relaxed max-w-xl">
+                Pas besoin d'être développeur. Générez des liens de paiement personnalisés en 10 secondes et partagez-les directement sur <strong class="text-[#5846F6]">WhatsApp</strong>, Instagram, TikTok ou par SMS pour encaisser sans site web.
+              </p>
+            </div>
+
+            <!-- Mini Interactive Link Generator Widget inside Bento Card -->
+            <div class="mt-8 pt-6 border-t border-[#ECEEF6] relative z-10">
+              <div class="bg-[#F8F9FD] rounded-2xl p-4 border border-[#ECEEF6] space-y-3">
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <input type="text" id="demoLinkProduct" value="Formation E-commerce 2026" class="flex-1 bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#0F172A] outline-none focus:border-[#5846F6]" placeholder="Nom du produit ou service">
+                  <input type="number" id="demoLinkAmount" value="15000" class="w-full sm:w-32 bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#0F172A] outline-none focus:border-[#5846F6] font-mono" placeholder="Montant FCFA">
+                </div>
+                <div class="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-[#ECEEF6]">
+                  <span class="text-xs font-mono text-[#5846F6] truncate" id="generatedLinkPreview">checkout.html?item=Formation+E-commerce&amount=15000</span>
+                  <button id="copyGeneratedLinkBtn" class="ml-2 px-3 py-1 rounded-lg bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-semibold whitespace-nowrap transition-colors">
+                    Copier le lien
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subtle background decorative pattern -->
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
+          </div>
+
+          <!-- Card 2: API Pour Développeurs (5 cols) -->
+          <div class="md:col-span-5 bento-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between group overflow-hidden relative">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-6 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+              </div>
+              <h3 class="text-2xl font-bold text-[#0F172A] mb-2">API Moderne & Webhooks</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">
+                Architecture RESTful propre, idempotence native et webhooks signés cryptographiquement en HMAC-SHA256 pour une sécurité bancaire absolue.
+              </p>
+            </div>
+
+            <div class="mt-8 p-4 rounded-2xl bg-[#0F172A] border border-slate-800 font-mono text-xs text-slate-300 space-y-2">
+              <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span>POST /v1/payments/checkout</span>
+                <span class="text-[#7C6EF8] font-bold">201 Created</span>
+              </div>
+              <div class="text-[11px] text-indigo-300">
+                X-VandiasPay-Signature: t=1729334,v1=9a2b8f...
+              </div>
+              <div class="text-[10px] text-slate-400">
+                Retours automatiques avec retry exponentiel sur vos serveurs.
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Versements Instantanés (5 cols) -->
+          <div class="md:col-span-5 bento-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between group overflow-hidden relative">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] mb-6 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <h3 class="text-2xl font-bold text-[#0F172A] mb-2">Versements Instantanés</h3>
+              <p class="text-slate-600 text-sm leading-relaxed">
+                Ne bloquez plus votre trésorerie. Retirez vos gains directement vers votre compte Wave, Orange Money ou compte bancaire en un clic ou par API automatique.
+              </p>
+            </div>
+
+            <div class="mt-6 flex items-center gap-3 p-3.5 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] text-xs text-[#0F172A]">
+              <span class="text-xl">⚡</span>
+              <div>
+                <strong class="font-bold text-[#5846F6] block">Cashout en 3 secondes</strong>
+                <span class="text-slate-600">Directement crédité sur votre numéro Wave ou MoMo personnel.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Tableau de Bord & Analytics (Large 7 cols) -->
+          <div class="md:col-span-7 bento-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between group overflow-hidden relative">
+            <div>
+              <div class="w-12 h-12 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] mb-6 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              </div>
+              <h3 class="text-2xl font-bold text-[#0F172A] mb-2">Tableau de Bord Multi-Devises</h3>
+              <p class="text-slate-600 text-sm leading-relaxed max-w-xl">
+                Suivez vos soldes dans 25 pays, vos clients et vos transactions en temps réel avec une interface propre, rapide et réactive.
+              </p>
+            </div>
+
+            <!-- Mini Dashboard Graphic Preview -->
+            <div class="mt-6 p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6]">
+              <div class="grid grid-cols-3 gap-3 text-center mb-3">
+                <div class="p-2.5 rounded-xl bg-white border border-[#ECEEF6] shadow-sm">
+                  <span class="text-[10px] text-slate-500 uppercase font-bold block">Wallet USD</span>
+                  <span class="text-sm font-extrabold text-[#0F172A]">1 450 $</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-white border border-[#ECEEF6] shadow-sm">
+                  <span class="text-[10px] text-slate-500 uppercase font-bold block">Wallet XOF</span>
+                  <span class="text-sm font-extrabold text-[#5846F6]">4 850 000 F</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-white border border-[#ECEEF6] shadow-sm">
+                  <span class="text-[10px] text-slate-500 uppercase font-bold block">Conversion</span>
+                  <span class="text-sm font-extrabold text-emerald-600">96.8%</span>
+                </div>
+              </div>
+              <!-- Mini visual bar chart -->
+              <div class="flex items-end gap-1.5 h-12 pt-2 px-1">
+                <div class="flex-1 bg-purple-200 rounded-t h-5 hover:bg-[#5846F6] transition-colors"></div>
+                <div class="flex-1 bg-purple-300 rounded-t h-8 hover:bg-[#5846F6] transition-colors"></div>
+                <div class="flex-1 bg-purple-200 rounded-t h-6 hover:bg-[#5846F6] transition-colors"></div>
+                <div class="flex-1 bg-purple-400 rounded-t h-10 hover:bg-[#5846F6] transition-colors"></div>
+                <div class="flex-1 bg-[#5846F6] rounded-t h-12 hover:bg-[#4B3BE0] transition-colors"></div>
+                <div class="flex-1 bg-purple-400 rounded-t h-9 hover:bg-[#5846F6] transition-colors"></div>
+                <div class="flex-1 bg-[#5846F6] rounded-t h-11 hover:bg-[#4B3BE0] transition-colors"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         5. TERMINAL DE CODE INTERACTIF POUR DÉVELOPPEURS
+         ======================================================== -->
+    <section id="developers" class="py-24 bg-white border-t border-[#ECEEF6] relative overflow-hidden">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-12">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+              Expérience Développeur Maximale
+            </div>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0F172A] tracking-tight">
+              Intégrez en 4 lignes de code. <br class="hidden sm:inline"/>
+              <span class="font-serif italic font-normal text-[#5846F6]">Dans votre langage préféré.</span>
+            </h2>
+            <p class="mt-4 text-slate-600 text-base max-w-xl">
+              Des SDKs complets pour Node.js, Python, PHP et une API REST compatible cURL. Documentation Swagger, Sandbox isolés et clés de test gratuites.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <a href="dashboard.html" class="px-5 py-2.5 rounded-xl bg-[#EEF0FD] hover:bg-purple-100 border border-[#D4D7F5] text-[#5846F6] font-bold text-xs flex items-center gap-2 transition-all">
+              <span>Obtenir mes clés d'API</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Terminal Window Container (Dark Slate IDE on Crisp White Page) -->
+        <div class="bg-[#0B0F19] rounded-3xl border border-slate-800 shadow-2xl overflow-hidden">
+          
+          <!-- Code Language Tabs Header -->
+          <div class="flex flex-wrap items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-800 bg-[#080B14]">
+            <div class="flex items-center gap-2 overflow-x-auto py-1">
+              <button class="code-tab-btn active px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all" data-lang="nodejs">
+                Node.js
+              </button>
+              <button class="code-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all text-slate-400 hover:text-white" data-lang="curl">
+                cURL (REST)
+              </button>
+              <button class="code-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all text-slate-400 hover:text-white" data-lang="python">
+                Python
+              </button>
+              <button class="code-tab-btn px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all text-slate-400 hover:text-white" data-lang="php">
+                PHP / Laravel
+              </button>
+            </div>
+
+            <div class="flex items-center gap-3 mt-2 sm:mt-0">
+              <button id="copyTabCodeBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-mono transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span id="copyTabCodeText">Copier le code</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Code Snippets Panels -->
+          <div class="p-6 font-mono text-xs sm:text-sm leading-relaxed overflow-x-auto bg-[#090C16]">
+            
+            <!-- NODEJS SNIPPET -->
+            <div id="codeNodejs" class="code-panel">
+              <pre class="syntax-highlighted"><code><span class="text-indigo-300">import</span> { VandiasPay } <span class="text-indigo-300">from</span> <span class="text-purple-300">'@vandiaspay/sdk'</span>;
+
+<span class="text-slate-500">// Initialisez avec votre clé API secrète (Mode Live ou Test)</span>
+<span class="text-indigo-300">const</span> client = <span class="text-indigo-300">new</span> <span class="text-teal-400">VandiasPay</span>({
+  <span class="text-sky-300">apiKey</span>: <span class="text-purple-300">'sk_live_vandias_9f81a7b6c5d4'</span>,
+  <span class="text-sky-300">country</span>: <span class="text-purple-300">'SN'</span> <span class="text-slate-500">// Support pour 25+ pays</span>
+});
+
+<span class="text-slate-500">// Création d'une transaction instantanée</span>
+<span class="text-indigo-300">const</span> payment = <span class="text-indigo-300">await</span> client.payments.<span class="text-teal-400">charge</span>({
+  <span class="text-sky-300">amount</span>: <span class="text-amber-300">10000</span>,
+  <span class="text-sky-300">currency</span>: <span class="text-purple-300">'XOF'</span>,
+  <span class="text-sky-300">method</span>: <span class="text-purple-300">'wave'</span>, <span class="text-slate-500">// ou 'orange_money', 'mtn_momo', 'card'</span>
+  <span class="text-sky-300">customer</span>: {
+    <span class="text-sky-300">phone</span>: <span class="text-purple-300">'+221770000000'</span>,
+    <span class="text-sky-300">email</span>: <span class="text-purple-300">'client@gmail.com'</span>
+  },
+  <span class="text-sky-300">webhook_url</span>: <span class="text-purple-300">'https://votre-app.com/api/webhooks/vandiaspay'</span>
+});
+
+console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'Statut du paiement :'</span>, payment.status); <span class="text-slate-500">// =&gt; "success"</span></code></pre>
+            </div>
+
+            <!-- CURL SNIPPET -->
+            <div id="codeCurl" class="code-panel hidden">
+              <pre class="syntax-highlighted"><code><span class="text-slate-500"># Appel direct à l'API REST VandiasPay</span>
+curl -X POST https://api.vandiaspay.com/v1/charges \
+  -H <span class="text-purple-300">"Authorization: Bearer sk_live_vandias_9f81a7b6c5d4"</span> \
+  -H <span class="text-purple-300">"Content-Type: application/json"</span> \
+  -d <span class="text-purple-300">'{
+    "amount": 10000,
+    "currency": "XOF",
+    "payment_method": "orange_money",
+    "customer": {
+      "phone": "+2250700000000",
+      "name": "Kouamé Jean"
+    },
+    "webhook_url": "https://votre-app.com/webhooks"
+  }'</span></code></pre>
+            </div>
+
+            <!-- PYTHON SNIPPET -->
+            <div id="codePython" class="code-panel hidden">
+              <pre class="syntax-highlighted"><code><span class="text-indigo-300">from</span> vandiaspay <span class="text-indigo-300">import</span> VandiasPayClient
+
+<span class="text-slate-500"># Instanciez le client officiel Python</span>
+client = VandiasPayClient(api_key=<span class="text-purple-300">"sk_live_vandias_9f81a7b6c5d4"</span>)
+
+<span class="text-slate-500"># Initier un paiement Wave ou MoMo</span>
+response = client.payments.create(
+    amount=<span class="text-amber-300">10000</span>,
+    currency=<span class="text-purple-300">"XOF"</span>,
+    method=<span class="text-purple-300">"wave"</span>,
+    customer_phone=<span class="text-purple-300">"+221770000000"</span>,
+    metadata={<span class="text-purple-300">"order_id"</span>: <span class="text-purple-300">"CMD_9941"</span>}
+)
+
+print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout_url']}"</span>)</code></pre>
+            </div>
+
+            <!-- PHP SNIPPET -->
+            <div id="codePhp" class="code-panel hidden">
+              <pre class="syntax-highlighted"><code><span class="text-indigo-300">&lt;?php</span>
+<span class="text-indigo-300">use</span> VandiasPay\VandiasPayClient;
+
+<span class="text-slate-500">// Installation via composer require vandiaspay/sdk</span>
+<span class="text-sky-300">$vandias</span> = <span class="text-indigo-300">new</span> VandiasPayClient(<span class="text-purple-300">'sk_live_vandias_9f81a7b6c5d4'</span>);
+
+<span class="text-sky-300">$session</span> = <span class="text-sky-300">$vandias</span>-&gt;sessions-&gt;<span class="text-teal-400">create</span>([
+    <span class="text-purple-300">'amount'</span>        =&gt; <span class="text-amber-300">10000</span>,
+    <span class="text-purple-300">'currency'</span>      =&gt; <span class="text-purple-300">'XOF'</span>,
+    <span class="text-purple-300">'customer_phone'</span>=&gt; <span class="text-purple-300">'+221770000000'</span>,
+    <span class="text-purple-300">'return_url'</span>    =&gt; route(<span class="text-purple-300">'checkout.finish'</span>)
+]);
+
+<span class="text-indigo-300">return</span> redirect(<span class="text-sky-300">$session</span>-&gt;url);</code></pre>
+            </div>
+
+          </div>
+
+          <!-- Terminal Footer Feature Row -->
+          <div class="px-6 py-4 bg-[#070A12] border-t border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-4">
+            <div class="flex items-center gap-6">
+              <span class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                Sandbox illimité avec cartes et numéros de test
+              </span>
+              <span class="hidden sm:flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                Webhooks HMAC SHA-256 avec retry 24h
+              </span>
+            </div>
+            <a href="dashboard.html" class="text-purple-400 hover:text-purple-300 font-semibold font-mono flex items-center gap-1">
+              Tester sur le Dashboard →
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         6. CALCULATEUR INTERACTIF DE FRAIS
+         ======================================================== -->
+    <section id="calculator" class="py-24 sm:py-32 relative bg-[#F8F9FD]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+            Rentabilité & Économies
+          </div>
+          <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0F172A] tracking-tight">
+            Calculez vos gains avec une <br class="hidden sm:inline"/>
+            <span class="font-serif italic font-normal text-[#5846F6]">tarification sans surprise</span>.
+          </h2>
+          <p class="mt-4 text-base sm:text-lg text-slate-600">
+            Fini les frais d'installation de 500 000 FCFA et les abonnements mensuels facturés par les banques traditionnelles. Payez uniquement quand vous réussissez.
+          </p>
+        </div>
+
+        <div class="max-w-4xl mx-auto bg-white border border-[#ECEEF6] rounded-3xl p-6 sm:p-10 shadow-xl relative">
+          
+          <!-- Slider Container -->
+          <div class="mb-10">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <label for="volumeSlider" class="text-sm font-bold text-[#0F172A]">
+                Votre volume de ventes mensuel estimé :
+              </label>
+              <div class="text-2xl sm:text-3xl font-black text-[#5846F6] font-mono" id="volumeDisplay">
+                2 500 000 FCFA
+              </div>
+            </div>
+
+            <!-- Range input -->
+            <input 
+              type="range" 
+              id="volumeSlider" 
+              min="100000" 
+              max="20000000" 
+              step="100000" 
+              value="2500000" 
+              class="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer focus:outline-none"
+            >
+            
+            <div class="flex justify-between text-[11px] font-mono text-slate-500 mt-2 font-semibold">
+              <span>100 000 FCFA</span>
+              <span>5 000 000 FCFA</span>
+              <span>10 000 000 FCFA</span>
+              <span>20 000 000+ FCFA</span>
+            </div>
+          </div>
+
+          <!-- Real-Time Results Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-8 border-t border-[#ECEEF6]">
+            
+            <!-- Net Payout -->
+            <div class="p-5 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] text-center shadow-sm">
+              <span class="text-xs font-bold text-[#5846F6] uppercase tracking-wider block mb-1">Votre Encaissement Net</span>
+              <div class="text-2xl sm:text-3xl font-extrabold text-[#0F172A] font-mono" id="netAmountDisplay">
+                2 437 500 FCFA
+              </div>
+              <span class="text-[11px] text-[#5846F6] mt-1 block font-medium">Directement disponible sur vos wallets</span>
+            </div>
+
+            <!-- VandiasPay Fee -->
+            <div class="p-5 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] text-center shadow-sm">
+              <span class="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1">Frais VandiasPay (2.5%)</span>
+              <div class="text-2xl sm:text-3xl font-extrabold text-slate-800 font-mono" id="feeAmountDisplay">
+                62 500 FCFA
+              </div>
+              <span class="text-[11px] text-slate-500 mt-1 block">0 FCFA sur les échecs de paiement</span>
+            </div>
+
+            <!-- Savings vs Traditional Banks -->
+            <div class="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center shadow-sm">
+              <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block mb-1">Économies Réalisées</span>
+              <div class="text-2xl sm:text-3xl font-extrabold text-emerald-700 font-mono" id="savingsAmountDisplay">
+                + 85 000 FCFA
+              </div>
+              <span class="text-[11px] text-emerald-600 mt-1 block font-medium">vs 4.5% + frais fixes banques classiques</span>
+            </div>
+
+          </div>
+
+          <!-- Bottom Calculator Note -->
+          <div class="mt-8 pt-6 border-t border-[#ECEEF6] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600 font-medium">
+            <span class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-[#5846F6]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              Volume supérieur à 15M FCFA/mois ? Contactez-nous pour un tarif dégressif grand compte.
+            </span>
+            <a href="dashboard.html" class="text-[#5846F6] hover:underline font-bold whitespace-nowrap">
+              Créer mon compte maintenant →
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         7. TARIFICATION TRANSPARENTE (PRICING)
+         ======================================================== -->
+    <section id="pricing" class="py-24 bg-white border-t border-[#ECEEF6] relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-16">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+            Tarifs Clairs & Simples
+          </div>
+          <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0F172A] tracking-tight">
+            Payez uniquement quand <br class="hidden sm:inline"/>
+            <span class="font-serif italic font-normal text-[#5846F6]">vous encaissez</span>.
+          </h2>
+          <p class="mt-4 text-slate-600 text-base sm:text-lg">
+            Aucun frais caché, aucun abonnement obligatoire. Démarrez en quelques clics et faites grandir votre entreprise.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
+          
+          <!-- Standard Plan (Highlight / Populaire) -->
+          <div class="relative rounded-3xl p-8 sm:p-10 bg-white border-2 border-[#5846F6] shadow-2xl shadow-purple-500/10 flex flex-col justify-between">
+            <div class="absolute -top-4 right-8 px-4 py-1 rounded-full bg-[#5846F6] text-white font-bold text-xs uppercase tracking-wider shadow-md">
+              Offre la plus populaire
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-2xl font-bold text-[#0F172A]">Starter & Croissance</h3>
+                  <p class="text-slate-500 text-sm mt-1">Pour startups, commerçants et créateurs</p>
+                </div>
+              </div>
+
+              <!-- Price tag -->
+              <div class="my-6 pb-6 border-b border-[#ECEEF6]">
+                <div class="flex items-baseline gap-2">
+                  <span class="text-5xl sm:text-6xl font-black text-[#0F172A] font-mono">2.5%</span>
+                  <span class="text-slate-500 text-sm font-semibold">/ transaction réussie</span>
+                </div>
+                <div class="mt-3 flex flex-wrap items-center gap-4 text-xs">
+                  <span class="flex items-center gap-1 font-bold text-[#5846F6]">✓ 0 FCFA installation</span>
+                  <span class="flex items-center gap-1 font-bold text-[#5846F6]">✓ 0 FCFA / mois</span>
+                  <span class="flex items-center gap-1 font-bold text-[#5846F6]">✓ 0 FCFA échec</span>
+                </div>
+              </div>
+
+              <!-- Included perks list -->
+              <div class="space-y-3.5 mb-8">
+                <div class="flex items-center gap-3 text-sm text-slate-700">
+                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Tous les moyens de paiement : <strong class="text-[#0F172A]">Wave, OM, MoMo, CB</strong></span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-700">
+                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Génération illimitée de <strong class="text-[#0F172A]">liens de paiement</strong> sans coder</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-700">
+                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Accès complet à l'API REST & Webhooks temps réel</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-700">
+                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Versements instantanés vers Mobile Money ou Banque</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-700">
+                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Support prioritaire par <strong class="text-[#0F172A]">WhatsApp & Email 7j/7</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <a href="dashboard.html" class="w-full py-4 rounded-xl bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] hover:from-[#4B3BE0] hover:to-[#6D5EFA] text-white font-bold text-center shadow-lg shadow-purple-500/25 transition-all">
+              Créer un compte et commencer à encaisser
+            </a>
+          </div>
+
+          <!-- Enterprise Plan -->
+          <div class="rounded-3xl p-8 sm:p-10 bg-[#F8F9FD] border border-[#ECEEF6] shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="mb-4">
+                <h3 class="text-2xl font-bold text-[#0F172A]">Grand Compte & Volume</h3>
+                <p class="text-slate-500 text-sm mt-1">Pour entreprises encaissant +15 000 000 FCFA/mois</p>
+              </div>
+
+              <!-- Custom Pricing -->
+              <div class="my-6 pb-6 border-b border-[#ECEEF6]">
+                <div class="flex items-baseline gap-2">
+                  <span class="text-4xl sm:text-5xl font-black text-[#0F172A] font-mono">Sur-mesure</span>
+                </div>
+                <div class="mt-3 text-xs text-slate-600 font-medium">
+                  Tarification dégressive jusqu'à <strong class="text-[#0F172A]">1.2%</strong> par transaction selon votre volume.
+                </div>
+              </div>
+
+              <!-- Enterprise Perks -->
+              <div class="space-y-3.5 mb-8">
+                <div class="flex items-center gap-3 text-sm text-slate-700">
+                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Tarifs négociés & dégressifs sur-mesure</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-700">
+                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Account Manager & ingénieur d'intégration dédié</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-700">
+                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>SLA de disponibilité 99.99% contractuel</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-slate-700">
+                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <span>Support d'astreinte 24/7 par canal privé Slack/WhatsApp</span>
+                </div>
+              </div>
+            </div>
+
+            <a href="dashboard.html" class="w-full py-4 rounded-xl bg-white hover:bg-slate-50 border border-[#ECEEF6] text-[#0F172A] font-bold text-center transition-all shadow-sm">
+              Parler à un conseiller commercial
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         8. FOIRE AUX QUESTIONS (FAQ ACCORDÉON)
+         ======================================================== -->
+    <section id="faq" class="py-24 sm:py-32 relative bg-[#F8F9FD] border-t border-[#ECEEF6]">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center mb-16">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+            Tout ce que vous devez savoir
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-[#0F172A] tracking-tight">
+            Foire Aux <span class="font-serif italic font-normal text-[#5846F6]">Questions</span>
+          </h2>
+          <p class="mt-4 text-slate-600 text-base">
+            Des réponses claires à vos questions les plus fréquentes sur VandiasPay.
+          </p>
+        </div>
+
+        <div class="space-y-4" id="faqAccordion">
+          
+          <!-- Question 1 -->
+          <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
+            <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
+              <span>Comment puis-je retirer mon argent après un encaissement ?</span>
+              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
+              Vos fonds sont disponibles immédiatement après la transaction réussie. Vous pouvez configurer des versements automatiques (quotidiens, hebdomadaires) ou demander un retrait instantané en 1 clic vers votre portefeuille <strong class="text-[#0F172A]">Wave</strong>, <strong class="text-[#0F172A]">Orange Money</strong>, <strong class="text-[#0F172A]">MTN MoMo</strong> ou directement par virement bancaire sur votre compte dans toute la zone UEMOA/CEMAC.
+            </div>
+          </div>
+
+          <!-- Question 2 -->
+          <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
+            <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
+              <span>Ai-je besoin d'une entreprise formellement enregistrée pour commencer ?</span>
+              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
+              <strong class="text-[#5846F6]">Non !</strong> Vous pouvez ouvrir un compte Starter en tant que travailleur indépendant, freelance, créateur de contenu ou particulier avec une simple pièce d'identité nationale ou passeport (KYC rapide). Si vous êtes une entreprise SARL, SAS ou ETS, vous pouvez fournir votre RCCM et NINEA pour débloquer des plafonds de volume illimités.
+            </div>
+          </div>
+
+          <!-- Question 3 -->
+          <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
+            <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
+              <span>Quels pays d'Afrique sont compatibles actuellement ?</span>
+              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
+              VandiasPay est pleinement opérationnel dans plus de 25 pays : <strong class="text-[#0F172A]">Sénégal, Côte d'Ivoire, Cameroun, RDC, Bénin, Mali, Togo, Burkina Faso, Guinée, Congo, Zambie, Ouganda, Tanzanie, Rwanda, Kenya, Ghana...</strong>. Nous acceptons également les Cartes Bancaires VISA et Mastercard du monde entier pour permettre à vos clients de la diaspora de vous payer sans friction.
+            </div>
+          </div>
+
+          <!-- Question 4 -->
+          <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
+            <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
+              <span>Mes clients doivent-ils créer un compte VandiasPay pour payer ?</span>
+              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
+              <strong class="text-[#5846F6]">Jamais !</strong> L'expérience pour vos acheteurs est ultra-fluide : ils cliquent sur votre lien de paiement ou passent par votre checkout, choisissent leur moyen habituel (Wave, OM, MoMo ou Carte) et confirment directement sur leur téléphone via un prompt push ou scan QR code. Zéro friction, taux de conversion record garanti.
+            </div>
+          </div>
+
+          <!-- Question 5 -->
+          <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
+            <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
+              <span>Comment les données et les fonds sont-ils sécurisés ?</span>
+              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
+              VandiasPay respecte les normes les plus strictes : conformité PCI-DSS Level 1, chiffrement AES-256 de bout en bout et signatures HMAC pour tous les webhooks. Les fonds sont cantonnés dans des comptes de séquestre auprès d'établissements bancaires agréés par la BCEAO et la BEAC.
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
+         9. CALL TO ACTION FINAL À TRÈS FORTE CONVERSION
+         ======================================================== -->
+    <section class="py-20 relative overflow-hidden bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="relative rounded-3xl p-8 sm:p-14 bg-gradient-to-r from-[#5846F6] via-[#6D5CF8] to-[#4B3BE0] shadow-2xl text-center overflow-hidden">
+          
+          <div class="relative z-10 max-w-3xl mx-auto text-white">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
+              Prêt à accélérer vos encaissements <br class="hidden sm:inline"/>
+              <span class="font-serif italic font-normal text-purple-200">dans toute l'Afrique ?</span>
+            </h2>
+            <p class="mt-5 text-base sm:text-lg text-purple-100 leading-relaxed">
+              Rejoignez plus de 1 200 startups, e-commerçants et développeurs qui font confiance à VandiasPay pour propulser leurs revenus numériques.
+            </p>
+
+            <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a href="dashboard.html" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-white hover:bg-slate-50 text-[#5846F6] font-bold text-base shadow-xl transition-all transform hover:-translate-y-0.5">
+                Créer mon compte gratuit en 2 minutes
+              </a>
+              <a href="https://wa.me/221770000000" target="_blank" rel="noopener" class="w-full sm:w-auto px-6 py-4 rounded-xl bg-purple-700/50 hover:bg-purple-700/70 text-white font-semibold text-base border border-white/20 transition-all flex items-center justify-center gap-2">
+                <span>💬 Discuter sur WhatsApp</span>
+              </a>
+            </div>
+
+            <div class="mt-6 text-xs text-purple-200">
+              ⚡ Activation immédiate du compte • Zéro engagement • Clés API instantanées
+            </div>
+          </div>
+
+          <!-- Decorative glow -->
+          <div class="absolute -top-24 -left-24 w-72 h-72 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================
+       10. FOOTER COMPLET & RASSURANT
+       ======================================================== -->
+  <footer class="border-t border-[#ECEEF6] bg-[#F8F9FD] pt-16 pb-12 relative z-10 text-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+        
+        <!-- Brand column -->
+        <div class="col-span-2">
+          <a href="#" class="flex items-center gap-3 mb-4">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-[#5846F6] via-[#7C6EF8] to-[#06B6D4] flex items-center justify-center text-white">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <span class="text-xl font-extrabold tracking-tight text-[#0F172A]">
+              VANDIAS PAY <span class="text-xs px-2 py-0.5 rounded-full bg-[#EEF0FD] text-[#5846F6] border border-[#D4D7F5] font-mono">API</span>
+            </span>
+          </a>
+          <p class="text-slate-600 text-xs sm:text-sm leading-relaxed max-w-sm mb-4">
+            La passerelle de paiement unifiée conçue pour débloquer le potentiel économique de l'Afrique. Connectez Wave, Orange Money, MoMo et cartes bancaires dans plus de 25 pays.
+          </p>
+          <div class="flex items-center gap-2 text-xs text-[#5846F6] font-semibold">
+            <span class="w-2 h-2 rounded-full bg-[#5846F6] animate-pulse"></span>
+            <span>Tous les systèmes opérationnels (99.98%)</span>
+          </div>
+        </div>
+
+        <!-- Produit -->
+        <div>
+          <h4 class="text-[#0F172A] font-bold text-xs uppercase tracking-wider mb-4">Produit</h4>
+          <ul class="space-y-2.5 text-slate-600 text-xs font-medium">
+            <li><a href="checkout.html" class="hover:text-[#5846F6] transition-colors">Checkout Universel</a></li>
+            <li><a href="#features" class="hover:text-[#5846F6] transition-colors">Liens de paiement</a></li>
+            <li><a href="dashboard.html" class="hover:text-[#5846F6] transition-colors">Wallets 25+ Pays</a></li>
+            <li><a href="#pricing" class="hover:text-[#5846F6] transition-colors">Tarifs</a></li>
+            <li><a href="#calculator" class="hover:text-[#5846F6] transition-colors">Calculateur</a></li>
+          </ul>
+        </div>
+
+        <!-- Développeurs -->
+        <div>
+          <h4 class="text-[#0F172A] font-bold text-xs uppercase tracking-wider mb-4">Développeurs</h4>
+          <ul class="space-y-2.5 text-slate-600 text-xs font-medium">
+            <li><a href="dashboard.html" class="hover:text-[#5846F6] transition-colors">Documentation API</a></li>
+            <li><a href="#developers" class="hover:text-[#5846F6] transition-colors">SDK Node.js & Python</a></li>
+            <li><a href="#developers" class="hover:text-[#5846F6] transition-colors">SDK PHP & Laravel</a></li>
+            <li><a href="#developers" class="hover:text-[#5846F6] transition-colors">Webhooks HMAC</a></li>
+            <li><a href="dashboard.html" class="hover:text-[#5846F6] transition-colors">Statut des serveurs</a></li>
+          </ul>
+        </div>
+
+        <!-- Entreprise & Légal -->
+        <div>
+          <h4 class="text-[#0F172A] font-bold text-xs uppercase tracking-wider mb-4">Légal & Contact</h4>
+          <ul class="space-y-2.5 text-slate-600 text-xs font-medium">
+            <li><a href="#" class="hover:text-[#5846F6] transition-colors">Conditions Générales (CGU)</a></li>
+            <li><a href="#" class="hover:text-[#5846F6] transition-colors">Politique de Confidentialité</a></li>
+            <li><a href="#" class="hover:text-[#5846F6] transition-colors">Conformité PCI-DSS</a></li>
+            <li><a href="https://wa.me/221770000000" target="_blank" class="hover:text-[#5846F6] transition-colors">Support WhatsApp 7j/7</a></li>
+            <li><a href="mailto:support@vandiaspay.com" class="hover:text-[#5846F6] transition-colors">contact@vandiaspay.com</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="pt-8 border-t border-[#ECEEF6] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div>
+          © 2026 VANDIAS PAY Technologies Inc. Tous droits réservés.
+        </div>
+        <div class="flex items-center gap-1.5 text-slate-500">
+          <span>Fait avec passion pour l'économie numérique africaine</span>
+          <span>🌍</span>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ========================================================
+       SOCIAL PROOF LIVE TOAST (DISCRET BOTTOM-LEFT)
+       ======================================================== -->
+  <div id="livePaymentToast" class="fixed bottom-5 left-5 z-40 max-w-xs sm:max-w-sm rounded-2xl bg-white border border-[#ECEEF6] p-3.5 shadow-2xl transition-all duration-500 transform translate-y-20 opacity-0 flex items-center gap-3 pointer-events-none">
+    <div class="w-9 h-9 rounded-xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] flex-shrink-0 font-bold text-xs" id="toastIcon">
+      ⚡
+    </div>
+    <div class="text-xs">
+      <div class="font-bold text-[#0F172A] flex items-center gap-1.5" id="toastTitle">
+        Paiement reçu : 15 000 FCFA
+      </div>
+      <div class="text-slate-500 text-[11px]" id="toastSubtitle">
+        via Wave • Dakar, Sénégal (il y a 4s)
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

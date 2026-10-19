@@ -1,0 +1,115 @@
+/* ========================================================
+   VANDIAS PAY — DASHBOARD STYLESHEET
+   Clean Light Fintech SaaS Aesthetic (As in Screenshots)
+   ======================================================== */
+
+:root {
+  --vp-purple: #5846F6;
+  --vp-purple-hover: #4B3BE0;
+  --vp-purple-light: #EEF0FD;
+  --vp-bg: #F8F9FD;
+  --vp-card: #FFFFFF;
+  --vp-border: #ECEEF6;
+  --vp-text: #111827;
+  --vp-muted: #6B7280;
+  --vp-subtle: #9CA3AF;
+  --vp-success: #10B981;
+  --vp-danger: #EF4444;
+}
+
+body {
+  background-color: var(--vp-bg);
+  color: var(--vp-text);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* Sidebar Active Nav Item (Exact Replica) */
+.nav-item {
+  color: #4B5563;
+  transition: all 0.18s ease-in-out;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  color: #111827;
+  background-color: #F3F4F8;
+}
+
+.nav-item.active {
+  background-color: var(--vp-purple) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(88, 70, 246, 0.3);
+}
+
+.nav-item.active svg {
+  color: #FFFFFF !important;
+}
+
+/* Wallet Tiles */
+.wallet-tile {
+  background-color: #F8F9FD;
+  border: 1px solid #ECEEF6;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wallet-tile:hover {
+  border-color: #D4D7F5;
+  background-color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.03);
+}
+
+/* Recent Transactions Row */
+.tx-item {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.tx-item:hover {
+  background-color: #F8F9FD;
+  border-color: #ECEEF6;
+}
+
+/* Profile Dropdown Menu (Screenshot 3) */
+#profileDropdownMenu {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Modal Backdrop & Animations */
+.modal-active {
+  display: flex !important;
+  opacity: 1 !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar for Sidebar & Content */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}

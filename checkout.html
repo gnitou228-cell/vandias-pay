@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paiement Sécurisé — VandiasPay Checkout</title>
+  <meta name="description" content="Page de paiement sécurisée VandiasPay. Réglez vos achats par Wave, Orange Money, MTN MoMo, Moov Africa ou Carte Bancaire.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            checkout: {
+              bg: '#F8F9FD',
+              card: '#FFFFFF',
+              border: '#ECEEF6',
+              purple: '#5846F6',
+              purpleHover: '#4B3BE0',
+              purpleLight: '#EEF0FD',
+              emerald: '#10B981',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="checkout.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235846F6'><path d='M13 2L3 14h9l-1 8 10-12h-9l1-8z'/></svg>">
+</head>
+<body class="bg-[#F8F9FD] text-[#0F172A] antialiased font-sans min-h-screen flex flex-col justify-between selection:bg-[#5846F6] selection:text-white">
+
+  <!-- Background Glow & Grid Overlay -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="checkout-glow glow-left"></div>
+    <div class="checkout-glow glow-right"></div>
+    <div class="checkout-grid-overlay"></div>
+  </div>
+
+  <!-- Header Réassurance & Sécurité -->
+  <header class="relative z-10 w-full border-b border-[#ECEEF6] bg-white/90 backdrop-blur-xl py-3.5 px-4 sm:px-8 shadow-sm">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      
+      <!-- Logo VandiasPay -->
+      <a href="index.html" class="flex items-center gap-2.5 group" title="VandiasPay Checkout">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#5846F6] via-[#7C6EF8] to-[#06B6D4] flex items-center justify-center shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-base font-extrabold tracking-tight text-[#0F172A]">VandiasPay</span>
+          <span class="text-[10px] text-[#5846F6] font-mono font-bold tracking-wider uppercase">Checkout</span>
+        </div>
+      </a>
+
+      <!-- Badge Sécurité SSL 256-bit -->
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold backdrop-blur-md">
+        <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd"/>
+        </svg>
+        <span class="hidden sm:inline">Paiement 100% Sécurisé</span>
+        <span class="sm:hidden">SSL 256-bit</span>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div class="w-full max-w-4xl mx-auto">
+
+      <!-- ====================================================
+           ÉCRAN 1 : FORMULAIRE DE PAIEMENT HÉBERGÉ (PAR DÉFAUT)
+           ==================================================== -->
+      <div id="screenCheckoutForm" class="checkout-screen active grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Colonne Gauche : Récapitulatif de Commande Marchand (5 cols) -->
+        <div class="lg:col-span-5 bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-xl flex flex-col justify-between order-2 lg:order-1">
+          <div>
+            <!-- Marchand vérifié -->
+            <div class="flex items-center gap-3 pb-5 border-b border-[#ECEEF6]">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#5846F6] to-[#7C6EF8] flex items-center justify-center text-white font-extrabold text-base shadow-md shadow-purple-500/20">
+                JD
+              </div>
+              <div>
+                <span class="text-[11px] uppercase tracking-wider text-slate-500 font-bold block">Paiement sécurisé pour</span>
+                <h2 class="text-sm sm:text-base font-bold text-[#0F172A] flex items-center gap-1.5" id="checkoutMerchantName">
+                  Jeff Digital Inc.
+                  <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                </h2>
+              </div>
+            </div>
+
+            <!-- Grand montant & intitulé produit -->
+            <div class="my-6">
+              <span class="text-xs text-slate-500 uppercase font-bold block mb-1">Total à régler</span>
+              <div class="text-3xl sm:text-4xl font-extrabold text-[#0F172A] font-mono tracking-tight flex items-baseline gap-2">
+                <span id="checkoutAmountDisplay">5 000</span>
+                <span class="text-xl sm:text-2xl text-[#5846F6] font-bold" id="checkoutCurrencyDisplay">FCFA</span>
+              </div>
+              <p class="text-xs text-slate-700 font-medium mt-2 p-2.5 rounded-xl bg-[#F8F9FD] border border-[#ECEEF6]" id="checkoutProductTitle">
+                🛒 Abonnement Canva Pro (1 an d'accès complet)
+              </p>
+            </div>
+
+            <!-- Détails de la commande -->
+            <div class="space-y-2.5 text-xs text-slate-600 pt-2 border-t border-[#ECEEF6]">
+              <div class="flex justify-between">
+                <span class="text-slate-500">Article :</span>
+                <span class="font-semibold text-[#0F172A] truncate max-w-[170px]" id="summaryItemName">Canva Pro 1 An</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Prix unitaire :</span>
+                <span class="font-mono text-[#0F172A] font-bold" id="summaryUnitPrice">5 000 FCFA</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Frais de traitement :</span>
+                <span class="font-mono text-[#5846F6] font-bold">Inclus (0 FCFA)</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">Réf. Panier :</span>
+                <span class="font-mono text-slate-500" id="summaryOrderRef">CMD-VP-88421</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom micro-assurances -->
+          <div class="mt-8 pt-5 border-t border-[#ECEEF6] space-y-2 text-[11px] text-slate-500">
+            <div class="flex items-center gap-2">
+              <span class="text-[#5846F6] font-bold">✓</span>
+              <span>Débit instantané sécurisé par l'opérateur</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[#5846F6] font-bold">✓</span>
+              <span>Reçu officiel envoyé par email et SMS</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[#5846F6] font-bold">✓</span>
+              <span>Conforme aux régulations BCEAO & BEAC</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Colonne Droite : Formulaire & Sélection de Méthode (7 cols) -->
+        <div class="lg:col-span-7 bg-white border border-[#ECEEF6] rounded-3xl p-6 sm:p-7 shadow-xl order-1 lg:order-2">
+          
+          <form id="checkoutPaymentForm" class="space-y-5">
+            
+            <!-- Étape 1 : Sélecteur de Pays avec drapeaux -->
+            <div>
+              <label for="countrySelect" class="text-xs uppercase font-bold text-slate-600 block mb-2 flex items-center justify-between">
+                <span>1. Choisissez votre Pays de résidence</span>
+                <span class="text-[10px] text-[#5846F6] font-mono font-bold">Auto-détection active</span>
+              </label>
+              
+              <div class="relative">
+                <select id="countrySelect" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#0F172A] font-semibold outline-none focus:border-[#5846F6] transition-colors appearance-none cursor-pointer">
+                  <option value="SN" data-prefix="+221" data-flag="🇸🇳" selected>🇸🇳 Sénégal (+221)</option>
+                  <option value="CI" data-prefix="+225" data-flag="🇨🇮">🇨🇮 Côte d'Ivoire (+225)</option>
+                  <option value="CM" data-prefix="+237" data-flag="🇨🇲">🇨🇲 Cameroun (+237)</option>
+                  <option value="BJ" data-prefix="+229" data-flag="🇧🇯">🇧🇯 Bénin (+229)</option>
+                  <option value="TG" data-prefix="+228" data-flag="🇹🇬">🇹🇬 Togo (+228)</option>
+                  <option value="BF" data-prefix="+226" data-flag="🇧🇫">🇧🇫 Burkina Faso (+226)</option>
+                  <option value="ML" data-prefix="+223" data-flag="🇲🇱">🇲🇱 Mali (+223)</option>
+                  <option value="CG" data-prefix="+242" data-flag="🇨🇬">🇨🇬 Congo (+242)</option>
+                  <option value="CD" data-prefix="+243" data-flag="🇨🇩">🇨🇩 RDC (+243)</option>
+                  <option value="FR" data-prefix="+33" data-flag="🌍">🌍 France & Diaspora (+33)</option>
+                </select>
+                <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Étape 2 : Sélecteur du Moyen de Paiement -->
+            <div>
+              <label class="text-xs uppercase font-bold text-slate-600 block mb-2">
+                2. Sélectionnez votre mode de règlement
+              </label>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="paymentMethodsGrid">
+                
+                <!-- Option Wave -->
+                <div class="payment-method-card active p-3 rounded-2xl border-2 border-[#5846F6] bg-[#EEF0FD] cursor-pointer transition-all flex items-center justify-between" data-method="wave">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#1BA2FF] flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                      <span class="text-base">🌊</span>
+                    </div>
+                    <div>
+                      <div class="text-xs sm:text-sm font-bold text-[#0F172A] flex items-center gap-1.5">
+                        Wave
+                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-800 font-semibold">1% ou 0F</span>
+                      </div>
+                      <span class="text-[10px] text-slate-500">Scan QR ou Push instantané</span>
+                    </div>
+                  </div>
+                  <div class="custom-radio w-4 h-4 rounded-full border-2 border-[#5846F6] flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-[#5846F6] radio-dot"></div>
+                  </div>
+                </div>
+
+                <!-- Option Orange Money -->
+                <div class="payment-method-card p-3 rounded-2xl border border-[#ECEEF6] bg-[#F8F9FD] hover:bg-[#F1F3F9] cursor-pointer transition-all flex items-center justify-between" data-method="orange">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#FF7900] flex items-center justify-center text-white font-black text-xs shadow-sm">
+                      OM
+                    </div>
+                    <div>
+                      <div class="text-xs sm:text-sm font-bold text-[#0F172A] flex items-center gap-1.5">
+                        Orange Money
+                      </div>
+                      <span class="text-[10px] text-slate-500">Push ou Code OTP</span>
+                    </div>
+                  </div>
+                  <div class="custom-radio w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                  </div>
+                </div>
+
+                <!-- Option MTN MoMo -->
+                <div class="payment-method-card p-3 rounded-2xl border border-[#ECEEF6] bg-[#F8F9FD] hover:bg-[#F1F3F9] cursor-pointer transition-all flex items-center justify-between" data-method="mtn">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-[#FFCC00] flex items-center justify-center text-black font-extrabold text-[11px] shadow-sm">
+                      MoMo
+                    </div>
+                    <div>
+                      <div class="text-xs sm:text-sm font-bold text-[#0F172A] flex items-center gap-1.5">
+                        MTN MoMo
+                      </div>
+                      <span class="text-[10px] text-slate-500">Validation Prompt USSD</span>
+                    </div>
+                  </div>
+                  <div class="custom-radio w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                  </div>
+                </div>
+
+                <!-- Option Moov Africa / Flooz -->
+                <div class="payment-method-card p-3 rounded-2xl border border-[#ECEEF6] bg-[#F8F9FD] hover:bg-[#F1F3F9] cursor-pointer transition-all flex items-center justify-between" data-method="moov">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-r from-blue-600 to-orange-500 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                      MV
+                    </div>
+                    <div>
+                      <div class="text-xs sm:text-sm font-bold text-[#0F172A] flex items-center gap-1.5">
+                        Moov Money
+                      </div>
+                      <span class="text-[10px] text-slate-500">Flooz / Moov Africa</span>
+                    </div>
+                  </div>
+                  <div class="custom-radio w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                  </div>
+                </div>
+
+                <!-- Option Carte Bancaire (spanning full width) -->
+                <div class="payment-method-card sm:col-span-2 p-3 rounded-2xl border border-[#ECEEF6] bg-[#F8F9FD] hover:bg-[#F1F3F9] cursor-pointer transition-all flex items-center justify-between" data-method="card">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-[#0F172A] font-bold text-xs shadow-sm">
+                      💳
+                    </div>
+                    <div>
+                      <div class="text-xs sm:text-sm font-bold text-[#0F172A] flex items-center gap-2">
+                        <span>Carte VISA / Mastercard</span>
+                        <div class="flex items-center gap-1">
+                          <span class="text-[9px] font-black italic text-blue-700">VISA</span>
+                          <span class="text-[9px] font-bold text-amber-600">Mastercard</span>
+                        </div>
+                      </div>
+                      <span class="text-[10px] text-slate-500">Diaspora & International (3D Secure 2.0)</span>
+                    </div>
+                  </div>
+                  <div class="custom-radio w-4 h-4 rounded-full border-2 border-slate-300 flex items-center justify-center">
+                    <div class="w-2 h-2 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Étape 3 : Champs Dynamiques Selon la Méthode -->
+            <div class="p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] space-y-3.5" id="dynamicFieldsContainer">
+              
+              <!-- Champs Mobile Money (Affiché par défaut) -->
+              <div id="fieldsMobileMoney" class="space-y-3">
+                <label for="payerPhone" class="text-xs font-bold text-slate-700 block">
+                  Numéro de téléphone Mobile Money
+                </label>
+                <div class="flex items-center rounded-xl bg-white border border-[#ECEEF6] px-3.5 py-2.5 focus-within:border-[#5846F6] transition-colors shadow-sm">
+                  <span id="phoneCountryPrefix" class="font-mono text-xs text-slate-600 pr-2.5 border-r border-slate-200 mr-2.5 flex items-center gap-1.5 whitespace-nowrap font-bold">
+                    <span id="phoneCountryFlag">🇸🇳</span> +221
+                  </span>
+                  <input type="tel" id="payerPhone" required value="77 842 19 04" placeholder="77 XXX XX XX" class="bg-transparent border-none outline-none text-[#0F172A] w-full font-mono text-xs sm:text-sm tracking-wide font-semibold">
+                </div>
+                
+                <!-- Notice spécifique selon l'opérateur -->
+                <p id="operatorHintText" class="text-[11px] text-slate-500 flex items-center gap-1.5">
+                  <span class="text-[#5846F6]">⚡</span>
+                  Une notification de validation sera envoyée sur votre compte Wave.
+                </p>
+              </div>
+
+              <!-- Champs Carte Bancaire (Masqué par défaut) -->
+              <div id="fieldsCard" class="space-y-3 hidden">
+                <div>
+                  <label for="cardNumber" class="text-xs font-bold text-slate-700 block mb-1">
+                    Numéro de Carte Bancaire
+                  </label>
+                  <div class="relative flex items-center rounded-xl bg-white border border-[#ECEEF6] px-3.5 py-2.5 focus-within:border-[#5846F6] transition-colors shadow-sm">
+                    <input type="text" id="cardNumber" placeholder="4242 •••• •••• 4242" maxlength="19" class="bg-transparent border-none outline-none text-[#0F172A] w-full font-mono text-xs sm:text-sm">
+                    <span id="detectedCardBrand" class="text-[10px] font-mono uppercase text-[#5846F6] font-bold">VISA</span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="cardExpiry" class="text-xs font-bold text-slate-700 block mb-1">Expiration (MM/AA)</label>
+                    <input type="text" id="cardExpiry" placeholder="12/28" maxlength="5" class="w-full bg-white border border-[#ECEEF6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#0F172A] font-mono outline-none focus:border-[#5846F6] shadow-sm">
+                  </div>
+                  <div>
+                    <label for="cardCvc" class="text-xs font-bold text-slate-700 block mb-1">Code CVC / CVV</label>
+                    <input type="password" id="cardCvc" placeholder="•••" maxlength="4" class="w-full bg-white border border-[#ECEEF6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#0F172A] font-mono outline-none focus:border-[#5846F6] shadow-sm">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Coordonnées Acheteur (Nom & Email pour envoi reçu) -->
+              <div class="pt-2 border-t border-[#ECEEF6] grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="payerName" class="text-[11px] font-bold text-slate-600 block mb-1">Votre Nom & Prénom</label>
+                  <input type="text" id="payerName" required value="Amadou Diallo" placeholder="Nom complet" class="w-full bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#0F172A] outline-none focus:border-[#5846F6] shadow-sm">
+                </div>
+                <div>
+                  <label for="payerEmail" class="text-[11px] font-bold text-slate-600 block mb-1">Email pour le reçu</label>
+                  <input type="email" id="payerEmail" required value="amadou.diallo@gmail.com" placeholder="nom@email.com" class="w-full bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#0F172A] outline-none focus:border-[#5846F6] font-mono text-[11px] shadow-sm">
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Bouton CTA Payer Principal -->
+            <button type="submit" id="btnSubmitPayment" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] hover:from-[#4B3BE0] hover:to-[#6D5EFA] text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-500/25 transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center gap-3">
+              <span id="btnPayText">Payer 5 000 FCFA avec Wave</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+
+            <!-- Reassurance logos sous le bouton -->
+            <div class="flex items-center justify-center gap-4 text-[10px] text-slate-500 pt-1 font-medium">
+              <span class="flex items-center gap-1">🔒 Chiffrement SSL 256-bit</span>
+              <span>•</span>
+              <span class="flex items-center gap-1">🛡️ Certifié PCI-DSS Level 1</span>
+              <span>•</span>
+              <span class="flex items-center gap-1">⚡ Instantané</span>
+            </div>
+
+          </form>
+
+        </div>
+
+      </div>
+
+      <!-- ====================================================
+           ÉCRAN 2 : EN ATTENTE DE VALIDATION MOBILE (60s)
+           ==================================================== -->
+      <div id="screenPendingValidation" class="checkout-screen hidden max-w-md mx-auto bg-white border border-[#ECEEF6] rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-6 animate-fade-in">
+        
+        <!-- Animated Pulse Spinner / Phone Icon -->
+        <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
+          <div class="absolute inset-0 rounded-full border-4 border-[#5846F6]/20 animate-ping"></div>
+          <div class="absolute inset-1 rounded-full border-4 border-[#5846F6] border-t-transparent animate-spin"></div>
+          <div class="relative z-10 w-16 h-16 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-3xl shadow-inner" id="pendingOperatorIcon">
+            📱
+          </div>
+        </div>
+
+        <div>
+          <span class="text-xs uppercase font-bold text-[#5846F6] tracking-wider font-mono block mb-1">
+            Transaction Initiée
+          </span>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-[#0F172A] tracking-tight" id="pendingPromptTitle">
+            Validez l'opération sur votre téléphone
+          </h2>
+          <p class="text-xs text-slate-600 mt-2 leading-relaxed" id="pendingPromptDesc">
+            Un message push a été envoyé sur le <strong class="text-[#0F172A] font-mono" id="pendingTargetPhone">+221 77 842 19 04</strong>. Ouvrez votre application <span class="text-[#5846F6] font-bold" id="pendingOperatorName">Wave</span> et confirmez avec votre code secret.
+          </p>
+        </div>
+
+        <!-- 60-Second Countdown Timer -->
+        <div class="p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] space-y-2">
+          <div class="flex items-center justify-between text-xs text-slate-500 font-mono">
+            <span>Délai d'expiration du prompt</span>
+            <span class="text-[#5846F6] font-bold text-sm" id="countdownTimerDisplay">00:58</span>
+          </div>
+          <!-- Progress bar -->
+          <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+            <div id="countdownProgressBar" class="h-full bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] transition-all duration-1000 ease-linear" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Action helper buttons -->
+        <div class="space-y-2.5 pt-2">
+          <button id="btnFastForwardSuccess" class="w-full py-3 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-xs shadow-lg shadow-purple-500/20 transition-all flex items-center justify-center gap-2">
+            <span>✓ J'ai validé sur mon téléphone</span>
+          </button>
+          
+          <button id="btnCancelPendingPayment" class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+            Annuler ou changer de méthode
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ====================================================
+           ÉCRAN 3 : PAIEMENT CONFIRMÉ AVEC SUCCÈS
+           ==================================================== -->
+      <div id="screenSuccess" class="checkout-screen hidden max-w-lg mx-auto bg-white border border-[#ECEEF6] rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-6 animate-fade-in relative overflow-hidden">
+        
+        <!-- Success Checkmark with Animation -->
+        <div class="success-animation-wrapper mx-auto">
+          <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white text-4xl shadow-xl shadow-emerald-500/30 animate-bounce-short">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+        </div>
+
+        <div>
+          <span class="text-xs font-bold uppercase tracking-widest text-[#5846F6] font-mono block mb-1">Reçu Officiel VandiasPay</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">Paiement Validé avec Succès !</h2>
+          <p class="text-xs text-slate-600 mt-2">Votre commande a été immédiatement confirmée auprès de <strong class="text-[#0F172A]" id="successMerchantLabel">Jeff Digital Inc.</strong></p>
+        </div>
+
+        <!-- Receipt Card Breakdown -->
+        <div class="p-4 sm:p-5 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] text-left text-xs text-slate-700 space-y-2.5 font-mono">
+          <div class="flex justify-between items-center pb-2 border-b border-[#ECEEF6]">
+            <span class="text-slate-500 font-sans font-semibold">Montant Réglé :</span>
+            <span class="text-lg font-bold text-emerald-600" id="successPaidAmount">5 000 FCFA</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500 font-sans">ID Transaction :</span>
+            <span class="text-slate-800" id="successTxId">tx_live_89a421b</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500 font-sans">Réf. Opérateur :</span>
+            <span class="text-slate-800" id="successOperatorRef">WAV-SN-998412-X</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500 font-sans">Moyen :</span>
+            <span class="text-[#0F172A] font-sans font-bold" id="successMethodLabel">Wave Mobile Money</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500 font-sans">Date & Heure :</span>
+            <span class="text-slate-700" id="successDateLabel">19 Octobre 2026, 11:25</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500 font-sans">Reçu envoyé à :</span>
+            <span class="text-slate-700 truncate max-w-[180px]" id="successEmailLabel">amadou.diallo@gmail.com</span>
+          </div>
+        </div>
+
+        <!-- Action Redirection Buttons -->
+        <div class="space-y-3 pt-2">
+          <a href="#" id="btnReturnToMerchant" class="w-full py-4 rounded-xl bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] hover:from-[#4B3BE0] hover:to-[#6D5EFA] text-white font-bold text-xs sm:text-sm shadow-xl shadow-purple-500/25 transition-all flex items-center justify-center gap-2">
+            <span>Continuer vers le site du vendeur</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </a>
+
+          <button id="btnPrintCheckoutReceipt" class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors flex items-center justify-center gap-2">
+            <span>🖨️ Télécharger le reçu officiel (PDF)</span>
+          </button>
+        </div>
+
+        <div class="text-[10px] text-slate-400">
+          Redirection automatique dans <span id="autoRedirectCountdown">10</span> secondes...
+        </div>
+
+      </div>
+
+      <!-- ====================================================
+           ÉCRAN 4 : ÉCHEC OU ANNULATION DU PAIEMENT
+           ==================================================== -->
+      <div id="screenFailed" class="checkout-screen hidden max-w-md mx-auto bg-white border border-rose-200 rounded-3xl p-6 sm:p-8 shadow-2xl text-center space-y-6 animate-fade-in">
+        
+        <!-- Error icon -->
+        <div class="w-20 h-20 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-500 text-3xl mx-auto shadow-sm">
+          <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </div>
+
+        <div>
+          <span class="text-xs uppercase font-bold text-rose-600 font-mono tracking-wider block mb-1">Échec de la transaction</span>
+          <h2 class="text-2xl font-extrabold text-[#0F172A] tracking-tight">Le paiement n'a pas abouti</h2>
+          <p class="text-xs text-slate-600 mt-2 leading-relaxed" id="failedErrorMessage">
+            L'opération a expiré ou le solde de votre compte était insuffisant. Aucun débit n'a été effectué sur votre compte.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] text-xs text-slate-600 text-left space-y-1.5 font-mono">
+          <div class="flex justify-between">
+            <span>Code Erreur :</span>
+            <span class="text-rose-600 font-bold">ERR_TIMEOUT_USER_CANCEL</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Horodatage :</span>
+            <span class="text-slate-700" id="failedTimestamp">19 Oct 2026, 11:26</span>
+          </div>
+        </div>
+
+        <div class="space-y-2.5 pt-2">
+          <button id="btnRetryPayment" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] hover:from-[#4B3BE0] text-white font-bold text-xs shadow-lg shadow-purple-500/20 transition-all flex items-center justify-center gap-2">
+            <span>Réessayer le paiement</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </button>
+
+          <button id="btnChooseAnotherMethod" class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+            Changer de moyen de paiement
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer Discret & Réassurance -->
+  <footer class="relative z-10 w-full border-t border-[#ECEEF6] bg-white py-4 px-4 text-center text-xs text-slate-500">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span>Propulsé par <strong class="text-slate-700">VandiasPay Technologies</strong></span>
+        <span>•</span>
+        <span>Infrastructure de paiement africaine</span>
+      </div>
+      <div class="flex items-center gap-3 text-[11px] text-slate-500">
+        <a href="index.html" class="hover:text-[#5846F6] transition-colors">Conditions</a>
+        <span>•</span>
+        <a href="index.html" class="hover:text-[#5846F6] transition-colors">Confidentialité</a>
+        <span>•</span>
+        <a href="index.html" class="hover:text-[#5846F6] transition-colors">Sécurité PCI-DSS</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="checkout.js"></script>
+</body>
+</html>

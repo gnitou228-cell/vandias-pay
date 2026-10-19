@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VANDIAS PAY — Tableau de bord</title>
+  <meta name="description" content="Tableau de bord VANDIAS PAY. Passerelle de paiement et gestion de wallets multi-devises pour plus de 25 pays en Afrique et à l'international.">
+  
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            vp: {
+              purple: '#5846F6',
+              purpleHover: '#4B3BE0',
+              purpleLight: '#EEF0FD',
+              bg: '#F8F9FD',
+              card: '#FFFFFF',
+              border: '#ECEEF6',
+              text: '#111827',
+              muted: '#6B7280',
+              subtle: '#9CA3AF',
+              success: '#10B981',
+              danger: '#EF4444'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235846F6'><circle cx='12' cy='12' r='10'/><path d='M8 12l3 3 5-6' stroke='white' stroke-width='2' fill='none'/></svg>">
+</head>
+<body class="bg-[#F8F9FD] text-[#111827] font-sans antialiased min-h-screen flex selection:bg-purple-600 selection:text-white">
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity"></div>
+
+  <!-- ========================================================
+       BARRE LATÉRALE (SIDEBAR GAUCHE - 15 ONGLETS CONFORMES)
+       ======================================================== -->
+  <aside id="dashboardSidebar" class="fixed top-0 bottom-0 left-0 w-64 bg-white border-r border-[#ECEEF6] z-50 flex flex-col justify-between transition-transform duration-300 transform -translate-x-full lg:translate-x-0 overflow-y-auto">
+    
+    <div>
+      <!-- Top Workspace / Organization Dropdown -->
+      <div class="p-4 border-b border-[#F0F2F9]">
+        <div class="flex items-center justify-between p-2 rounded-2xl hover:bg-[#F9FAFC] cursor-pointer transition-colors border border-transparent hover:border-[#ECEEF6]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#5846F6] to-[#7C6EF8] text-white flex items-center justify-center font-bold text-sm shadow-md shadow-purple-500/20">
+              VI
+            </div>
+            <div class="flex flex-col">
+              <span class="text-sm font-extrabold text-[#111827] tracking-tight">VANDIAS PAY</span>
+              <span class="text-[11px] text-[#6B7280]">Automatisation & IA</span>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </div>
+
+      <!-- Navigation List (15 Sections) -->
+      <nav class="p-3 space-y-1 text-sm font-medium" id="sidebarNav">
+        
+        <!-- 1. Tableau de bord (Active Pill) -->
+        <button class="nav-item active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all" data-tab="overview">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Tableau de bord</span>
+        </button>
+
+        <!-- 2. Wallet -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="wallet">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          <span>Wallet</span>
+        </button>
+
+        <!-- 3. Transactions -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="transactions">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+          <span>Transactions</span>
+        </button>
+
+        <!-- 4. Liens de paiement -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="links">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          <span>Liens de paiement</span>
+        </button>
+
+        <!-- 5. Sessions de checkout -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="checkout-sessions">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+          <span>Sessions de checkout</span>
+        </button>
+
+        <!-- 6. Clients -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="customers">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          <span>Clients</span>
+        </button>
+
+        <!-- 7. Statistiques -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="stats">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+          <span>Statistiques</span>
+        </button>
+
+        <!-- 8. Retraits -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="payouts">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z"/></svg>
+          <span>Retraits</span>
+        </button>
+
+        <!-- 9. Développeur -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="developer">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          <span>Développeur</span>
+        </button>
+
+        <!-- 10. Webhooks -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="webhooks">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+          <span>Webhooks</span>
+        </button>
+
+        <!-- 11. Journal des webhooks -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="webhook-logs">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Journal des webhooks</span>
+        </button>
+
+        <!-- 12. Litiges -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="disputes">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span>Litiges</span>
+        </button>
+
+        <!-- 13. Tarification -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="pricing">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+          <span>Tarification</span>
+        </button>
+
+        <!-- 14. Support -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="support">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Support</span>
+        </button>
+
+        <!-- 15. Paramètres -->
+        <button class="nav-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F8]" data-tab="settings">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Paramètres</span>
+        </button>
+
+      </nav>
+    </div>
+
+    <!-- Bottom User Pill -->
+    <div class="p-3 border-t border-[#F0F2F9] m-2 rounded-2xl bg-[#F9FAFC] border">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white font-bold text-sm flex items-center justify-center">
+          G
+        </div>
+        <div class="flex flex-col truncate">
+          <span class="text-xs font-bold text-[#111827] truncate">Gnitou</span>
+          <span class="text-[10px] text-[#6B7280] truncate">VANDIAS PAY</span>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ========================================================
+       ESPACE DE TRAVAIL PRINCIPAL (MAIN WORKSPACE)
+       ======================================================== -->
+  <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
+    
+    <!-- Header Supérieur Blanc Épuré -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#ECEEF6] px-4 sm:px-8 py-3.5 flex items-center justify-between">
+      
+      <!-- Left: Mobile Menu Trigger & Search Bar -->
+      <div class="flex items-center gap-3 flex-1 max-w-md">
+        <button id="openSidebarBtn" class="lg:hidden p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors" aria-label="Ouvrir le menu">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+
+        <!-- Search Bar: "Recherche (bientôt)" -->
+        <div class="relative w-full">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" placeholder="Recherche (bientôt)" readonly class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl pl-10 pr-4 py-2 text-xs sm:text-sm text-slate-700 placeholder-slate-400 outline-none cursor-not-allowed">
+        </div>
+      </div>
+
+      <!-- Right: Notification Bell & Profile Dropdown Trigger -->
+      <div class="flex items-center gap-3 relative">
+        
+        <!-- Notification Bell -->
+        <button class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors relative" title="Notifications">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500"></span>
+        </button>
+
+        <!-- Profile Button Trigger (Avatar G Gnitou v) -->
+        <button id="profileDropdownBtn" class="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-[#ECEEF6]">
+          <div class="w-8 h-8 rounded-full bg-[#6366F1] text-white font-bold text-xs flex items-center justify-center shadow-sm">
+            G
+          </div>
+          <span class="text-xs sm:text-sm font-bold text-[#111827]">Gnitou</span>
+          <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" id="profileChevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+
+        <!-- ====================================================
+             MENU DÉROULANT PROFIL (EXACT COMME LA CAPTURE D'ÉCRAN 3)
+             ==================================================== -->
+        <div id="profileDropdownMenu" class="hidden absolute right-0 top-12 w-60 bg-white rounded-2xl border border-[#ECEEF6] shadow-xl p-3 z-50 animate-fade-in">
+          <!-- Profile Info Header -->
+          <div class="flex items-center gap-3 p-2 pb-3 border-b border-[#F0F2F9]">
+            <div class="w-10 h-10 rounded-2xl bg-[#6366F1] text-white font-bold text-sm flex items-center justify-center shadow-sm">
+              G
+            </div>
+            <div class="flex flex-col truncate">
+              <span class="text-xs font-bold text-[#111827]">Gnitou</span>
+              <span class="text-[11px] text-[#6B7280] truncate">gnitou866@gmail.com</span>
+            </div>
+          </div>
+
+          <!-- Menu items -->
+          <div class="pt-2 space-y-1 text-xs font-medium text-[#4B5563]">
+            <button class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#F8F9FD] hover:text-[#111827] transition-colors" onclick="switchTab('settings')">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span>Paramètres</span>
+            </button>
+
+            <button class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-[#F8F9FD] hover:text-[#111827] transition-colors" onclick="switchTab('support')">
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>Support</span>
+            </button>
+
+            <!-- Déconnexion en rouge -->
+            <button id="btnSignOut" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[#EF4444] hover:bg-rose-50 transition-colors font-semibold" onclick="handleSignOut()">
+              <svg class="w-4 h-4 text-[#EF4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              <span>Déconnexion</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="p-4 sm:p-8 flex-1">
+      
+      <!-- ====================================================
+           SECTION 1 : TABLEAU DE BORD (ACCUEIL EXACT SELON SCREENSHOTS)
+           ==================================================== -->
+      <section id="section-overview" class="dashboard-section active space-y-6">
+        
+        <!-- En-tête : Titre + Sous-titre -->
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight">Tableau de bord</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280] mt-1 font-normal">Vue d'ensemble de VANDIAS PAY — tous pays confondus.</p>
+        </div>
+
+        <!-- Boutons d'Action Rapide -->
+        <div class="flex items-center gap-3">
+          <!-- Retirer (Bouton Blanc avec contour) -->
+          <button id="btnOpenPayoutModal" class="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-[#ECEEF6] hover:bg-slate-50 text-[#111827] text-xs sm:text-sm font-semibold transition-all shadow-sm">
+            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z"/></svg>
+            <span>Retirer</span>
+          </button>
+
+          <!-- Créer un lien de paiement (Bouton Violet Solide) -->
+          <button id="btnOpenCreateLinkModal" class="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs sm:text-sm font-semibold transition-all shadow-md shadow-purple-500/25">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            <span>Créer un lien de paiement</span>
+          </button>
+        </div>
+
+        <!-- Grid 2 Colonnes Principales : Solde Disponible (Wallets) + Transactions Récentes -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- Colonne Gauche : Solde disponible dans 25+ Pays (8 cols) -->
+          <div class="lg:col-span-8 bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm">
+            
+            <!-- Carte Header -->
+            <div class="flex items-center justify-between mb-6 pb-2 border-b border-[#F4F6FC]">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-[#EEF0FD] text-[#5846F6] flex items-center justify-center">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                </div>
+                <h2 class="text-base font-bold text-[#111827]">Solde disponible</h2>
+                <span class="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-[#5846F6] font-semibold border border-purple-100 hidden sm:inline">25+ pays actifs</span>
+              </div>
+              <button class="text-xs font-bold text-[#5846F6] hover:underline" onclick="switchTab('wallet')">
+                Voir le wallet
+              </button>
+            </div>
+
+            <!-- Grille des Devises / Wallets (25+ Pays d'Afrique & International) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3.5" id="walletsGrid">
+              
+              <!-- USD (International) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">USD</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- ZMW (Zambie) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">ZMW</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- UGX (Ouganda) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">UGX</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- TZS (Tanzanie) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">TZS</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- XOF (8 Pays UEMOA: Sénégal, Côte d'Ivoire, Bénin, Togo, Mali...) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase">XOF</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-[#5846F6] font-semibold">UEMOA</span>
+                </div>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">80</span>
+              </div>
+
+              <!-- RWF (Rwanda) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">RWF</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- NGN (Nigéria) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">NGN</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- MZN (Mozambique) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">MZN</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- CDF (RDC) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">CDF</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- XAF (6 Pays CEMAC: Cameroun, Gabon, Congo, Tchad...) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase">XAF</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-[#5846F6] font-semibold">CEMAC</span>
+                </div>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- KES (Kenya) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">KES</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- GHS (Ghana) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">GHS</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- GNF (Guinée Conakry) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">GNF</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- ZAR (Afrique du Sud) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">ZAR</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+              <!-- EUR (Europe & Diaspora) -->
+              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
+                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">EUR</span>
+                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Colonne Droite : Transactions Récentes (4 cols) -->
+          <div class="lg:col-span-4 bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm">
+            
+            <div class="flex items-center justify-between mb-4 pb-2 border-b border-[#F4F6FC]">
+              <h2 class="text-base font-bold text-[#111827]">Transactions récentes</h2>
+              <button class="text-xs font-bold text-[#5846F6] hover:underline" onclick="switchTab('transactions')">
+                Tout voir
+              </button>
+            </div>
+
+            <!-- Liste des transactions exactes (conformes aux captures) -->
+            <div class="space-y-3" id="recentTxList">
+              
+              <!-- Transaction 1 : 983f6ce... +5 USD Réussi -->
+              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 font-bold flex items-center justify-center text-sm shadow-sm">
+                    +
+                  </div>
+                  <div>
+                    <span class="text-xs font-mono font-bold text-[#111827] block">983f6ce1059746b2b4...</span>
+                    <span class="text-[10px] text-slate-400">18 oct., 23:50</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-bold text-emerald-600 block font-mono">+5 USD</span>
+                  <span class="text-[10px] font-semibold text-emerald-500">Réussi</span>
+                </div>
+              </div>
+
+              <!-- Transaction 2 : d5d6276... +9983 CDF Échoué -->
+              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center text-sm shadow-sm">
+                    +
+                  </div>
+                  <div>
+                    <span class="text-xs font-mono font-bold text-[#111827] block">d5d62768b3de4e...</span>
+                    <span class="text-[10px] text-slate-400">18 oct., 23:38</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-bold text-slate-600 block font-mono">+9983 CDF</span>
+                  <span class="text-[10px] font-semibold text-rose-500">Échoué</span>
+                </div>
+              </div>
+
+              <!-- Transaction 3 : 54260b5... +7900 XOF Échoué -->
+              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center text-sm shadow-sm">
+                    +
+                  </div>
+                  <div>
+                    <span class="text-xs font-mono font-bold text-[#111827] block">54260b5ebd934...</span>
+                    <span class="text-[10px] text-slate-400">10 oct., 17:58</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-bold text-slate-600 block font-mono">+7900 XOF</span>
+                  <span class="text-[10px] font-semibold text-rose-500">Échoué</span>
+                </div>
+              </div>
+
+              <!-- Transaction 4 : e0abd62... +5000 CDF Réussi -->
+              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-emerald-50 text-emerald-500 font-bold flex items-center justify-center text-sm shadow-sm">
+                    +
+                  </div>
+                  <div>
+                    <span class="text-xs font-mono font-bold text-[#111827] block">e0abd62d74ae4...</span>
+                    <span class="text-[10px] text-slate-400">30 sept., 08:22</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-bold text-emerald-600 block font-mono">+5000 CDF</span>
+                  <span class="text-[10px] font-semibold text-emerald-500">Réussi</span>
+                </div>
+              </div>
+
+              <!-- Transaction 5 : 97931ad... +5000 CDF Échoué -->
+              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center text-sm shadow-sm">
+                    +
+                  </div>
+                  <div>
+                    <span class="text-xs font-mono font-bold text-[#111827] block">97931add9f2d44...</span>
+                    <span class="text-[10px] text-slate-400">30 sept., 08:18</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-bold text-slate-600 block font-mono">+5000 CDF</span>
+                  <span class="text-[10px] font-semibold text-rose-500">Échoué</span>
+                </div>
+              </div>
+
+              <!-- Transaction 6 : a524b01... +2000 XOF Échoué -->
+              <div class="tx-item p-2.5 rounded-2xl hover:bg-[#F8F9FD] transition-colors flex items-center justify-between cursor-pointer border border-transparent hover:border-[#ECEEF6]">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center text-sm shadow-sm">
+                    +
+                  </div>
+                  <div>
+                    <span class="text-xs font-mono font-bold text-[#111827] block">a524b01b88c249...</span>
+                    <span class="text-[10px] text-slate-400">30 sept., 04:48</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-bold text-slate-600 block font-mono">+2000 XOF</span>
+                  <span class="text-[10px] font-semibold text-rose-500">Échoué</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ====================================================
+           SECTION 2 : WALLET COMPLET (DÉPÔT / RETRAIT / CONVERSION)
+           ==================================================== -->
+      <section id="section-wallet" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Portefeuille Multi-Devises</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Gérez vos soldes dans 25 pays d'Afrique, convertissez ou transférez instantanément.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="allWalletsDetailedGrid">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 3 : TRANSACTIONS
+           ==================================================== -->
+      <section id="section-transactions" class="dashboard-section hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-extrabold text-[#111827]">Historique des Transactions</h1>
+            <p class="text-xs sm:text-sm text-[#6B7280]">Toutes les transactions entrantes et sortantes par devise et opérateur.</p>
+          </div>
+          <button id="btnExportCsv" class="px-3.5 py-2 rounded-xl bg-white border border-[#ECEEF6] hover:bg-slate-50 text-xs font-bold text-[#111827] flex items-center gap-2 shadow-sm">
+            <span>📥 Exporter CSV</span>
+          </button>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-sm overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="text-[#9CA3AF] uppercase text-[11px] font-bold border-b border-[#F0F2F9]">
+              <tr>
+                <th class="py-3 px-3">ID Transaction</th>
+                <th class="py-3 px-3">Date</th>
+                <th class="py-3 px-3">Client</th>
+                <th class="py-3 px-3">Montant Brut</th>
+                <th class="py-3 px-3">Devise</th>
+                <th class="py-3 px-3">Statut</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#F4F6FC]" id="fullTransactionsBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 4 : LIENS DE PAIEMENT
+           ==================================================== -->
+      <section id="section-links" class="dashboard-section hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-extrabold text-[#111827]">Liens de Paiement</h1>
+            <p class="text-xs sm:text-sm text-[#6B7280]">Générez et partagez des liens de paiement instantanés.</p>
+          </div>
+          <button class="px-4 py-2.5 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/25" onclick="openCreateLinkModal()">
+            + Créer un lien
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="paymentLinksListContainer">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 5 : SESSIONS DE CHECKOUT
+           ==================================================== -->
+      <section id="section-checkout-sessions" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Sessions de Checkout</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Suivi en temps réel des sessions hébergées sur VandiasPay Checkout.</p>
+        </div>
+
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm">
+          <div class="flex items-center justify-between pb-4 border-b border-[#F4F6FC] mb-4">
+            <span class="text-xs font-bold text-[#111827]">Tester la page de Checkout Hébergée officielle</span>
+            <a href="checkout.html" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-purple-50 text-[#5846F6] text-xs font-bold hover:bg-purple-100 transition-colors">
+              Ouvrir checkout.html ↗
+            </a>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Vos clients sont redirigés vers la page de paiement sécurisée aux normes PCI-DSS pour régler via Wave, Orange Money, MTN MoMo, Moov ou Carte Bancaire.
+          </p>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 6 : CLIENTS (CRM)
+           ==================================================== -->
+      <section id="section-customers" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Répertoire Clients</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Historique de vos acheteurs identifiés par numéro Mobile Money ou Carte.</p>
+        </div>
+
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-sm overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="text-[#9CA3AF] uppercase text-[11px] font-bold border-b border-[#F0F2F9]">
+              <tr>
+                <th class="py-3 px-3">Nom</th>
+                <th class="py-3 px-3">Téléphone</th>
+                <th class="py-3 px-3">Email</th>
+                <th class="py-3 px-3">Achats</th>
+                <th class="py-3 px-3">Total Dépensé</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#F4F6FC]" id="customersTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 7 : STATISTIQUES
+           ==================================================== -->
+      <section id="section-stats" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Statistiques & Croissance</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Performances de conversion et répartition géographique.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
+            <span class="text-xs text-slate-400 font-bold uppercase block mb-1">Taux de conversion</span>
+            <span class="text-2xl font-black text-emerald-500">96.8%</span>
+          </div>
+          <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
+            <span class="text-xs text-slate-400 font-bold uppercase block mb-1">Pays les plus actifs</span>
+            <span class="text-sm font-bold text-[#111827]">Sénégal, RDC, Côte d'Ivoire</span>
+          </div>
+          <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
+            <span class="text-xs text-slate-400 font-bold uppercase block mb-1">Opérateur N°1</span>
+            <span class="text-sm font-bold text-[#5846F6]">Wave & Orange Money (68%)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 8 : RETRAITS
+           ==================================================== -->
+      <section id="section-payouts" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Demande de Retraits</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Transférez vos fonds vers votre compte Wave, Orange Money, MTN ou compte bancaire.</p>
+        </div>
+
+        <div class="max-w-xl bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm space-y-4">
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Moyen de réception</label>
+            <select id="payoutMethodSelect" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827] font-medium outline-none">
+              <option value="Wave">Wave Mobile Money</option>
+              <option value="Orange Money">Orange Money</option>
+              <option value="MTN MoMo">MTN Mobile Money</option>
+              <option value="Virement Bancaire">Virement Bancaire UEMOA / CEMAC</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Numéro de téléphone / IBAN</label>
+            <input type="text" id="payoutPhoneInput" value="+221 77 842 19 04" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono outline-none">
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Montant à retirer (XOF / USD)</label>
+            <input type="number" id="payoutAmountInput" value="50000" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono outline-none">
+          </div>
+
+          <button id="btnSubmitWithdrawal" class="w-full py-3 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all">
+            Confirmer le retrait immédiat
+          </button>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 9 : DÉVELOPPEUR & CLÉS API
+           ==================================================== -->
+      <section id="section-developer" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Clés d'API & Développeurs</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Connectez VandiasPay API à votre application, site Shopify, WooCommerce ou mobile.</p>
+        </div>
+
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm space-y-4 max-w-2xl">
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Clé Publique (Publishable Key)</label>
+            <div class="flex items-center gap-2">
+              <input type="text" readonly value="pk_live_vandias_9x7a28kb4f1c" class="flex-1 bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+              <button class="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700" onclick="navigator.clipboard.writeText('pk_live_vandias_9x7a28kb4f1c'); showToast('Copié !', 'Clé publique copiée.');">
+                Copier
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Clé Secrète (Secret Key)</label>
+            <div class="flex items-center gap-2">
+              <input type="password" id="devSecretKeyInput" readonly value="sk_live_vandias_99182aa83021bf" class="flex-1 bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+              <button class="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700" onclick="toggleSecretKey()">
+                Afficher
+              </button>
+              <button class="px-3.5 py-2.5 rounded-2xl bg-[#5846F6] text-white text-xs font-bold shadow-sm" onclick="navigator.clipboard.writeText('sk_live_vandias_99182aa83021bf'); showToast('Copié !', 'Clé secrète copiée.');">
+                Copier
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 10 : WEBHOOKS
+           ==================================================== -->
+      <section id="section-webhooks" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Configuration des Webhooks</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Recevez des notifications HTTP sécurisées en temps réel pour chaque paiement réussi.</p>
+        </div>
+
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm space-y-4 max-w-2xl">
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">URL de votre Webhook (Endpoint HTTPS)</label>
+            <input type="url" value="https://api.votre-saas.com/webhooks/vandiaspay" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Secret de signature HMAC (X-VandiasPay-Signature)</label>
+            <input type="text" readonly value="whsec_884920bcf10a8274d7e" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono text-slate-500">
+          </div>
+
+          <button class="px-5 py-2.5 rounded-2xl bg-[#5846F6] text-white text-xs font-bold shadow-md shadow-purple-500/25" onclick="showToast('Sauvegardé !', 'URL webhook mise à jour avec succès.')">
+            Enregistrer le Webhook
+          </button>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 11 : JOURNAL DES WEBHOOKS
+           ==================================================== -->
+      <section id="section-webhook-logs" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Journal des Webhooks</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Historique des requêtes HTTP transmises à votre infrastructure serveur.</p>
+        </div>
+
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-sm space-y-3 font-mono text-xs">
+          <div class="p-3 rounded-2xl bg-[#F8F9FD] flex items-center justify-between border border-[#ECEEF6]">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px]">200 OK</span>
+              <span class="text-slate-700 font-semibold">payment.succeeded</span>
+              <span class="text-slate-400 text-[11px]">(tx_live_983f6ce)</span>
+            </div>
+            <span class="text-slate-400 text-[11px]">Il y a 12 min • 85ms</span>
+          </div>
+          <div class="p-3 rounded-2xl bg-[#F8F9FD] flex items-center justify-between border border-[#ECEEF6]">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px]">200 OK</span>
+              <span class="text-slate-700 font-semibold">payout.completed</span>
+              <span class="text-slate-400 text-[11px]">(po_89124)</span>
+            </div>
+            <span class="text-slate-400 text-[11px]">Hier, 18:22 • 110ms</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 12 : LITIGES
+           ==================================================== -->
+      <section id="section-disputes" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Gestion des Litiges</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Suivez les réclamations de contestation et remboursements.</p>
+        </div>
+
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-12 text-center shadow-sm">
+          <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-500 font-bold flex items-center justify-center text-xl mx-auto mb-3">
+            ✓
+          </div>
+          <h3 class="text-sm font-bold text-[#111827]">Aucun litige en cours</h3>
+          <p class="text-xs text-slate-500 mt-1">Votre compte a un taux de contestation irréprochable de 0.0%.</p>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 13 : TARIFICATION
+           ==================================================== -->
+      <section id="section-pricing" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Tarification & Barèmes</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Modèle de tarification transparent par opérateur.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
+            <h3 class="text-sm font-bold text-[#111827] mb-2">Wave</h3>
+            <span class="text-2xl font-extrabold text-[#5846F6]">1.0%</span>
+            <span class="text-xs text-slate-400 block mt-1">Par transaction réussie</span>
+          </div>
+          <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
+            <h3 class="text-sm font-bold text-[#111827] mb-2">Orange & MTN MoMo</h3>
+            <span class="text-2xl font-extrabold text-[#5846F6]">2.5%</span>
+            <span class="text-xs text-slate-400 block mt-1">Par transaction réussie</span>
+          </div>
+          <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
+            <h3 class="text-sm font-bold text-[#111827] mb-2">Cartes VISA / Mastercard</h3>
+            <span class="text-2xl font-extrabold text-[#5846F6]">2.8%</span>
+            <span class="text-xs text-slate-400 block mt-1">International & Diaspora</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 14 : SUPPORT
+           ==================================================== -->
+      <section id="section-support" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Support & Assistance Marchand</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Contactez notre équipe dédiée 7j/7 pour toute assistance technique ou financière.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-xl">
+          <a href="https://wa.me/221770000000" target="_blank" class="p-5 rounded-3xl bg-white border border-[#ECEEF6] hover:border-emerald-200 transition-all shadow-sm flex items-center gap-3">
+            <span class="text-3xl">💬</span>
+            <div>
+              <h3 class="text-sm font-bold text-[#111827]">WhatsApp Dédié</h3>
+              <p class="text-xs text-slate-500">Réponse en moins de 5 minutes</p>
+            </div>
+          </a>
+
+          <a href="mailto:support@vandiaspay.com" class="p-5 rounded-3xl bg-white border border-[#ECEEF6] hover:border-purple-200 transition-all shadow-sm flex items-center gap-3">
+            <span class="text-3xl">✉️</span>
+            <div>
+              <h3 class="text-sm font-bold text-[#111827]">Email Support</h3>
+              <p class="text-xs text-slate-500">support@vandiaspay.com</p>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <!-- ====================================================
+           SECTION 15 : PARAMÈTRES
+           ==================================================== -->
+      <section id="section-settings" class="dashboard-section hidden space-y-6">
+        <div>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Paramètres du Compte</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Coordonnées de l'entreprise et statut de vérification KYC.</p>
+        </div>
+
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm max-w-xl space-y-4">
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Nom du Marchand / Entreprise</label>
+            <input type="text" value="VANDIA IA" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827]">
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Email Propriétaire</label>
+            <input type="email" value="gnitou866@gmail.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs text-[#111827]">
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center gap-2.5 text-xs text-emerald-800 font-semibold">
+            <span class="text-emerald-500 text-base">✓</span>
+            <span>Compte Vérifié Niveau 2 (Plafond illimité activé)</span>
+          </div>
+
+          <button class="px-5 py-2.5 rounded-2xl bg-[#5846F6] text-white text-xs font-bold shadow-md shadow-purple-500/25" onclick="showToast('Sauvegardé !', 'Profil mis à jour.')">
+            Sauvegarder les modifications
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ========================================================
+       MODAL : CRÉER UN NOUVEAU LIEN DE PAIEMENT
+       ======================================================== -->
+  <div id="modalCreateLink" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-[#ECEEF6] space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-[#F0F2F9]">
+        <h3 class="text-base font-bold text-[#111827]">Créer un lien de paiement</h3>
+        <button class="text-slate-400 hover:text-slate-700" onclick="closeModal('modalCreateLink')">✕</button>
+      </div>
+
+      <form id="createLinkForm" class="space-y-3.5">
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Intitulé du produit ou service *</label>
+          <input type="text" id="newLinkTitle" required placeholder="Ex: Abonnement Canva Pro" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Montant *</label>
+            <input type="number" id="newLinkAmount" required value="5000" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Devise</label>
+            <select id="newLinkCurrency" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3 py-2.5 text-xs font-bold">
+              <option value="XOF">XOF (FCFA)</option>
+              <option value="USD">USD ($)</option>
+              <option value="CDF">CDF</option>
+              <option value="XAF">XAF</option>
+              <option value="EUR">EUR (€)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2 border-t border-[#F0F2F9]">
+          <button type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100" onclick="closeModal('modalCreateLink')">Annuler</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/25">Créer le lien</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL : RETRAIT
+       ======================================================== -->
+  <div id="modalPayoutQuick" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-[#ECEEF6] space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-[#F0F2F9]">
+        <h3 class="text-base font-bold text-[#111827]">Demander un Retrait</h3>
+        <button class="text-slate-400 hover:text-slate-700" onclick="closeModal('modalPayoutQuick')">✕</button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Moyen de réception</label>
+          <select class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3 py-2.5 text-xs font-medium">
+            <option>Wave Mobile Money (+221)</option>
+            <option>Orange Money (+225)</option>
+            <option>MTN MoMo (+237)</option>
+            <option>Compte Bancaire UEMOA</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Montant à transférer</label>
+          <input type="number" value="10000" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono font-bold">
+        </div>
+
+        <button class="w-full py-2.5 rounded-2xl bg-[#5846F6] text-white text-xs font-bold shadow-md shadow-purple-500/25" onclick="showToast('Retrait initié !', 'Virement en cours de traitement.'); closeModal('modalPayoutQuick');">
+          Transférer instantanément
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="vpToast" class="fixed bottom-5 right-5 z-50 bg-[#111827] text-white px-4 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 transition-all transform translate-y-16 opacity-0 pointer-events-none text-xs">
+    <div class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-[10px]">✓</div>
+    <div>
+      <div class="font-bold" id="vpToastTitle">Notification</div>
+      <div class="text-slate-400 text-[11px]" id="vpToastDesc">Opération réussie.</div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

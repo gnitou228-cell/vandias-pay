@@ -63,10 +63,10 @@ Renseignez vos clés Supabase si vous souhaitez connecter la base cloud. Le serv
 ```bash
 npm start
 ```
-- **Landing Page** : [http://localhost:4173/index.html](http://localhost:4173/index.html)
-- **Tableau de Bord** : [http://localhost:4173/dashboard.html](http://localhost:4173/dashboard.html)
-- **Hosted Checkout** : [http://localhost:4173/checkout.html](http://localhost:4173/checkout.html)
-- **Statut API** : [http://localhost:4173/api/v1/status](http://localhost:4173/api/v1/status)
+- **Landing Page** : [http://localhost:3000/index.html](http://localhost:3000/index.html)
+- **Tableau de Bord** : [http://localhost:3000/dashboard.html](http://localhost:3000/dashboard.html)
+- **Hosted Checkout** : [http://localhost:3000/checkout.html](http://localhost:3000/checkout.html)
+- **Statut API** : [http://localhost:3000/api/v1/status](http://localhost:3000/api/v1/status)
 
 ---
 
@@ -74,7 +74,7 @@ npm start
 
 ### Créer une session de paiement :
 ```bash
-curl -X POST http://localhost:4173/api/v1/checkout-sessions \
+curl -X POST http://localhost:3000/api/v1/checkout-sessions \
   -H "Authorization: Bearer sk_live_vdp_9f81a7b6c5d4e3f2a1b0c9d8" \
   -H "Content-Type: application/json" \
   -d '{
@@ -92,7 +92,7 @@ curl -X POST http://localhost:4173/api/v1/checkout-sessions \
 {
   "success": true,
   "id": "sess_89a421b0",
-  "checkout_url": "http://localhost:4173/checkout.html?session=sess_89a421b0",
+  "checkout_url": "http://localhost:3000/checkout.html?session=sess_89a421b0",
   "amount": 10000,
   "fee": 250,
   "net": 9750,

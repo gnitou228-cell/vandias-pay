@@ -5,9 +5,9 @@
  * ========================================================
  */
 
-// Détection automatique de l'URL du Backend API (gestion locale, file:// et port 4173)
-const API_BASE_URL = (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && window.location.port !== '4173'))
-  ? 'http://localhost:4173'
+// Détection automatique de l'URL du Backend API (compatible avec tout port HTTP/HTTPS 3000/4173 et mode file://)
+const API_BASE_URL = (window.location.protocol === 'file:')
+  ? (window.__VANDIAS_API_URL || 'http://localhost:3000')
   : '';
 
 // Intercepteur global de fetch pour garantir que tout appel relatif fonctionne même en file:// ou sur un autre serveur
@@ -2778,7 +2778,7 @@ function initAuthModalEvents() {
         }
       } catch (err) {
         console.error('Erreur inscription:', err);
-        showToast('Erreur de connexion', 'Vérifiez que le serveur VandiasPay est démarré sur http://localhost:4173 (' + err.message + ')');
+        showToast('Erreur de connexion', 'Vérifiez que le serveur VandiasPay est démarré sur ' + (window.location.origin || 'http://localhost:3000') + ' (' + err.message + ')');
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;

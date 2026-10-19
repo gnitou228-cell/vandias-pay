@@ -37,10 +37,12 @@ CREATE TABLE IF NOT EXISTS public.api_keys (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
     key_type VARCHAR(10) NOT NULL CHECK (key_type IN ('test', 'live')),
-    name VARCHAR(100) DEFAULT 'Clé API par défaut',
+    name VARCHAR(100) DEFAULT 'Serveur backend',
     public_key VARCHAR(100) UNIQUE NOT NULL,
     secret_key VARCHAR(100) UNIQUE NOT NULL,
     secret_key_hash VARCHAR(255),
+    scope VARCHAR(50) DEFAULT 'FULL' CHECK (scope IN ('FULL', 'PAYIN_ONLY', 'PAYOUT_ONLY', 'READ_ONLY')),
+    status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'REVOKED')),
     is_active BOOLEAN DEFAULT TRUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     last_used_at TIMESTAMPTZ
@@ -49,6 +51,22 @@ CREATE TABLE IF NOT EXISTS public.api_keys (
 -- Index pour authentification API ultra-rapide (en < 5ms)
 CREATE INDEX IF NOT EXISTS idx_api_keys_secret_key ON public.api_keys(secret_key);
 CREATE INDEX IF NOT EXISTS idx_api_keys_merchant_id ON public.api_keys(merchant_id);
+
+-- ========================================================
+-- 2.b. TABLE DE WHITELIST IP (IP_WHITELIST)
+-- Restreint les requêtes API aux serveurs autorisés
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.ip_whitelist (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+    ip_address VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
+    status VARCHAR(20) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'INACTIVE')),
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ip_whitelist_merchant ON public.ip_whitelist(merchant_id);
+
 
 -- ========================================================
 -- 3. TABLE DES LIENS DE PAIEMENT SANS CODER (PAYMENT_LINKS)

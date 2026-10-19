@@ -73,7 +73,14 @@ const VPState = {
   payoutCount: 0,
   payoutTotalPages: 1,
   methodIdToDelete: null,
-  payoutIdToCancel: null
+  payoutIdToCancel: null,
+  apiKeysList: [],
+  ipWhitelist: [],
+  activeDevSubTab: 'keys',
+  devKeySearchQuery: '',
+  keyIdToRevoke: null,
+  keyIdToDelete: null,
+  ipIdToDelete: null
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -89,6 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAllSettingsForms();
   initWalletSection();
   initPayoutsSection();
+  initDeveloperSection();
 
   // Vérification de la session et chargement dynamique
   if (VPState.token) {
@@ -202,15 +210,11 @@ function renderAllDashboardElements() {
   if (xofObj) xofObj.balance = balanceFCFA;
   renderDetailedWallets();
 
-  // 5. Clés API dans l'onglet Développeur
-  const liveKey = VPState.apiKeys.find(k => k.key_type === 'live') || VPState.apiKeys[0];
-  const testKey = VPState.apiKeys.find(k => k.key_type === 'test') || VPState.apiKeys[1];
-
-  const pubKeyInput = document.getElementById('devPublicKeyInput');
-  const secKeyInput = document.getElementById('devSecretKeyInput');
-
-  if (pubKeyInput && liveKey) pubKeyInput.value = liveKey.public_key;
-  if (secKeyInput && liveKey) secKeyInput.value = liveKey.secret_key;
+  // 5. Clés API et Whitelist dans l'onglet Développeur (100% conforme SasPay)
+  const devMerchantName = document.getElementById('devMerchantName');
+  if (devMerchantName) devMerchantName.textContent = m.business_name || 'VANDIA IA';
+  loadAndRenderApiKeys(VPState.devKeySearchQuery);
+  loadAndRenderIpWhitelist();
 
   // 6. Webhooks
   const webhookUrlInput = document.getElementById('webhookUrlInput');
@@ -1779,6 +1783,424 @@ async function confirmCancelPayout() {
 }
 
 /* ========================================================
+   5.c. SECTION DÉVELOPPEUR & CLÉS API (100% CONFORME SASPAY)
+   ======================================================== */
+
+function formatShortDate(isoString) {
+  if (!isoString) return 'Récemment';
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return 'Récemment';
+  }
+}
+
+function initDeveloperSection() {
+  // 1. Navigation des 2 sous-onglets Développeur (Clés API / IP Whitelist)
+  const buttons = document.querySelectorAll('.dev-subtab-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.getAttribute('data-dev-tab');
+      switchDevSubTab(tabId);
+    });
+  });
+
+  // 2. Recherche par nom ou préfixe (conforme barre de recherche SasPay)
+  const searchInput = document.getElementById('devKeySearchInput');
+  if (searchInput) {
+    let debounceTimer;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        VPState.devKeySearchQuery = e.target.value.trim();
+        loadAndRenderApiKeys(VPState.devKeySearchQuery);
+      }, 250);
+    });
+  }
+
+  // 3. Formulaire inline de génération de clé API
+  const formCreateKey = document.getElementById('formCreateApiKey');
+  if (formCreateKey) {
+    formCreateKey.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('newKeyNameInput')?.value || '';
+      const scope = document.getElementById('newKeyScopeSelect')?.value || 'FULL';
+      const submitBtn = document.getElementById('btnSubmitGenerateKey');
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Génération...';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/api-keys', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ name, scope })
+        });
+        const data = await res.json();
+
+        if (data.success && data.api_key) {
+          // Affichage de la clé secrète révélée une seule fois dans la modale de sécurité
+          const secretInput = document.getElementById('revealedSecretKeyInput');
+          if (secretInput) {
+            secretInput.value = data.api_key.secret_key;
+          }
+          openModal('modalRevealApiKey');
+
+          // Réinitialiser le formulaire
+          formCreateKey.reset();
+          const scopeSelect = document.getElementById('newKeyScopeSelect');
+          if (scopeSelect) scopeSelect.value = 'FULL';
+
+          showToast('Clé API générée !', 'Copiez la clé secrète dès maintenant.');
+          loadAndRenderApiKeys(VPState.devKeySearchQuery);
+        } else {
+          showToast('Erreur', data.error || 'Impossible de générer la clé.');
+        }
+      } catch (err) {
+        showToast('Erreur réseau', err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Générer';
+        }
+      }
+    });
+  }
+
+  // 4. Copier la clé secrète révélée dans le presse-papier
+  const btnCopySecret = document.getElementById('btnCopyRevealedSecret');
+  if (btnCopySecret) {
+    btnCopySecret.addEventListener('click', () => {
+      const secretInput = document.getElementById('revealedSecretKeyInput');
+      if (secretInput && secretInput.value) {
+        navigator.clipboard.writeText(secretInput.value);
+        showToast('Copié !', 'Clé secrète copiée dans le presse-papier.');
+      }
+    });
+  }
+
+  // 5. Bouton confirmation révocation
+  const btnConfirmRevoke = document.getElementById('btnConfirmRevokeKey');
+  if (btnConfirmRevoke) {
+    btnConfirmRevoke.addEventListener('click', confirmRevokeKey);
+  }
+
+  // 6. Bouton confirmation suppression clé
+  const btnConfirmDelete = document.getElementById('btnConfirmDeleteKey');
+  if (btnConfirmDelete) {
+    btnConfirmDelete.addEventListener('click', confirmDeleteKey);
+  }
+
+  // 7. Formulaire ajout IP Whitelist
+  const formAddIp = document.getElementById('formAddWhitelistIp');
+  if (formAddIp) {
+    formAddIp.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ip = document.getElementById('newWhitelistIpInput')?.value || '';
+      const desc = document.getElementById('newWhitelistDescInput')?.value || '';
+      const submitBtn = document.getElementById('btnSubmitAddWhitelist');
+
+      if (!ip.trim()) {
+        showToast('Erreur', 'Veuillez saisir une adresse IP ou CIDR valide.');
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Ajout...';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/ip-whitelist', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ ip_address: ip.trim(), description: desc.trim() })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          formAddIp.reset();
+          showToast('IP autorisée', data.message || 'Adresse IP enregistrée avec succès.');
+          loadAndRenderIpWhitelist();
+        } else {
+          showToast('Erreur', data.error || 'Impossible d\'ajouter cette adresse IP.');
+        }
+      } catch (err) {
+        showToast('Erreur réseau', err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '+ Ajouter cette IP';
+        }
+      }
+    });
+  }
+
+  // 8. Bouton confirmation suppression IP
+  const btnConfirmDeleteIp = document.getElementById('btnConfirmDeleteIp');
+  if (btnConfirmDeleteIp) {
+    btnConfirmDeleteIp.addEventListener('click', confirmDeleteIp);
+  }
+}
+
+function switchDevSubTab(tabId) {
+  VPState.activeDevSubTab = tabId;
+  const buttons = document.querySelectorAll('.dev-subtab-btn');
+  const panels = document.querySelectorAll('.dev-subtab-panel');
+
+  buttons.forEach(btn => {
+    const isCurrent = btn.getAttribute('data-dev-tab') === tabId;
+    if (isCurrent) {
+      btn.className = 'dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#5846F6] text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)]';
+    } else {
+      btn.className = 'dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]';
+    }
+  });
+
+  panels.forEach(panel => {
+    if (panel.id === `dev-panel-${tabId}`) {
+      panel.classList.remove('hidden');
+    } else {
+      panel.classList.add('hidden');
+    }
+  });
+
+  if (tabId === 'keys') {
+    loadAndRenderApiKeys(VPState.devKeySearchQuery);
+  } else if (tabId === 'whitelist') {
+    loadAndRenderIpWhitelist();
+  }
+}
+
+async function loadAndRenderApiKeys(search = '') {
+  const tbody = document.getElementById('apiKeysTableBody');
+  if (!tbody) return;
+
+  try {
+    const url = search ? `/api/v1/merchant/api-keys?search=${encodeURIComponent(search)}` : '/api/v1/merchant/api-keys';
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.api_keys)) return;
+
+    VPState.apiKeysList = data.api_keys;
+
+    if (VPState.apiKeysList.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="py-10 text-center text-slate-400 text-xs">
+            Aucune clé d'API trouvée.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = '';
+    VPState.apiKeysList.forEach(k => {
+      const isActive = k.status === 'ACTIVE' && k.is_active;
+      const maskedKey = k.secret_key_masked || 'sk_live_...';
+      const keyName = k.name || 'Clé API';
+      const scopeLabel = k.scope_label || 'Encaissement et décaissement';
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-[#F9FAFC] transition-colors';
+      tr.innerHTML = `
+        <td class="py-3.5 px-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[#5846F6]">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+            </div>
+            <div>
+              <div class="text-xs sm:text-sm font-bold text-[#111827]">${keyName}</div>
+              <div class="font-mono text-[11px] text-slate-400 select-all">${maskedKey}</div>
+            </div>
+          </div>
+        </td>
+        <td class="py-3.5 px-4 text-xs text-slate-600 font-medium">
+          ${scopeLabel}
+        </td>
+        <td class="py-3.5 px-4">
+          ${isActive 
+            ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-600">Active</span>'
+            : '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-600">Révoquée</span>'
+          }
+        </td>
+        <td class="py-3.5 px-4 text-right">
+          <div class="inline-flex items-center justify-end gap-3">
+            ${isActive 
+              ? `<button type="button" class="text-xs font-semibold text-amber-600 hover:text-amber-700 transition-colors" onclick="openRevokeKeyModal('${k.id}', '${keyName.replace(/'/g, "\\'")}')">Révoquer</button>`
+              : `<span class="text-xs text-slate-400 italic">Révoquée</span>`
+            }
+            <button type="button" class="text-slate-400 hover:text-rose-600 transition-colors p-1" onclick="openDeleteKeyModal('${k.id}', '${keyName.replace(/'/g, "\\'")}')" title="Supprimer définitivement">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Erreur chargement clés API:', err);
+  }
+}
+
+function openRevokeKeyModal(id, name) {
+  VPState.keyIdToRevoke = id;
+  const title = document.getElementById('revokeKeyModalTitle');
+  if (title) title.textContent = `Révoquer la clé "${name}" ?`;
+  openModal('modalRevokeApiKey');
+}
+
+async function confirmRevokeKey() {
+  if (!VPState.keyIdToRevoke) return;
+
+  try {
+    const res = await fetch(`/api/v1/merchant/api-keys/${VPState.keyIdToRevoke}/revoke`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('Clé révoquée', 'Cette clé API est désormais désactivée.');
+      closeModal('modalRevokeApiKey');
+      loadAndRenderApiKeys(VPState.devKeySearchQuery);
+    } else {
+      showToast('Erreur', data.error || 'Impossible de révoquer cette clé.');
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
+}
+
+function openDeleteKeyModal(id, name) {
+  VPState.keyIdToDelete = id;
+  const title = document.getElementById('deleteKeyModalTitle');
+  if (title) title.textContent = `Supprimer la clé "${name}" ?`;
+  openModal('modalDeleteApiKey');
+}
+
+async function confirmDeleteKey() {
+  if (!VPState.keyIdToDelete) return;
+
+  try {
+    const res = await fetch(`/api/v1/merchant/api-keys/${VPState.keyIdToDelete}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('Clé supprimée', 'La clé d\'API a été définitivement effacée.');
+      closeModal('modalDeleteApiKey');
+      loadAndRenderApiKeys(VPState.devKeySearchQuery);
+    } else {
+      showToast('Erreur', data.error || 'Impossible de supprimer cette clé.');
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
+}
+
+async function loadAndRenderIpWhitelist() {
+  const tbody = document.getElementById('ipWhitelistTableBody');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/v1/merchant/ip-whitelist', {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.ip_whitelist)) return;
+
+    VPState.ipWhitelist = data.ip_whitelist;
+
+    if (VPState.ipWhitelist.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
+            Aucune adresse IP autorisée enregistrée. Vos serveurs ont accès libre avec leur clé secrète.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = '';
+    VPState.ipWhitelist.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-[#F9FAFC] transition-colors';
+      tr.innerHTML = `
+        <td class="py-3.5 px-4 font-mono font-bold text-xs text-[#111827]">
+          ${item.ip_address}
+        </td>
+        <td class="py-3.5 px-4 text-xs text-slate-600">
+          ${item.description || '—'}
+        </td>
+        <td class="py-3.5 px-4 text-xs text-slate-400 font-mono">
+          ${formatShortDate(item.created_at)}
+        </td>
+        <td class="py-3.5 px-4">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-600">Active</span>
+        </td>
+        <td class="py-3.5 px-4 text-right">
+          <button type="button" class="text-slate-400 hover:text-rose-600 transition-colors p-1" onclick="openDeleteIpModal('${item.id}', '${item.ip_address}')" title="Supprimer">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error('Erreur chargement whitelist IP:', err);
+  }
+}
+
+function openDeleteIpModal(id, ip) {
+  VPState.ipIdToDelete = id;
+  const title = document.getElementById('deleteIpModalTitle');
+  if (title) title.textContent = `Supprimer l'IP "${ip}" ?`;
+  openModal('modalDeleteWhitelistIp');
+}
+
+async function confirmDeleteIp() {
+  if (!VPState.ipIdToDelete) return;
+
+  try {
+    const res = await fetch(`/api/v1/merchant/ip-whitelist/${VPState.ipIdToDelete}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('IP supprimée', 'L\'adresse IP a été retirée de la liste.');
+      closeModal('modalDeleteWhitelistIp');
+      loadAndRenderIpWhitelist();
+    } else {
+      showToast('Erreur', data.error || 'Impossible de supprimer cette IP.');
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
+}
+
+/* ========================================================
    6. GESTION DES MODALS D'AUTHENTIFICATION & INSCRIPTION
    ======================================================== */
 
@@ -1983,6 +2405,11 @@ function switchTab(tabKey) {
   if (tabKey === 'payouts') {
     loadAndRenderPayouts();
     loadAndRenderPayoutMethods();
+  }
+
+  if (tabKey === 'developer') {
+    loadAndRenderApiKeys(VPState.devKeySearchQuery);
+    loadAndRenderIpWhitelist();
   }
 
   closeMobileDrawer();

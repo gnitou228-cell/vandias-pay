@@ -230,24 +230,46 @@ const memoryDb = {
   ],
   api_keys: [
     {
-      id: 'k1-live-vdp',
+      id: 'key_jeff_digital',
       merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d',
       key_type: 'live',
-      name: 'Production API Key',
-      public_key: 'pk_live_vdp_8f91a2b3c4d5e6f7',
-      secret_key: 'sk_live_vdp_9f81a7b6c5d4e3f2a1b0c9d8',
+      name: 'Jeff Digital',
+      public_key: 'pk_live_vdp_jeffdigital01',
+      secret_key: 'sk_live_vdp_wqJUOJhG2TjZ9x8w7v6u5t4s',
+      secret_key_masked: 'sk_live_wqJUOJhG2TjZ...',
+      scope: 'FULL',
+      scope_label: 'Encaissement et décaissement',
+      status: 'ACTIVE',
       is_active: true,
-      created_at: new Date().toISOString()
+      created_at: new Date(Date.now() - 30 * 86400000).toISOString()
     },
     {
-      id: 'k2-test-vdp',
+      id: 'key_vandia_ia',
       merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d',
-      key_type: 'test',
-      name: 'Sandbox Test API Key',
-      public_key: 'pk_test_vdp_1a2b3c4d5e6f7a8b',
-      secret_key: 'sk_test_vdp_0z9y8x7w6v5u4t3s2r1q0p9o',
+      key_type: 'live',
+      name: 'VANDIA IA',
+      public_key: 'pk_live_vdp_vandiaia002',
+      secret_key: 'sk_live_vdp_QZ2Lawuqkr0M4v8x2b1c0d9e',
+      secret_key_masked: 'sk_live_QZ2Lawuqkr0M...',
+      scope: 'FULL',
+      scope_label: 'Encaissement et décaissement',
+      status: 'ACTIVE',
       is_active: true,
-      created_at: new Date().toISOString()
+      created_at: new Date(Date.now() - 15 * 86400000).toISOString()
+    },
+    {
+      id: 'key_nestora',
+      merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d',
+      key_type: 'live',
+      name: 'NESTORA',
+      public_key: 'pk_live_vdp_nestora0003',
+      secret_key: 'sk_live_vdp_FfVxIymp2BZ7a6b5c4d3e2f1',
+      secret_key_masked: 'sk_live_FfVxIymp2BZ-...',
+      scope: 'FULL',
+      scope_label: 'Encaissement et décaissement',
+      status: 'ACTIVE',
+      is_active: true,
+      created_at: new Date(Date.now() - 5 * 86400000).toISOString()
     }
   ],
   payment_links: [
@@ -357,6 +379,16 @@ const memoryDb = {
   wallet_transfers: [
     { id: 'tr_1', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', from_country: 'SN', to_country: 'CI', from_currency: 'XOF', to_currency: 'XOF', from_amount: 100000, to_amount: 100000, exchange_rate: 1.0, fee_amount: 0, fee_percent_applied: 0, status: 'COMPLETED', created_at: new Date(Date.now() - 43200000).toISOString() },
     { id: 'tr_2', merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d', from_country: 'US', to_country: 'SN', from_currency: 'USD', to_currency: 'XOF', from_amount: 50, to_amount: 30250, exchange_rate: 605.0, fee_amount: 0, fee_percent_applied: 0, status: 'COMPLETED', created_at: new Date(Date.now() - 90000000).toISOString() }
+  ],
+  ip_whitelist: [
+    {
+      id: 'ip_1',
+      merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d',
+      ip_address: '197.234.221.10',
+      description: 'Serveur Backend Live AWS',
+      status: 'ACTIVE',
+      created_at: new Date(Date.now() - 5 * 86400000).toISOString()
+    }
   ]
 };
 
@@ -2413,6 +2445,398 @@ app.post('/api/v1/merchant/wallet/transfers', requireMerchantAuth, async (req, r
       transfer: newTransfer,
       source_wallet: sourceWallet,
       dest_wallet: destWallet
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ========================================================
+// 6.e. GESTION DES CLÉS D'API & WHITELIST IP (SASPAY DÉVELOPPEUR)
+// ========================================================
+
+/**
+ * GET /api/v1/merchant/api-keys
+ * Récupérer la liste des clés API du marchand avec filtrage par nom ou préfixe
+ */
+app.get('/api/v1/merchant/api-keys', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { search } = req.query;
+
+    if (!Array.isArray(memoryDb.api_keys)) {
+      memoryDb.api_keys = [];
+    }
+
+    let keys = memoryDb.api_keys.filter(k => k.merchant_id === merchantId);
+
+    // Initialiser les clés par défaut conformes à la capture SasPay si vide
+    if (keys.length === 0) {
+      const defaultKeys = [
+        {
+          id: `key_${crypto.randomUUID().slice(0, 8)}`,
+          merchant_id: merchantId,
+          key_type: 'live',
+          name: 'Jeff Digital',
+          public_key: 'pk_live_vdp_' + crypto.randomBytes(8).toString('hex'),
+          secret_key: 'sk_live_vdp_wqJUOJhG2TjZ' + crypto.randomBytes(6).toString('hex'),
+          secret_key_masked: 'sk_live_wqJUOJhG2TjZ...',
+          scope: 'FULL',
+          scope_label: 'Encaissement et décaissement',
+          status: 'ACTIVE',
+          is_active: true,
+          created_at: new Date(Date.now() - 30 * 86400000).toISOString()
+        },
+        {
+          id: `key_${crypto.randomUUID().slice(0, 8)}`,
+          merchant_id: merchantId,
+          key_type: 'live',
+          name: req.merchant.business_name || 'VANDIA IA',
+          public_key: 'pk_live_vdp_' + crypto.randomBytes(8).toString('hex'),
+          secret_key: 'sk_live_vdp_QZ2Lawuqkr0M' + crypto.randomBytes(6).toString('hex'),
+          secret_key_masked: 'sk_live_QZ2Lawuqkr0M...',
+          scope: 'FULL',
+          scope_label: 'Encaissement et décaissement',
+          status: 'ACTIVE',
+          is_active: true,
+          created_at: new Date(Date.now() - 15 * 86400000).toISOString()
+        },
+        {
+          id: `key_${crypto.randomUUID().slice(0, 8)}`,
+          merchant_id: merchantId,
+          key_type: 'live',
+          name: 'NESTORA',
+          public_key: 'pk_live_vdp_' + crypto.randomBytes(8).toString('hex'),
+          secret_key: 'sk_live_vdp_FfVxIymp2BZ' + crypto.randomBytes(6).toString('hex'),
+          secret_key_masked: 'sk_live_FfVxIymp2BZ-...',
+          scope: 'FULL',
+          scope_label: 'Encaissement et décaissement',
+          status: 'ACTIVE',
+          is_active: true,
+          created_at: new Date(Date.now() - 5 * 86400000).toISOString()
+        }
+      ];
+      memoryDb.api_keys.push(...defaultKeys);
+      keys = defaultKeys;
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      keys = keys.filter(k =>
+        (k.name && k.name.toLowerCase().includes(q)) ||
+        (k.secret_key && k.secret_key.toLowerCase().includes(q)) ||
+        (k.public_key && k.public_key.toLowerCase().includes(q))
+      );
+    }
+
+    const sanitized = keys.map(k => {
+      let mask = k.secret_key_masked;
+      if (!mask) {
+        if (k.secret_key) {
+          mask = k.secret_key.replace('sk_live_vdp_', 'sk_live_').slice(0, 19) + '...';
+        } else {
+          mask = 'sk_live_...';
+        }
+      }
+      return {
+        id: k.id,
+        name: k.name || 'Clé API',
+        key_type: k.key_type || 'live',
+        scope: k.scope || 'FULL',
+        scope_label: k.scope_label || (k.scope === 'PAYIN_ONLY' ? 'Encaissement uniquement' : (k.scope === 'PAYOUT_ONLY' ? 'Décaissement uniquement' : (k.scope === 'READ_ONLY' ? 'Lecture seule' : 'Encaissement et décaissement'))),
+        status: k.status || (k.is_active ? 'ACTIVE' : 'REVOKED'),
+        is_active: k.is_active !== false && k.status !== 'REVOKED',
+        public_key: k.public_key,
+        secret_key_masked: mask,
+        created_at: k.created_at
+      };
+    });
+
+    res.json({
+      success: true,
+      api_keys: sanitized
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/api-keys
+ * Générer une nouvelle clé API avec révélation unique de la clé secrète
+ */
+app.post('/api/v1/merchant/api-keys', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { name, scope } = req.body;
+
+    const validScopes = {
+      'FULL': 'Encaissement et décaissement',
+      'PAYIN_ONLY': 'Encaissement uniquement',
+      'PAYOUT_ONLY': 'Décaissement uniquement',
+      'READ_ONLY': 'Lecture seule'
+    };
+
+    const chosenScope = validScopes[scope] ? scope : 'FULL';
+    const scopeLabel = validScopes[chosenScope];
+    const keyName = (name && name.trim()) ? name.trim() : 'Serveur backend';
+
+    const rawSecret = 'sk_live_vdp_' + crypto.randomBytes(18).toString('hex');
+    const rawPublic = 'pk_live_vdp_' + crypto.randomBytes(12).toString('hex');
+
+    const newKey = {
+      id: `key_${crypto.randomUUID().slice(0, 8)}`,
+      merchant_id: merchantId,
+      key_type: 'live',
+      name: keyName,
+      public_key: rawPublic,
+      secret_key: rawSecret,
+      scope: chosenScope,
+      scope_label: scopeLabel,
+      status: 'ACTIVE',
+      is_active: true,
+      created_at: new Date().toISOString()
+    };
+
+    if (!Array.isArray(memoryDb.api_keys)) {
+      memoryDb.api_keys = [];
+    }
+    memoryDb.api_keys.unshift(newKey);
+
+    if (supabase) {
+      try {
+        await supabase.from('api_keys').insert([{
+          id: newKey.id,
+          merchant_id: merchantId,
+          key_type: 'live',
+          name: keyName,
+          public_key: rawPublic,
+          secret_key: rawSecret,
+          scope: chosenScope,
+          status: 'ACTIVE',
+          is_active: true,
+          created_at: newKey.created_at
+        }]);
+      } catch (err) {
+        console.warn('Supabase key insert warning:', err.message);
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Clé API générée avec succès.',
+      api_key: {
+        id: newKey.id,
+        name: newKey.name,
+        key_type: newKey.key_type,
+        scope: newKey.scope,
+        scope_label: newKey.scope_label,
+        status: newKey.status,
+        is_active: newKey.is_active,
+        public_key: newKey.public_key,
+        secret_key: newKey.secret_key, // Révélé une seule fois à la création
+        secret_key_masked: newKey.secret_key.slice(0, 19) + '...',
+        created_at: newKey.created_at
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/api-keys/:id/revoke
+ * Révoquer une clé API existante
+ */
+app.post('/api/v1/merchant/api-keys/:id/revoke', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { id } = req.params;
+
+    const key = memoryDb.api_keys.find(k => k.id === id && k.merchant_id === merchantId);
+    if (!key) {
+      return res.status(404).json({ success: false, error: 'Clé API introuvable.' });
+    }
+
+    key.status = 'REVOKED';
+    key.is_active = false;
+
+    if (supabase) {
+      try {
+        await supabase
+          .from('api_keys')
+          .update({ status: 'REVOKED', is_active: false })
+          .eq('id', id)
+          .eq('merchant_id', merchantId);
+      } catch (err) {
+        console.warn('Supabase revoke key warning:', err.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `La clé "${key.name}" a été révoquée.`
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/merchant/api-keys/:id
+ * Supprimer définitivement une clé API
+ */
+app.delete('/api/v1/merchant/api-keys/:id', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { id } = req.params;
+
+    const index = memoryDb.api_keys.findIndex(k => k.id === id && k.merchant_id === merchantId);
+    if (index === -1) {
+      return res.status(404).json({ success: false, error: 'Clé API introuvable.' });
+    }
+
+    memoryDb.api_keys.splice(index, 1);
+
+    if (supabase) {
+      try {
+        await supabase
+          .from('api_keys')
+          .delete()
+          .eq('id', id)
+          .eq('merchant_id', merchantId);
+      } catch (err) {
+        console.warn('Supabase delete key warning:', err.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Clé API supprimée définitivement.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/merchant/ip-whitelist
+ * Liste des adresses IP autorisées pour ce marchand
+ */
+app.get('/api/v1/merchant/ip-whitelist', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+
+    if (!Array.isArray(memoryDb.ip_whitelist)) {
+      memoryDb.ip_whitelist = [];
+    }
+
+    let ips = memoryDb.ip_whitelist.filter(i => i.merchant_id === merchantId);
+    if (ips.length === 0) {
+      const defaultIp = {
+        id: `ip_${crypto.randomUUID().slice(0, 8)}`,
+        merchant_id: merchantId,
+        ip_address: '197.234.221.10',
+        description: 'Serveur Backend Live AWS',
+        status: 'ACTIVE',
+        created_at: new Date(Date.now() - 5 * 86400000).toISOString()
+      };
+      memoryDb.ip_whitelist.push(defaultIp);
+      ips = [defaultIp];
+    }
+
+    res.json({
+      success: true,
+      ip_whitelist: ips
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/ip-whitelist
+ * Ajouter une adresse IP ou CIDR à la whitelist
+ */
+app.post('/api/v1/merchant/ip-whitelist', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { ip_address, description } = req.body;
+
+    if (!ip_address || !ip_address.trim()) {
+      return res.status(400).json({ success: false, error: 'Adresse IP ou CIDR requise.' });
+    }
+
+    const cleanIp = ip_address.trim();
+
+    if (!Array.isArray(memoryDb.ip_whitelist)) {
+      memoryDb.ip_whitelist = [];
+    }
+    const exists = memoryDb.ip_whitelist.find(i => i.merchant_id === merchantId && i.ip_address === cleanIp);
+    if (exists) {
+      return res.status(400).json({ success: false, error: 'Cette adresse IP est déjà dans votre liste.' });
+    }
+
+    const newIp = {
+      id: `ip_${crypto.randomUUID().slice(0, 8)}`,
+      merchant_id: merchantId,
+      ip_address: cleanIp,
+      description: (description && description.trim()) ? description.trim() : 'Serveur de production',
+      status: 'ACTIVE',
+      created_at: new Date().toISOString()
+    };
+
+    memoryDb.ip_whitelist.unshift(newIp);
+
+    if (supabase) {
+      try {
+        await supabase.from('ip_whitelist').insert([newIp]);
+      } catch (err) {
+        console.warn('Supabase IP insert warning:', err.message);
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Adresse IP ${cleanIp} autorisée avec succès.`,
+      ip: newIp
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/merchant/ip-whitelist/:id
+ * Supprimer une IP de la whitelist
+ */
+app.delete('/api/v1/merchant/ip-whitelist/:id', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    const { id } = req.params;
+
+    const index = memoryDb.ip_whitelist.findIndex(i => i.id === id && i.merchant_id === merchantId);
+    if (index === -1) {
+      return res.status(404).json({ success: false, error: 'Adresse IP introuvable.' });
+    }
+
+    const deleted = memoryDb.ip_whitelist.splice(index, 1)[0];
+
+    if (supabase) {
+      try {
+        await supabase
+          .from('ip_whitelist')
+          .delete()
+          .eq('id', id)
+          .eq('merchant_id', merchantId);
+      } catch (err) {
+        console.warn('Supabase IP delete warning:', err.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `L'adresse IP ${deleted.ip_address} a été supprimée.`
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

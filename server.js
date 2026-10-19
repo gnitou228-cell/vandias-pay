@@ -325,33 +325,33 @@ const gatewayManager = new PaymentGatewayManager();
 // ========================================================
 let supabase = null;
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const rawServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const rawAnonKey = process.env.SUPABASE_ANON_KEY;
 
-const isSupabasePlaceholder = !SUPABASE_URL ||
-  SUPABASE_URL.includes('your-project-ref') ||
-  SUPABASE_URL.includes('votre-projet') ||
-  !SUPABASE_SERVICE_KEY ||
-  SUPABASE_SERVICE_KEY.includes('your_service_role_key_here') ||
-  SUPABASE_SERVICE_KEY.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...') ||
-  SUPABASE_SERVICE_KEY.includes('xxxxxxxx');
+const isPlaceholder = (val) => !val ||
+  val.includes('your-project-ref') ||
+  val.includes('votre-projet') ||
+  val.includes('your_service_role_key_here') ||
+  val.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...') ||
+  val.includes('xxxxxxxx');
 
-if (SUPABASE_URL && SUPABASE_SERVICE_KEY && !isSupabasePlaceholder) {
+const validServiceKey = !isPlaceholder(rawServiceKey) ? rawServiceKey : null;
+const validAnonKey = !isPlaceholder(rawAnonKey) ? rawAnonKey : null;
+const activeKey = validServiceKey || validAnonKey;
+
+if (SUPABASE_URL && activeKey && !isPlaceholder(SUPABASE_URL)) {
   try {
     const { createClient } = require('@supabase/supabase-js');
-    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+    supabase = createClient(SUPABASE_URL, activeKey, {
       auth: { persistSession: false }
     });
-    console.log(`✅ Connecté avec succès à Supabase PostgreSQL Cloud (${SUPABASE_URL}) !`);
+    const keyType = validServiceKey ? 'Service Role Key (Admin)' : 'Publishable / Anon Key';
+    console.log(`✅ Connecté avec succès à Supabase Cloud (${SUPABASE_URL}) [${keyType}] !`);
   } catch (err) {
-    console.warn('⚠️ Supabase SDK non disponible ou erreur d’initialisation. Utilisation du Memory Store haute performance.');
+    console.warn('⚠️ Erreur initialisation Supabase SDK:', err.message);
   }
 } else {
-  if (SUPABASE_URL && !SUPABASE_URL.includes('your-project-ref') && !SUPABASE_URL.includes('votre-projet')) {
-    console.log(`ℹ️ URL Supabase configurée (${SUPABASE_URL}). Renseignez SUPABASE_SERVICE_ROLE_KEY dans .env pour activer la synchronisation PostgreSQL.`);
-  } else {
-    console.log('ℹ️ Mode Développement / Sandbox : Base en mémoire synchronisée (Prête pour connexion Supabase via .env).');
-  }
+  console.log('ℹ️ Mode Développement / Sandbox : Base en mémoire synchronisée (Prête pour connexion Supabase via .env).');
 }
 
 // --------------------------------------------------------

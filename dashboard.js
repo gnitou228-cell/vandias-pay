@@ -38,7 +38,8 @@ const VPState = {
     { code: "BIF", name: "Franc Burundais (Burundi)", balance: 0, flag: "🇧🇮", symbol: "FBu" },
     { code: "SLL", name: "Leone Sierra-Léonais", balance: 0, flag: "🇸🇱", symbol: "Le" },
     { code: "LRD", name: "Dollar Libérien", balance: 0, flag: "🇱🇷", symbol: "L$" }
-  ]
+  ],
+  pricingRates: []
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initActionModals();
   initSettingsAndWebhookHandlers();
   initCopyButtons();
+  initPricingSection();
 
   // Vérification de la session et chargement dynamique
   if (VPState.token) {
@@ -109,6 +111,9 @@ async function loadMerchantDashboard() {
       const linksData = await linksRes.json();
       VPState.paymentLinks = linksData.links || [];
     }
+
+    // 4. Tarification réseau (conforme SasPay)
+    await fetchPricingRates();
 
     // Mise à jour de l'interface complète
     renderAllDashboardElements();
@@ -192,6 +197,9 @@ function renderAllDashboardElements() {
 
   // 10. Clients CRM
   renderCustomersList();
+
+  // 11. Tarification réseau (conforme SasPay)
+  renderPricingRates();
 }
 
 /* ========================================================
@@ -937,4 +945,239 @@ function showToast(title, desc = "") {
     toast.classList.remove('translate-y-0', 'opacity-100');
     toast.classList.add('translate-y-16', 'opacity-0');
   }, 3200);
+}
+
+/* ========================================================
+   9. TARIFICATION RÉSEAU PAR RÉSEAU (CONFORME À SASPAY)
+   ======================================================== */
+
+let pricingSearchDebounce = null;
+
+function initPricingSection() {
+  const searchInput = document.getElementById('pricingSearchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(pricingSearchDebounce);
+      pricingSearchDebounce = setTimeout(() => {
+        renderPricingRates(e.target.value);
+      }, 80);
+    });
+  }
+
+  // Charger immédiatement les tarifs dès l'initialisation
+  fetchPricingRates();
+}
+
+async function fetchPricingRates() {
+  try {
+    const res = await fetch('/api/v1/pricing/my-rates');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        VPState.pricingRates = data.data;
+        renderPricingRates(document.getElementById('pricingSearchInput')?.value || '');
+      }
+    }
+  } catch (err) {
+    console.warn('Impossible de charger les tarifs depuis l\'API:', err);
+  }
+}
+
+function renderPricingRates(search = '') {
+  const container = document.getElementById('pricingCountriesContainer');
+  if (!container) return;
+
+  const q = (search || '').trim().toLowerCase();
+  const rates = VPState.pricingRates || [];
+
+  const filtered = rates.filter(r => {
+    if (!q) return true;
+    const countryName = (r.country_name || '').toLowerCase();
+    const networkName = (r.network_name || '').toLowerCase();
+    const countryCode = (r.country_code || '').toLowerCase();
+    return countryName.includes(q) || networkName.includes(q) || countryCode.includes(q);
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="rounded-2xl border border-dashed border-[#ECEEF6] bg-white p-12 text-center shadow-xs">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-violet-50 text-xl text-[#5846F6]">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <p class="mt-3 text-sm font-semibold text-[#111827]">Aucun réseau ne correspond à cette recherche.</p>
+        <p class="mt-1 text-xs text-[#6B7280]">Essayez avec un autre terme (ex: Bénin, Sénégal, Wave, Orange, MTN, Carte...).</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Grouper par pays
+  const countryMap = new Map();
+  filtered.forEach(item => {
+    if (!countryMap.has(item.country_code)) {
+      countryMap.set(item.country_code, {
+        code: item.country_code,
+        name: item.country_name,
+        flag: item.flag,
+        rows: []
+      });
+    }
+    countryMap.get(item.country_code).rows.push(item);
+  });
+
+  // Trier alphabétiquement (International en fin de liste)
+  const sortedCountries = Array.from(countryMap.values()).sort((a, b) => {
+    if (a.code === 'INTL') return 1;
+    if (b.code === 'INTL') return -1;
+    return a.name.localeCompare(b.name, 'fr');
+  });
+
+  container.innerHTML = sortedCountries.map(c => `
+    <div class="rounded-2xl border border-[#ECEEF6] bg-white p-5 sm:p-6 shadow-sm">
+      <p class="mb-4 text-sm font-bold text-[#111827] flex items-center gap-2">
+        <span class="text-xl">${c.flag}</span>
+        <span>${c.name}</span>
+        <span class="text-[11px] font-medium text-[#6B7280]">(${c.rows.length} réseau${c.rows.length > 1 ? 'x' : ''})</span>
+      </p>
+
+      <div class="overflow-x-auto">
+        <table class="w-full border-separate border-spacing-y-2 text-left text-xs">
+          <thead>
+            <tr class="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">
+              <th class="pb-1 pl-4">Réseau</th>
+              <th class="pb-1">Encaissement</th>
+              <th class="pb-1 pr-4">Décaissement</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${c.rows.map(r => renderPricingRow(r)).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPricingRow(row) {
+  return `
+    <tr class="rounded-xl bg-violet-50/40 text-[#111827] transition-colors hover:bg-violet-50/70">
+      <td class="rounded-l-xl py-3.5 pl-4 font-semibold text-[#111827] align-top whitespace-nowrap">
+        <div class="flex items-center gap-2.5">
+          ${getNetworkBadge(row.network_name, row.network_code)}
+          <span class="font-bold text-[#111827] text-xs sm:text-sm">${row.network_name}</span>
+        </div>
+      </td>
+      <td class="py-3.5 pr-3 align-top">
+        ${renderPricingDirection(row.payin, row.network_name, 'payin')}
+      </td>
+      <td class="rounded-r-xl py-3.5 pr-4 align-top">
+        ${renderPricingDirection(row.payout, row.network_name, 'payout')}
+      </td>
+    </tr>
+  `;
+}
+
+function renderPricingDirection(dir, networkName, type) {
+  if (!dir || dir.available === false) {
+    return `<span class="text-xs font-medium text-[#9CA3AF] italic">Indisponible actuellement</span>`;
+  }
+
+  if (!dir.tiers || dir.tiers.length === 0) {
+    return `<span class="text-xs font-medium text-[#9CA3AF] italic">Non configuré</span>`;
+  }
+
+  const customPill = dir.is_custom ? `
+    <span class="mb-1 inline-block rounded-full bg-violet-600/10 px-2 py-0.5 text-[10px] font-semibold text-violet-600">
+      Tarif personnalisé
+    </span>
+  ` : '';
+
+  const tiersHtml = dir.tiers.map(t => {
+    const feeStr = formatPricingFee(t);
+    const modeStr = t.fee_charge_mode === 'DEDUCTED' ? 'déduits' : (t.fee_charge_mode === 'ADD_ON' ? 'ajoutés' : '');
+
+    let limitsStr = '';
+    if (t.floor_amount || t.cap_amount) {
+      const parts = [];
+      if (t.floor_amount) parts.push(`min ${formatCurrencyAmount(t.floor_amount, t.currency)}`);
+      if (t.cap_amount) parts.push(`max ${formatCurrencyAmount(t.cap_amount, t.currency)}`);
+      limitsStr = `<div class="text-[10px] text-[#9CA3AF] mt-0.5 font-medium">${parts.join(' · ')}</div>`;
+    }
+
+    return `
+      <div class="space-y-0.5">
+        <div class="flex items-baseline gap-1.5 flex-wrap">
+          <span class="font-bold text-[#111827] text-xs sm:text-sm font-mono">${feeStr}</span>
+          ${modeStr ? `<span class="text-[11px] text-[#6B7280]">(${modeStr})</span>` : ''}
+        </div>
+        ${limitsStr}
+      </div>
+    `;
+  }).join('');
+
+  return `<div>${customPill}${tiersHtml}</div>`;
+}
+
+function formatPricingFee(tier) {
+  const p = typeof tier.percent === 'number' && tier.percent > 0;
+  const f = typeof tier.fixed === 'number' && tier.fixed > 0;
+
+  if (p && f) {
+    return `${tier.percent}% + ${formatCurrencyAmount(tier.fixed, tier.currency)}`;
+  }
+  if (p) {
+    return `${tier.percent}%`;
+  }
+  if (f) {
+    return formatCurrencyAmount(tier.fixed, tier.currency);
+  }
+  return 'Gratuit';
+}
+
+function formatCurrencyAmount(val, cur = 'XOF') {
+  if (val === null || val === undefined) return '';
+  return `${Number(val).toLocaleString('fr-FR')} ${cur}`;
+}
+
+function getNetworkBadge(name, code) {
+  const n = (name || '').toLowerCase();
+  let bg = 'bg-slate-100 text-slate-700';
+  let label = name.slice(0, 3).toUpperCase();
+
+  if (n.includes('wave')) {
+    bg = 'bg-[#1DC3EC]/15 text-[#0094C6]';
+    label = '🌊';
+  } else if (n.includes('orange')) {
+    bg = 'bg-[#FF6600]/15 text-[#E65100]';
+    label = 'OM';
+  } else if (n.includes('mtn')) {
+    bg = 'bg-[#FFCC00]/25 text-[#B45309]';
+    label = 'MTN';
+  } else if (n.includes('moov')) {
+    bg = 'bg-[#004F9F]/15 text-[#004F9F]';
+    label = 'Moov';
+  } else if (n.includes('celtiis')) {
+    bg = 'bg-teal-50 text-teal-700';
+    label = 'CLT';
+  } else if (n.includes('t-money')) {
+    bg = 'bg-amber-50 text-amber-700';
+    label = 'TM';
+  } else if (n.includes('free')) {
+    bg = 'bg-rose-50 text-rose-600';
+    label = 'Free';
+  } else if (n.includes('airtel')) {
+    bg = 'bg-red-50 text-red-600';
+    label = 'Artl';
+  } else if (n.includes('carte') || n.includes('visa')) {
+    bg = 'bg-indigo-50 text-indigo-700';
+    label = '💳';
+  } else if (n.includes('apple') || n.includes('google')) {
+    bg = 'bg-slate-900 text-white';
+    label = '';
+  } else if (n.includes('virement') || n.includes('bank')) {
+    bg = 'bg-blue-50 text-blue-700';
+    label = '🏛️';
+  }
+
+  return `<span class="inline-flex h-7 w-7 items-center justify-center rounded-lg ${bg} text-[11px] font-bold shadow-xs flex-shrink-0">${label}</span>`;
 }

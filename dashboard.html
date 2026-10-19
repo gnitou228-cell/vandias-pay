@@ -720,30 +720,25 @@
       </section>
 
       <!-- ====================================================
-           SECTION 13 : TARIFICATION
+           SECTION 13 : TARIFICATION (CONFORME À SASPAY)
            ==================================================== -->
       <section id="section-pricing" class="dashboard-section hidden space-y-6">
         <div>
-          <h1 class="text-2xl font-extrabold text-[#111827]">Tarification & Barèmes</h1>
-          <p class="text-xs sm:text-sm text-[#6B7280]">Modèle de tarification transparent par opérateur.</p>
+          <h1 class="text-2xl font-extrabold tracking-tight text-[#111827]">Tarification</h1>
+          <p class="mt-1 text-sm text-[#6B7280]">Le tarif réellement appliqué aujourd'hui, réseau par réseau — encaissement et décaissement.</p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
-            <h3 class="text-sm font-bold text-[#111827] mb-2">Wave</h3>
-            <span class="text-2xl font-extrabold text-[#5846F6]">1.0%</span>
-            <span class="text-xs text-slate-400 block mt-1">Par transaction réussie</span>
+        <!-- Barre de recherche pays ou réseau -->
+        <div class="relative max-w-sm">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           </div>
-          <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
-            <h3 class="text-sm font-bold text-[#111827] mb-2">Orange & MTN MoMo</h3>
-            <span class="text-2xl font-extrabold text-[#5846F6]">2.5%</span>
-            <span class="text-xs text-slate-400 block mt-1">Par transaction réussie</span>
-          </div>
-          <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
-            <h3 class="text-sm font-bold text-[#111827] mb-2">Cartes VISA / Mastercard</h3>
-            <span class="text-2xl font-extrabold text-[#5846F6]">2.8%</span>
-            <span class="text-xs text-slate-400 block mt-1">International & Diaspora</span>
-          </div>
+          <input type="text" id="pricingSearchInput" placeholder="Rechercher un pays ou un réseau…" class="w-full rounded-2xl border border-[#ECEEF6] bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none transition-all shadow-sm">
+        </div>
+
+        <!-- Conteneur des cartes de tarification par pays -->
+        <div id="pricingCountriesContainer" class="space-y-5">
+          <!-- Dynamically populated by dashboard.js matching SasPay exactly -->
         </div>
       </section>
 

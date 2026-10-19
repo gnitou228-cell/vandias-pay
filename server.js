@@ -991,6 +991,522 @@ app.put('/api/v1/merchant/settings', requireMerchantAuth, async (req, res) => {
 });
 
 // ========================================================
+// 6.b. MATRICE DE TARIFICATION RÉSEAU PAR RÉSEAU (SASPAY STANDARD)
+// ========================================================
+
+const defaultPricingRates = [
+  // 1. Sénégal (SN)
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'WAVE_SN',
+    network_name: 'Wave',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'ORANGE_MONEY_SN',
+    network_name: 'Orange Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'FREE_MONEY_SN',
+    network_name: 'Free Money / YAS',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 1500000, percent: 2.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 1500000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 2. Côte d'Ivoire (CI)
+  {
+    country_code: 'CI',
+    country_name: "Côte d'Ivoire",
+    flag: '🇨🇮',
+    network_code: 'WAVE_CI',
+    network_name: 'Wave',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2500000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2500000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'CI',
+    country_name: "Côte d'Ivoire",
+    flag: '🇨🇮',
+    network_code: 'ORANGE_MONEY_CI',
+    network_name: 'Orange Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2500000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2500000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'CI',
+    country_name: "Côte d'Ivoire",
+    flag: '🇨🇮',
+    network_code: 'MTN_MOMO_CI',
+    network_name: 'MTN MoMo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2500000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2500000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'CI',
+    country_name: "Côte d'Ivoire",
+    flag: '🇨🇮',
+    network_code: 'MOOV_MONEY_CI',
+    network_name: 'Moov Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 3. Bénin (BJ)
+  {
+    country_code: 'BJ',
+    country_name: 'Bénin',
+    flag: '🇧🇯',
+    network_code: 'MTN_MOMO_BJ',
+    network_name: 'MTN MoMo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'BJ',
+    country_name: 'Bénin',
+    flag: '🇧🇯',
+    network_code: 'MOOV_MONEY_BJ',
+    network_name: 'Moov Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'BJ',
+    country_name: 'Bénin',
+    flag: '🇧🇯',
+    network_code: 'CELTIIS_BJ',
+    network_name: 'Celtiis Cash',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 1500000, percent: 2.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 1500000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 4. Togo (TG)
+  {
+    country_code: 'TG',
+    country_name: 'Togo',
+    flag: '🇹🇬',
+    network_code: 'TMONEY_TG',
+    network_name: 'T-Money (Togocom)',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'TG',
+    country_name: 'Togo',
+    flag: '🇹🇬',
+    network_code: 'MOOV_MONEY_TG',
+    network_name: 'Moov Money (Flooz)',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 5. Cameroun (CM)
+  {
+    country_code: 'CM',
+    country_name: 'Cameroun',
+    flag: '🇨🇲',
+    network_code: 'MTN_MOMO_CM',
+    network_name: 'MTN MoMo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2500000, percent: 2.5, fixed: 0, currency: 'XAF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 1000, max_amount: 2500000, percent: 1.5, fixed: 0, currency: 'XAF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'CM',
+    country_name: 'Cameroun',
+    flag: '🇨🇲',
+    network_code: 'ORANGE_MONEY_CM',
+    network_name: 'Orange Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2500000, percent: 2.5, fixed: 0, currency: 'XAF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 1000, max_amount: 2500000, percent: 1.5, fixed: 0, currency: 'XAF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 6. RDC — République Démocratique du Congo (CD)
+  {
+    country_code: 'CD',
+    country_name: 'RDC (Congo Kinshasa)',
+    flag: '🇨🇩',
+    network_code: 'MPESA_CD',
+    network_name: 'Vodacom M-Pesa',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 1000, max_amount: 10000000, percent: 2.5, fixed: 0, currency: 'CDF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 2500, max_amount: 10000000, percent: 1.5, fixed: 0, currency: 'CDF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'CD',
+    country_name: 'RDC (Congo Kinshasa)',
+    flag: '🇨🇩',
+    network_code: 'ORANGE_MONEY_CD',
+    network_name: 'Orange Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 1000, max_amount: 10000000, percent: 2.5, fixed: 0, currency: 'CDF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 2500, max_amount: 10000000, percent: 1.5, fixed: 0, currency: 'CDF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'CD',
+    country_name: 'RDC (Congo Kinshasa)',
+    flag: '🇨🇩',
+    network_code: 'AIRTEL_MONEY_CD',
+    network_name: 'Airtel Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 1000, max_amount: 10000000, percent: 2.5, fixed: 0, currency: 'CDF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 2500, max_amount: 10000000, percent: 1.5, fixed: 0, currency: 'CDF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 7. Burkina Faso (BF)
+  {
+    country_code: 'BF',
+    country_name: 'Burkina Faso',
+    flag: '🇧🇫',
+    network_code: 'ORANGE_MONEY_BF',
+    network_name: 'Orange Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'BF',
+    country_name: 'Burkina Faso',
+    flag: '🇧🇫',
+    network_code: 'MOOV_MONEY_BF',
+    network_name: 'Moov Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 8. Mali (ML)
+  {
+    country_code: 'ML',
+    country_name: 'Mali',
+    flag: '🇲🇱',
+    network_code: 'ORANGE_MONEY_ML',
+    network_name: 'Orange Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 2.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'ML',
+    country_name: 'Mali',
+    flag: '🇲🇱',
+    network_code: 'WAVE_ML',
+    network_name: 'Wave',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 100, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 2000000, percent: 1.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 9. Guinée Conakry (GN)
+  {
+    country_code: 'GN',
+    country_name: 'Guinée Conakry',
+    flag: '🇬🇳',
+    network_code: 'ORANGE_MONEY_GN',
+    network_name: 'Orange Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 5000, max_amount: 15000000, percent: 2.5, fixed: 0, currency: 'GNF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 10000, max_amount: 15000000, percent: 1.5, fixed: 0, currency: 'GNF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'GN',
+    country_name: 'Guinée Conakry',
+    flag: '🇬🇳',
+    network_code: 'MTN_MOMO_GN',
+    network_name: 'MTN MoMo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 5000, max_amount: 15000000, percent: 2.5, fixed: 0, currency: 'GNF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 10000, max_amount: 15000000, percent: 1.5, fixed: 0, currency: 'GNF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 10. Ghana (GH)
+  {
+    country_code: 'GH',
+    country_name: 'Ghana',
+    flag: '🇬🇭',
+    network_code: 'MTN_MOMO_GH',
+    network_name: 'MTN MoMo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 2, max_amount: 10000, percent: 2.5, fixed: 0, currency: 'GHS', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 5, max_amount: 10000, percent: 1.0, fixed: 0, currency: 'GHS', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+  {
+    country_code: 'GH',
+    country_name: 'Ghana',
+    flag: '🇬🇭',
+    network_code: 'AIRTELTIGO_GH',
+    network_name: 'AirtelTigo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 2, max_amount: 10000, percent: 2.5, fixed: 0, currency: 'GHS', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 5, max_amount: 10000, percent: 1.0, fixed: 0, currency: 'GHS', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    }
+  },
+
+  // 11. International & Cartes Bancaires (INTL)
+  {
+    country_code: 'INTL',
+    country_name: 'International & Diaspora',
+    flag: '🌍',
+    network_code: 'CARD_VISA_MC',
+    network_name: 'Cartes Bancaires (Visa / Mastercard)',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 10000000, percent: 2.8, fixed: 150, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: false,
+      is_custom: false,
+      tiers: []
+    }
+  },
+  {
+    country_code: 'INTL',
+    country_name: 'International & Diaspora',
+    flag: '🌍',
+    network_code: 'APPLE_GOOGLE_PAY',
+    network_name: 'Apple Pay & Google Pay',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 500, max_amount: 10000000, percent: 2.8, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: null, cap_amount: null }]
+    },
+    payout: {
+      available: false,
+      is_custom: false,
+      tiers: []
+    }
+  },
+  {
+    country_code: 'INTL',
+    country_name: 'International & Diaspora',
+    flag: '🌍',
+    network_code: 'BANK_TRANSFER',
+    network_name: 'Virement Bancaire (UEMOA / CEMAC / SWIFT)',
+    payin: {
+      available: false,
+      is_custom: false,
+      tiers: []
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ min_amount: 50000, max_amount: 50000000, percent: 1.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'DEDUCTED', floor_amount: 1000, cap_amount: 25000 }]
+    }
+  }
+];
+
+/**
+ * GET /api/v1/pricing/my-rates
+ * Tarification appliquée aujourd'hui réseau par réseau (Encaissement et Décaissement)
+ * Conforme à 100% avec le standard de SasPay
+ */
+app.get('/api/v1/pricing/my-rates', (req, res) => {
+  res.json({
+    success: true,
+    data: defaultPricingRates
+  });
+});
+
+// ========================================================
 // 7. API PUBLIQUE DÉVELOPPEUR (PROTECTION BEARER API KEY)
 // ========================================================
 

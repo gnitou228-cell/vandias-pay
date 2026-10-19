@@ -114,19 +114,48 @@ CREATE TABLE IF NOT EXISTS public.payouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
     amount NUMERIC(15, 2) NOT NULL CHECK (amount > 0),
+    net_amount NUMERIC(15, 2) NOT NULL CHECK (net_amount > 0),
     fee NUMERIC(15, 2) DEFAULT 0.00 NOT NULL,
-    channel VARCHAR(20) NOT NULL CHECK (channel IN ('WAVE', 'MTN', 'ORANGE', 'BANK')),
-    recipient_phone VARCHAR(50) NOT NULL,
+    currency VARCHAR(10) DEFAULT 'XOF' NOT NULL,
+    channel VARCHAR(30) NOT NULL,
+    country VARCHAR(5) DEFAULT 'SN',
+    recipient_phone VARCHAR(50),
     recipient_name VARCHAR(255),
-    status VARCHAR(20) DEFAULT 'PENDING' NOT NULL CHECK (status IN ('PENDING', 'COMPLETED', 'REJECTED')),
-    reference VARCHAR(100) DEFAULT ('PAYOUT-' || upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 10))),
+    status VARCHAR(20) DEFAULT 'SUCCESS' NOT NULL CHECK (status IN ('PENDING', 'SUCCESS', 'COMPLETED', 'CANCELLED', 'REJECTED')),
+    reference VARCHAR(100) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
 -- Index pour historique des retraits
 CREATE INDEX IF NOT EXISTS idx_payouts_merchant ON public.payouts(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_payouts_reference ON public.payouts(reference);
 CREATE INDEX IF NOT EXISTS idx_payouts_status ON public.payouts(status);
+
+-- ========================================================
+-- 5.a. TABLE DES MÉTHODES DE RETRAIT ENREGISTRÉES
+-- Comptes Mobile Money et Virement Bancaire (IBAN)
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.payout_methods (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+    type VARCHAR(30) NOT NULL CHECK (type IN ('MOBILE_MONEY', 'BANK_TRANSFER')),
+    label VARCHAR(100) NOT NULL,
+    network VARCHAR(50),
+    network_name VARCHAR(100),
+    phone_number VARCHAR(50),
+    bank_name VARCHAR(150),
+    account_holder_name VARCHAR(255),
+    account_number VARCHAR(100),
+    iban VARCHAR(100),
+    swift_bic VARCHAR(50),
+    is_verified BOOLEAN DEFAULT TRUE NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_payout_methods_merchant ON public.payout_methods(merchant_id);
 
 -- ========================================================
 -- 5.b. TABLE DES WALLETS MULTI-PAYS (WALLETS)

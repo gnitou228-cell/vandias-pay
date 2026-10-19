@@ -49,7 +49,17 @@ const VPState = {
   ledgerSearchFilter: '',
   ledgerPage: 1,
   ledgerLimit: 10,
-  ledgerTotalPages: 1
+  ledgerTotalPages: 1,
+  payoutsList: [],
+  payoutMethods: [],
+  activePayoutSubTab: 'settlements',
+  payoutPage: 1,
+  payoutPageSize: 20,
+  payoutSearchQuery: '',
+  payoutCount: 0,
+  payoutTotalPages: 1,
+  methodIdToDelete: null,
+  payoutIdToCancel: null
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -64,6 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSettingsSubTabs();
   initAllSettingsForms();
   initWalletSection();
+  initPayoutsSection();
 
   // Vérification de la session et chargement dynamique
   if (VPState.token) {
@@ -221,6 +232,14 @@ function renderAllDashboardElements() {
   loadAndRenderWallets();
   loadAndRenderWalletLedger();
   loadAndRenderWalletTransfers();
+
+  // 14. Retraits et méthodes de retrait (100% conforme SasPay)
+  const payoutsMerchantEl = document.getElementById('payoutsMerchantName');
+  if (payoutsMerchantEl) {
+    payoutsMerchantEl.textContent = m.business_name || 'VANDIA IA';
+  }
+  loadAndRenderPayouts();
+  loadAndRenderPayoutMethods();
 }
 
 /* ========================================================
@@ -1193,6 +1212,559 @@ function initWalletSection() {
 }
 
 /* ========================================================
+   5.b RETRAITS & MÉTHODES DE RETRAIT (100% CONFORME SASPAY)
+   ======================================================== */
+
+function formatSasPayDate(isoString) {
+  if (!isoString) return '—';
+  const d = new Date(isoString);
+  const months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  const isUtcIso = typeof isoString === 'string' && isoString.includes('T') && isoString.endsWith('Z');
+  const day = isUtcIso ? d.getUTCDate() : d.getDate();
+  const month = months[isUtcIso ? d.getUTCMonth() : d.getMonth()] || '';
+  const year = isUtcIso ? d.getUTCFullYear() : d.getFullYear();
+  const hours = String(isUtcIso ? d.getUTCHours() : d.getHours()).padStart(2, '0');
+  const minutes = String(isUtcIso ? d.getUTCMinutes() : d.getMinutes()).padStart(2, '0');
+  return `${day} ${month} ${year}, ${hours}:${minutes}`;
+}
+
+async function loadAndRenderPayouts() {
+  if (!VPState.token) return;
+  try {
+    const query = new URLSearchParams({
+      page: VPState.payoutPage || 1,
+      page_size: VPState.payoutPageSize || 20,
+      search: VPState.payoutSearchQuery || ''
+    });
+
+    const res = await fetch(`/api/v1/merchant/payouts?${query.toString()}`, {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.success) return;
+
+    VPState.payoutsList = data.results || [];
+    VPState.payoutCount = data.count || 0;
+    VPState.payoutTotalPages = data.total_pages || 1;
+
+    // Mise à jour dynamique du nom d'entreprise dans le sous-titre
+    const subtitleName = document.getElementById('payoutsMerchantName');
+    if (subtitleName && VPState.merchant) {
+      subtitleName.textContent = VPState.merchant.business_name || 'VANDIA IA';
+    }
+
+    const tbody = document.getElementById('payoutsTableBody');
+    if (!tbody) return;
+
+    if (VPState.payoutsList.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="py-12 text-center text-xs text-[#6B7280]">
+            <div class="flex flex-col items-center justify-center gap-2">
+              <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+              <p class="font-medium text-slate-500">Aucun retrait pour l'instant.</p>
+            </div>
+          </td>
+        </tr>
+      `;
+    } else {
+      tbody.innerHTML = VPState.payoutsList.map(p => {
+        const dateStr = formatSasPayDate(p.created_at);
+
+        let badgeHtml = '';
+        const st = (p.status || '').toUpperCase();
+        if (st === 'SUCCESS' || st === 'COMPLETED' || st === 'RÉUSSI') {
+          badgeHtml = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700">Réussi</span>`;
+        } else if (st === 'PENDING' || st === 'EN ATTENTE') {
+          badgeHtml = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700">En attente</span>`;
+        } else if (st === 'CANCELLED' || st === 'ANNULÉ') {
+          badgeHtml = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">Annulé</span>`;
+        } else {
+          badgeHtml = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700">Échoué</span>`;
+        }
+
+        const netAmount = parseFloat(p.net_amount || p.amount || 0);
+        const netFormatted = `${netAmount.toLocaleString('fr-FR')} ${p.currency || 'XOF'}`;
+
+        const cancelAction = (st === 'PENDING') ? `
+          <button type="button" onclick="openCancelPayoutModal('${p.id}', '${p.reference}')" class="rounded-lg px-2.5 py-1 text-xs font-semibold text-rose-500 hover:bg-rose-50 transition-colors">
+            Annuler
+          </button>
+        ` : '';
+
+        return `
+          <tr class="hover:bg-slate-50/60 transition-colors">
+            <td class="py-3 px-4 font-semibold text-[#111827] text-xs font-mono select-all">
+              ${p.reference}
+            </td>
+            <td class="py-3 px-4 text-[#6B7280] text-xs">
+              ${dateStr}
+            </td>
+            <td class="py-3 px-4">
+              ${badgeHtml}
+            </td>
+            <td class="py-3 px-4 text-right font-bold text-[#111827] text-xs">
+              ${netFormatted}
+            </td>
+            <td class="py-3 px-4 text-right">
+              ${cancelAction}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Pagination
+    const counterEl = document.getElementById('payoutPaginationCounter');
+    const startIdx = VPState.payoutCount === 0 ? 0 : (VPState.payoutPage - 1) * VPState.payoutPageSize + 1;
+    const endIdx = Math.min(VPState.payoutPage * VPState.payoutPageSize, VPState.payoutCount);
+    if (counterEl) {
+      counterEl.textContent = `${startIdx}-${endIdx} sur ${VPState.payoutCount}`;
+    }
+
+    const prevBtn = document.getElementById('btnPayoutPrevPage');
+    const nextBtn = document.getElementById('btnPayoutNextPage');
+    if (prevBtn) prevBtn.disabled = VPState.payoutPage <= 1;
+    if (nextBtn) nextBtn.disabled = VPState.payoutPage >= VPState.payoutTotalPages;
+  } catch (err) {
+    console.error('Erreur chargement des retraits:', err);
+  }
+}
+
+async function loadAndRenderPayoutMethods() {
+  if (!VPState.token) return;
+  try {
+    const res = await fetch('/api/v1/merchant/payout-methods', {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.success) return;
+
+    VPState.payoutMethods = data.methods || [];
+
+    const tbody = document.getElementById('payoutMethodsTableBody');
+    if (tbody) {
+      if (VPState.payoutMethods.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-12 text-center text-xs text-[#6B7280]">
+              <p class="font-medium text-slate-500">Aucune méthode de retrait pour l'instant.</p>
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = VPState.payoutMethods.map(m => {
+          const isMobile = m.type === 'MOBILE_MONEY';
+          const typeBadge = isMobile
+            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-[#5846F6]">Mobile Money</span>`
+            : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">Virement</span>`;
+          
+          const details = isMobile
+            ? `${m.network_name || m.network || 'Mobile Money'} • <span class="font-mono">${m.phone_number || ''}</span>`
+            : `${m.bank_name || 'Banque'} • ${m.account_holder_name || ''} <span class="font-mono text-slate-400">(${m.iban || m.account_number || ''})</span>`;
+
+          return `
+            <tr class="hover:bg-slate-50/60 transition-colors">
+              <td class="py-3 px-4">${typeBadge}</td>
+              <td class="py-3 px-4 font-semibold text-[#111827] text-xs">${m.label}</td>
+              <td class="py-3 px-4 text-[#6B7280] text-xs">${details}</td>
+              <td class="py-3 px-4">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700">Actif</span>
+              </td>
+              <td class="py-3 px-4 text-right">
+                <button type="button" onclick="openDeletePayoutMethodModal('${m.id}', '${m.label.replace(/'/g, "\\'")}')" class="p-1 text-slate-400 hover:text-rose-600 transition-colors" title="Supprimer">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // Mise à jour du dropdown méthode dans le formulaire de retrait
+    const methodSelect = document.getElementById('payoutSelectSavedMethod');
+    if (methodSelect) {
+      if (VPState.payoutMethods.length === 0) {
+        methodSelect.innerHTML = `<option value="" disabled selected>Aucune méthode enregistrée</option>`;
+      } else {
+        methodSelect.innerHTML = `
+          <option value="" disabled selected>Choisir une méthode</option>
+          ${VPState.payoutMethods.map(m => `
+            <option value="${m.id}">${m.label} (${m.type === 'MOBILE_MONEY' ? (m.phone_number || m.network_name) : (m.bank_name || 'Virement')})</option>
+          `).join('')}
+        `;
+      }
+    }
+  } catch (err) {
+    console.error('Erreur chargement méthodes de retrait:', err);
+  }
+}
+
+function switchPayoutSubTab(tabKey) {
+  VPState.activePayoutSubTab = tabKey;
+  const buttons = document.querySelectorAll('.payout-subtab-btn');
+  const panels = document.querySelectorAll('.payout-subtab-panel');
+
+  buttons.forEach(btn => {
+    const k = btn.getAttribute('data-payout-tab');
+    if (k === tabKey) {
+      btn.className = 'payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#5846F6] text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)]';
+    } else {
+      btn.className = 'payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]';
+    }
+  });
+
+  panels.forEach(p => {
+    if (p.id === `payout-panel-${tabKey}`) {
+      p.classList.remove('hidden');
+    } else {
+      p.classList.add('hidden');
+    }
+  });
+
+  if (tabKey === 'settlements') {
+    loadAndRenderPayouts();
+  } else if (tabKey === 'methods') {
+    loadAndRenderPayoutMethods();
+  }
+}
+
+function initPayoutsSection() {
+  // 1. Navigation des 2 sous-onglets
+  const buttons = document.querySelectorAll('.payout-subtab-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabKey = btn.getAttribute('data-payout-tab');
+      switchPayoutSubTab(tabKey);
+    });
+  });
+
+  // 2. Bascule du formulaire Demander un retrait
+  const btnToggleRequest = document.getElementById('btnToggleRequestPayoutForm');
+  const formRequest = document.getElementById('formRequestPayoutInline');
+  const btnCancelRequest = document.getElementById('btnCancelInlinePayout');
+  const walletSelect = document.getElementById('payoutSelectWallet');
+
+  if (btnToggleRequest && formRequest) {
+    btnToggleRequest.addEventListener('click', () => {
+      const isHidden = formRequest.classList.contains('hidden');
+      if (isHidden) {
+        // Remplir la liste des wallets
+        if (walletSelect) {
+          const list = (VPState.walletsList && VPState.walletsList.length > 0)
+            ? VPState.walletsList
+            : [
+                { country: 'SN', currency: 'XOF', available_amount: 150000 },
+                { country: 'TG', currency: 'XOF', available_amount: 80 },
+                { country: 'CI', currency: 'XOF', available_amount: 0 },
+                { country: 'BJ', currency: 'XOF', available_amount: 0 }
+              ];
+          walletSelect.innerHTML = `
+            <option value="" disabled selected>Choisir un pays</option>
+            ${list.map(w => {
+              const flag = getCountryFlag(w.country);
+              const name = getCountryName(w.country);
+              const amt = parseFloat(w.available_amount || 0).toLocaleString('fr-FR');
+              return `<option value="${w.country}">${flag} ${name} — ${amt} ${w.currency} dispo.</option>`;
+            }).join('')}
+          `;
+        }
+        formRequest.classList.remove('hidden');
+      } else {
+        formRequest.classList.add('hidden');
+      }
+    });
+  }
+
+  if (btnCancelRequest && formRequest) {
+    btnCancelRequest.addEventListener('click', () => {
+      formRequest.classList.add('hidden');
+    });
+  }
+
+  // 3. Soumission de la demande de retrait
+  if (formRequest) {
+    formRequest.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const country = walletSelect?.value;
+      const methodId = document.getElementById('payoutSelectSavedMethod')?.value;
+      const amount = parseFloat(document.getElementById('payoutInputAmount')?.value || 0);
+      const submitBtn = document.getElementById('btnSubmitInlinePayout');
+      const errorEl = document.getElementById('payoutInlineError');
+
+      if (!country || !methodId || !amount || isNaN(amount) || amount <= 0) {
+        if (errorEl) {
+          errorEl.textContent = 'Veuillez sélectionner un wallet, une méthode et renseigner un montant valide.';
+          errorEl.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Traitement en cours...';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/payouts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({
+            country,
+            payout_method: methodId,
+            requested_amount: amount
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast('Retrait demandé !', data.message || 'Votre demande de retrait a été enregistrée.');
+          formRequest.reset();
+          formRequest.classList.add('hidden');
+          if (errorEl) errorEl.classList.add('hidden');
+
+          await loadAndRenderPayouts();
+          await loadAndRenderWallets();
+          await loadAndRenderWalletLedger();
+        } else {
+          if (errorEl) {
+            errorEl.textContent = data.error || 'Impossible d\'effectuer ce retrait.';
+            errorEl.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent = err.message;
+          errorEl.classList.remove('hidden');
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Confirmer la demande';
+        }
+      }
+    });
+  }
+
+  // 4. Recherche de retraits avec debounce
+  const searchInput = document.getElementById('payoutSearchQuery');
+  if (searchInput) {
+    let timer = null;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        VPState.payoutSearchQuery = e.target.value;
+        VPState.payoutPage = 1;
+        loadAndRenderPayouts();
+      }, 300);
+    });
+  }
+
+  // 5. Pagination
+  const pageSizeSelect = document.getElementById('payoutPageSizeSelect');
+  if (pageSizeSelect) {
+    pageSizeSelect.addEventListener('change', (e) => {
+      VPState.payoutPageSize = parseInt(e.target.value) || 20;
+      VPState.payoutPage = 1;
+      loadAndRenderPayouts();
+    });
+  }
+
+  const prevBtn = document.getElementById('btnPayoutPrevPage');
+  const nextBtn = document.getElementById('btnPayoutNextPage');
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      if (VPState.payoutPage > 1) {
+        VPState.payoutPage--;
+        loadAndRenderPayouts();
+      }
+    });
+  }
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      if (VPState.payoutPage < VPState.payoutTotalPages) {
+        VPState.payoutPage++;
+        loadAndRenderPayouts();
+      }
+    });
+  }
+
+  // 6. Bascule du formulaire d'ajout de méthode
+  const btnToggleAddMethod = document.getElementById('btnToggleAddMethodForm');
+  const formAddMethod = document.getElementById('formAddPayoutMethod');
+  const btnCancelAddMethod = document.getElementById('btnCancelAddMethod');
+
+  if (btnToggleAddMethod && formAddMethod) {
+    btnToggleAddMethod.addEventListener('click', () => {
+      formAddMethod.classList.toggle('hidden');
+    });
+  }
+
+  if (btnCancelAddMethod && formAddMethod) {
+    btnCancelAddMethod.addEventListener('click', () => {
+      formAddMethod.classList.add('hidden');
+    });
+  }
+
+  // Bascule type Mobile Money vs Bank Transfer
+  const typeRadios = document.querySelectorAll('input[name="payoutMethodType"]');
+  const fieldsMobile = document.getElementById('methodFieldsMobileMoney');
+  const fieldsBank = document.getElementById('methodFieldsBank');
+
+  typeRadios.forEach(r => {
+    r.addEventListener('change', (e) => {
+      if (e.target.value === 'MOBILE_MONEY') {
+        fieldsMobile?.classList.remove('hidden');
+        fieldsBank?.classList.add('hidden');
+        document.getElementById('pmLabel')?.setAttribute('required', 'true');
+        document.getElementById('pmBankLabel')?.removeAttribute('required');
+      } else {
+        fieldsMobile?.classList.add('hidden');
+        fieldsBank?.classList.remove('hidden');
+        document.getElementById('pmLabel')?.removeAttribute('required');
+        document.getElementById('pmBankLabel')?.setAttribute('required', 'true');
+      }
+    });
+  });
+
+  // Soumission d'une nouvelle méthode
+  if (formAddMethod) {
+    formAddMethod.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const type = document.querySelector('input[name="payoutMethodType"]:checked')?.value || 'MOBILE_MONEY';
+      let payload = {};
+
+      if (type === 'MOBILE_MONEY') {
+        payload = {
+          type,
+          label: document.getElementById('pmLabel')?.value,
+          network: document.getElementById('pmNetwork')?.value,
+          phone_number: document.getElementById('pmPhone')?.value
+        };
+      } else {
+        payload = {
+          type,
+          label: document.getElementById('pmBankLabel')?.value,
+          bank_name: document.getElementById('pmBankName')?.value,
+          account_holder_name: document.getElementById('pmAccountHolder')?.value,
+          account_number: document.getElementById('pmIban')?.value,
+          iban: document.getElementById('pmIban')?.value,
+          swift_bic: document.getElementById('pmSwift')?.value
+        };
+      }
+
+      const submitBtn = document.getElementById('btnSubmitAddMethod');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enregistrement...';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/payout-methods', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showToast('Méthode enregistrée !', 'Votre méthode de retrait est prête à être utilisée.');
+          formAddMethod.reset();
+          formAddMethod.classList.add('hidden');
+          loadAndRenderPayoutMethods();
+        } else {
+          showToast('Erreur', data.error || 'Impossible d\'ajouter cette méthode.');
+        }
+      } catch (err) {
+        showToast('Erreur réseau', err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Enregistrer la méthode';
+        }
+      }
+    });
+  }
+
+  // 7. Modale de suppression d'une méthode
+  const btnConfirmDelete = document.getElementById('btnConfirmDeleteMethod');
+  if (btnConfirmDelete) {
+    btnConfirmDelete.addEventListener('click', confirmDeletePayoutMethod);
+  }
+
+  // 8. Modale d'annulation d'un retrait
+  const btnConfirmCancel = document.getElementById('btnConfirmCancelPayout');
+  if (btnConfirmCancel) {
+    btnConfirmCancel.addEventListener('click', confirmCancelPayout);
+  }
+}
+
+function openDeletePayoutMethodModal(id, label) {
+  VPState.methodIdToDelete = id;
+  const title = document.getElementById('deleteMethodModalTitle');
+  if (title) title.textContent = `Supprimer "${label}" ?`;
+  openModal('modalDeletePayoutMethod');
+}
+
+async function confirmDeletePayoutMethod() {
+  if (!VPState.methodIdToDelete) return;
+  try {
+    const res = await fetch(`/api/v1/merchant/payout-methods/${VPState.methodIdToDelete}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Méthode supprimée', 'La méthode de retrait a bien été retirée.');
+      closeModal('modalDeletePayoutMethod');
+      loadAndRenderPayoutMethods();
+    } else {
+      showToast('Erreur', data.error || 'Impossible de supprimer cette méthode.');
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
+}
+
+function openCancelPayoutModal(id, reference) {
+  VPState.payoutIdToCancel = id;
+  const title = document.getElementById('cancelPayoutModalTitle');
+  if (title) title.textContent = `Annuler le retrait "${reference}" ?`;
+  openModal('modalCancelPayout');
+}
+
+async function confirmCancelPayout() {
+  if (!VPState.payoutIdToCancel) return;
+  try {
+    const res = await fetch(`/api/v1/merchant/payouts/${VPState.payoutIdToCancel}/cancel`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Retrait annulé', 'Le montant réservé a été reversé sur votre solde disponible.');
+      closeModal('modalCancelPayout');
+      loadAndRenderPayouts();
+      loadAndRenderWallets();
+    } else {
+      showToast('Erreur', data.error || 'Impossible d\'annuler ce retrait.');
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
+}
+
+/* ========================================================
    6. GESTION DES MODALS D'AUTHENTIFICATION & INSCRIPTION
    ======================================================== */
 
@@ -1355,6 +1927,11 @@ function switchTab(tabKey) {
     loadAndRenderWalletTransfers();
   }
 
+  if (tabKey === 'payouts') {
+    loadAndRenderPayouts();
+    loadAndRenderPayoutMethods();
+  }
+
   closeMobileDrawer();
   closeProfileDropdown();
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1514,7 +2091,7 @@ function initActionModals() {
     });
   }
 
-  // Demande de retrait
+  // Demande de retrait rapide
   const btnWithdraw = document.getElementById('btnSubmitWithdrawal');
   if (btnWithdraw) {
     btnWithdraw.addEventListener('click', async () => {
@@ -1529,13 +2106,15 @@ function initActionModals() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${VPState.token}`
           },
-          body: JSON.stringify({ amount: amt, channel: 'WAVE', recipient_phone: phone })
+          body: JSON.stringify({ amount: amt, channel, recipient_phone: phone })
         });
         const data = await res.json();
 
         if (data.success) {
           if (VPState.merchant) VPState.merchant.balance_fcfa = data.new_balance;
           renderAllDashboardElements();
+          loadAndRenderPayouts();
+          loadAndRenderWallets();
           showToast("Retrait validé !", `Virement de ${amt.toLocaleString('fr-FR')} FCFA envoyé.`);
           closeModal('modalPayoutQuick');
         } else {

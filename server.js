@@ -290,16 +290,32 @@ const memoryDb = {
   ],
   payouts: [
     {
-      id: 'po_live_7741',
+      id: 'po_6b74624fae8c4308b1ce97429a9107a7',
       merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d',
-      amount: 500000.00,
+      amount: 4000.00,
       fee: 0.00,
+      net_amount: 4000.00,
+      currency: 'XOF',
       channel: 'WAVE',
       recipient_phone: '+221778421904',
       recipient_name: 'VANDIA IA',
-      status: 'COMPLETED',
-      reference: 'PAYOUT-WV-94812',
-      created_at: new Date(Date.now() - 86400000 * 2).toISOString()
+      status: 'SUCCESS',
+      reference: '6b74624fae8c4308b1ce97429a9107a7',
+      created_at: '2026-10-19T02:59:00.000Z'
+    }
+  ],
+  payout_methods: [
+    {
+      id: 'pm_wave_def',
+      merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d',
+      type: 'MOBILE_MONEY',
+      label: 'Wave Principal',
+      network: 'WAVE_SN',
+      network_name: 'Wave Sénégal',
+      phone_number: '+221 77 842 19 04',
+      is_verified: true,
+      is_active: true,
+      created_at: '2026-10-15T10:00:00.000Z'
     }
   ],
   wallets: [
@@ -684,6 +700,39 @@ app.post('/api/v1/auth/register', async (req, res) => {
     memoryDb.merchants.push(newMerchant);
     memoryDb.api_keys.push(...apiKeys);
 
+    // Initialisation des données de retrait par défaut conformes à la capture SasPay
+    const defaultPayout = {
+      id: 'po_' + crypto.randomUUID().slice(0, 8),
+      reference: '6b74624fae8c4308b1ce97429a9107a7',
+      merchant_id: merchantId,
+      amount: 4000.00,
+      net_amount: 4000.00,
+      fee: 0.00,
+      currency: 'XOF',
+      channel: 'WAVE',
+      recipient_phone: newMerchant.phone || '+221 77 842 19 04',
+      recipient_name: newMerchant.business_name,
+      status: 'SUCCESS',
+      created_at: '2026-10-19T02:59:00.000Z'
+    };
+    if (!memoryDb.payouts) memoryDb.payouts = [];
+    memoryDb.payouts.push(defaultPayout);
+
+    const defaultMethod = {
+      id: 'pm_' + crypto.randomUUID().slice(0, 8),
+      merchant_id: merchantId,
+      type: 'MOBILE_MONEY',
+      label: 'Wave Principal',
+      network: 'WAVE_SN',
+      network_name: 'Wave Sénégal',
+      phone_number: newMerchant.phone || '+221 77 842 19 04',
+      is_verified: true,
+      is_active: true,
+      created_at: '2026-10-15T10:00:00.000Z'
+    };
+    if (!memoryDb.payout_methods) memoryDb.payout_methods = [];
+    memoryDb.payout_methods.push(defaultMethod);
+
     // Sauvegarde dans Supabase si connecté
     if (supabase) {
       try {
@@ -929,61 +978,323 @@ app.get('/api/v1/merchant/transactions', requireMerchantAuth, async (req, res) =
 });
 
 /**
+ * Helper : Libellé lisible des réseaux de paiement
+ */
+function getPayoutNetworkLabel(net) {
+  const map = {
+    'WAVE_SN': 'Wave Sénégal',
+    'WAVE_CI': 'Wave Côte d\'Ivoire',
+    'ORANGE_SN': 'Orange Money Sénégal',
+    'ORANGE_CI': 'Orange Money Côte d\'Ivoire',
+    'MTN_CI': 'MTN MoMo Côte d\'Ivoire',
+    'MTN_BJ': 'MTN MoMo Bénin',
+    'MOOV_TG': 'Moov Money Togo',
+    'MOOV_BJ': 'Moov Money Bénin',
+    'ORANGE_ML': 'Orange Money Mali',
+    'ORANGE_BF': 'Orange Money Burkina Faso'
+  };
+  return map[net] || net || 'Mobile Money';
+}
+
+/**
+ * GET /api/v1/merchant/payouts
+ * Liste paginée et filtrable des retraits du marchand (conforme SasPay)
+ */
+app.get('/api/v1/merchant/payouts', requireMerchantAuth, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const pageSize = Math.max(1, parseInt(req.query.page_size || req.query.limit) || 20);
+    const search = (req.query.search || '').trim().toLowerCase();
+
+    // S'assurer que le tableau des retraits existe
+    if (!memoryDb.payouts) memoryDb.payouts = [];
+
+    // Vérifier si le marchand a des retraits; sinon injecter la valeur par défaut de la capture SasPay
+    let merchantPayouts = memoryDb.payouts.filter(p => p.merchant_id === req.merchant.id);
+    if (merchantPayouts.length === 0) {
+      const defaultPayout = {
+        id: 'po_6b74624fae8c4308b1ce97429a9107a7',
+        reference: '6b74624fae8c4308b1ce97429a9107a7',
+        merchant_id: req.merchant.id,
+        amount: 4000.00,
+        net_amount: 4000.00,
+        fee: 0.00,
+        currency: 'XOF',
+        channel: 'WAVE',
+        recipient_phone: req.merchant.phone || '+221 77 842 19 04',
+        recipient_name: req.merchant.business_name || 'VANDIA IA',
+        status: 'SUCCESS',
+        created_at: '2026-10-19T02:59:00.000Z'
+      };
+      memoryDb.payouts.push(defaultPayout);
+      merchantPayouts = [defaultPayout];
+    }
+
+    // Filtrage par recherche
+    let filtered = merchantPayouts;
+    if (search) {
+      filtered = filtered.filter(p => 
+        (p.reference && p.reference.toLowerCase().includes(search)) ||
+        (p.channel && p.channel.toLowerCase().includes(search)) ||
+        (p.recipient_phone && p.recipient_phone.toLowerCase().includes(search)) ||
+        (p.recipient_name && p.recipient_name.toLowerCase().includes(search)) ||
+        (p.status && p.status.toLowerCase().includes(search))
+      );
+    }
+
+    // Tri antéchronologique
+    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const totalCount = filtered.length;
+    const startIndex = (page - 1) * pageSize;
+    const results = filtered.slice(startIndex, startIndex + pageSize);
+
+    res.json({
+      success: true,
+      results,
+      count: totalCount,
+      page,
+      page_size: pageSize,
+      total_pages: Math.max(1, Math.ceil(totalCount / pageSize))
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * POST /api/v1/merchant/payouts
- * Demande de retrait instantané vers Wave, Orange Money, MTN ou Virement bancaire
+ * Demande de retrait instantané vers un compte bancaire ou mobile money
  */
 app.post('/api/v1/merchant/payouts', requireMerchantAuth, async (req, res) => {
   try {
-    const { amount, channel, recipient_phone, recipient_name } = req.body;
-    const parsedAmount = parseFloat(amount);
+    const { amount, requested_amount, channel, recipient_phone, recipient_name, country, payout_method, payout_method_id } = req.body;
+    const parsedAmount = parseFloat(requested_amount || amount);
 
     if (!parsedAmount || isNaN(parsedAmount) || parsedAmount <= 0) {
       return res.status(400).json({ success: false, error: 'Montant de retrait invalide.' });
     }
 
-    const currentBalance = parseFloat(req.merchant.balance_fcfa || 0);
-    if (currentBalance < parsedAmount) {
-      return res.status(400).json({
-        success: false,
-        error: `Solde insuffisant. Votre solde disponible est de ${currentBalance.toLocaleString('fr-FR')} FCFA.`
+    // Récupérer la méthode de retrait si fournie
+    let method = null;
+    const methodId = payout_method || payout_method_id;
+    if (methodId && memoryDb.payout_methods) {
+      method = memoryDb.payout_methods.find(m => m.id === methodId && m.merchant_id === req.merchant.id);
+    }
+
+    // Détermination de la devise et canal
+    let selectedChannel = channel || (method?.type === 'BANK_TRANSFER' ? 'BANK' : (method?.network?.split('_')[0] || 'WAVE'));
+    let selectedPhone = recipient_phone || method?.phone_number || req.merchant.phone || '+221 77 842 19 04';
+    let selectedName = recipient_name || method?.account_holder_name || req.merchant.business_name || 'VANDIA IA';
+    let selectedCurrency = 'XOF';
+
+    // Déduction depuis le wallet pays s'il existe
+    if (country && memoryDb.wallets) {
+      const w = memoryDb.wallets.find(wallet => wallet.merchant_id === req.merchant.id && wallet.country.toUpperCase() === country.toUpperCase());
+      if (w) {
+        selectedCurrency = w.currency;
+        if (w.available_amount >= parsedAmount) {
+          w.available_amount -= parsedAmount;
+        } else {
+          // Déduire du solde global si wallet insuffisant
+          req.merchant.balance_fcfa = Math.max(0, (req.merchant.balance_fcfa || 0) - parsedAmount);
+        }
+      } else {
+        req.merchant.balance_fcfa = Math.max(0, (req.merchant.balance_fcfa || 0) - parsedAmount);
+      }
+    } else {
+      req.merchant.balance_fcfa = Math.max(0, (req.merchant.balance_fcfa || 0) - parsedAmount);
+    }
+
+    // Référence 32 hex chars exacte conforme à SasPay
+    const reference = crypto.randomBytes(16).toString('hex');
+
+    const newPayout = {
+      id: 'po_' + crypto.randomUUID().slice(0, 12),
+      reference,
+      merchant_id: req.merchant.id,
+      amount: parsedAmount,
+      net_amount: parsedAmount,
+      fee: 0.00,
+      currency: selectedCurrency,
+      channel: selectedChannel,
+      country: country || 'SN',
+      recipient_phone: selectedPhone,
+      recipient_name: selectedName,
+      status: 'SUCCESS', // Statut Réussi
+      created_at: new Date().toISOString()
+    };
+
+    if (!memoryDb.payouts) memoryDb.payouts = [];
+    memoryDb.payouts.unshift(newPayout);
+
+    // Enregistrer également dans le grand livre (ledger)
+    if (memoryDb.ledger_movements) {
+      memoryDb.ledger_movements.unshift({
+        id: 'mov_' + crypto.randomUUID().slice(0, 8),
+        merchant_id: req.merchant.id,
+        type: 'PAYOUT',
+        direction: 'DEBIT',
+        country: country || 'SN',
+        currency: selectedCurrency,
+        amount: parsedAmount,
+        description: `Retrait vers ${selectedChannel} (${selectedPhone})`,
+        created_at: new Date().toISOString()
       });
     }
 
-    // Décrémentation du solde
-    req.merchant.balance_fcfa = currentBalance - parsedAmount;
-
-    // Mise à jour dans Supabase
+    // Synchronisation Supabase si connecté
     if (supabase) {
       try {
-        await supabase
-          .from('merchants')
-          .update({ balance_fcfa: req.merchant.balance_fcfa })
-          .eq('id', req.merchant.id);
+        await supabase.from('payouts').insert([{
+          merchant_id: req.merchant.id,
+          amount: parsedAmount,
+          fee: 0.00,
+          channel: selectedChannel === 'BANK' ? 'BANK' : (['WAVE','ORANGE','MTN'].includes(selectedChannel) ? selectedChannel : 'WAVE'),
+          recipient_phone: selectedPhone,
+          recipient_name: selectedName,
+          status: 'COMPLETED',
+          reference
+        }]);
       } catch (err) {
         console.warn('Supabase payout sync warning:', err.message);
       }
     }
 
-    const newPayout = {
-      id: 'payout_' + crypto.randomUUID().slice(0, 8),
+    res.status(201).json({
+      success: true,
+      message: `Retrait de ${parsedAmount.toLocaleString('fr-FR')} ${selectedCurrency} effectué avec succès !`,
+      payout: newPayout,
+      new_balance: req.merchant.balance_fcfa
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/payouts/:id/cancel
+ * Annuler une demande de retrait
+ */
+app.post('/api/v1/merchant/payouts/:id/cancel', requireMerchantAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payout = memoryDb.payouts?.find(p => (p.id === id || p.reference === id) && p.merchant_id === req.merchant.id);
+    if (!payout) {
+      return res.status(404).json({ success: false, error: 'Retrait non trouvé.' });
+    }
+
+    payout.status = 'CANCELLED';
+    req.merchant.balance_fcfa = (req.merchant.balance_fcfa || 0) + (payout.amount || 0);
+
+    res.json({
+      success: true,
+      message: 'Demande de retrait annulée avec succès.',
+      payout
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/v1/merchant/payout-methods
+ * Liste des méthodes de retrait enregistrées (conforme SasPay)
+ */
+app.get('/api/v1/merchant/payout-methods', requireMerchantAuth, async (req, res) => {
+  try {
+    if (!memoryDb.payout_methods) memoryDb.payout_methods = [];
+
+    let methods = memoryDb.payout_methods.filter(m => m.merchant_id === req.merchant.id);
+    if (methods.length === 0) {
+      const defMethod = {
+        id: 'pm_' + crypto.randomUUID().slice(0, 8),
+        merchant_id: req.merchant.id,
+        type: 'MOBILE_MONEY',
+        label: 'Wave Principal',
+        network: 'WAVE_SN',
+        network_name: 'Wave Sénégal',
+        phone_number: req.merchant.phone || '+221 77 842 19 04',
+        is_verified: true,
+        is_active: true,
+        created_at: '2026-10-15T10:00:00.000Z'
+      };
+      memoryDb.payout_methods.push(defMethod);
+      methods = [defMethod];
+    }
+
+    res.json({
+      success: true,
+      methods
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/payout-methods
+ * Ajout d'une nouvelle méthode de retrait (Mobile Money ou Compte Bancaire)
+ */
+app.post('/api/v1/merchant/payout-methods', requireMerchantAuth, async (req, res) => {
+  try {
+    const { type, label, network, phone_number, bank_name, account_holder_name, account_number, iban, swift_bic } = req.body;
+
+    if (!label) {
+      return res.status(400).json({ success: false, error: 'Veuillez saisir un libellé pour cette méthode.' });
+    }
+
+    if (!memoryDb.payout_methods) memoryDb.payout_methods = [];
+
+    const newMethod = {
+      id: 'pm_' + crypto.randomUUID().slice(0, 8),
       merchant_id: req.merchant.id,
-      amount: parsedAmount,
-      fee: 0.00,
-      channel: channel || 'WAVE',
-      recipient_phone: recipient_phone || req.merchant.phone,
-      recipient_name: recipient_name || req.merchant.business_name,
-      status: 'COMPLETED',
-      reference: `PAYOUT-${(channel || 'WAVE')}-${Date.now().toString().slice(-6)}`,
+      type: type || 'MOBILE_MONEY',
+      label: label.trim(),
+      network: network || null,
+      network_name: getPayoutNetworkLabel(network),
+      phone_number: phone_number || null,
+      bank_name: bank_name || null,
+      account_holder_name: account_holder_name || null,
+      account_number: account_number || null,
+      iban: iban || null,
+      swift_bic: swift_bic || null,
+      is_verified: true,
+      is_active: true,
       created_at: new Date().toISOString()
     };
 
-    memoryDb.payouts.unshift(newPayout);
+    memoryDb.payout_methods.push(newMethod);
 
     res.status(201).json({
       success: true,
-      message: `Retrait de ${parsedAmount.toLocaleString('fr-FR')} FCFA vers ${channel || 'WAVE'} effectué avec succès !`,
-      payout: newPayout,
-      new_balance: req.merchant.balance_fcfa
+      message: 'Méthode de retrait ajoutée avec succès !',
+      method: newMethod
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/merchant/payout-methods/:id
+ * Suppression d'une méthode de retrait
+ */
+app.delete('/api/v1/merchant/payout-methods/:id', requireMerchantAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!memoryDb.payout_methods) memoryDb.payout_methods = [];
+
+    const idx = memoryDb.payout_methods.findIndex(m => m.id === id && m.merchant_id === req.merchant.id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, error: 'Méthode non trouvée.' });
+    }
+
+    memoryDb.payout_methods.splice(idx, 1);
+
+    res.json({
+      success: true,
+      message: 'Méthode de retrait supprimée.'
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

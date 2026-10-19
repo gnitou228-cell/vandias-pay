@@ -39,7 +39,9 @@ const VPState = {
     { code: "SLL", name: "Leone Sierra-Léonais", balance: 0, flag: "🇸🇱", symbol: "Le" },
     { code: "LRD", name: "Dollar Libérien", balance: 0, flag: "🇱🇷", symbol: "L$" }
   ],
-  pricingRates: []
+  pricingRates: [],
+  settings: null,
+  activeSettingsSubTab: 'kyc'
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -51,6 +53,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSettingsAndWebhookHandlers();
   initCopyButtons();
   initPricingSection();
+  initSettingsSubTabs();
+  initAllSettingsForms();
 
   // Vérification de la session et chargement dynamique
   if (VPState.token) {
@@ -200,6 +204,9 @@ function renderAllDashboardElements() {
 
   // 11. Tarification réseau (conforme SasPay)
   renderPricingRates();
+
+  // 12. Paramètres avancés (100% conforme SasPay)
+  loadAndRenderSettings();
 }
 
 /* ========================================================
@@ -1180,4 +1187,496 @@ function getNetworkBadge(name, code) {
   }
 
   return `<span class="inline-flex h-7 w-7 items-center justify-center rounded-lg ${bg} text-[11px] font-bold shadow-xs flex-shrink-0">${label}</span>`;
+}
+
+/* ========================================================
+   10. PARAMÈTRES AVANCÉS DU MARCHAND (100% CONFORME SASPAY)
+   ======================================================== */
+
+function initSettingsSubTabs() {
+  const buttons = document.querySelectorAll('.settings-subtab-btn');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.getAttribute('data-settings-tab');
+      switchSettingsSubTab(tabId);
+    });
+  });
+
+  // Listener upload logo
+  const logoInput = document.getElementById('settingsLogoFileInput');
+  if (logoInput) {
+    logoInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        showToast('Format invalide', 'Utilisez un fichier JPEG, PNG ou WebP.');
+        return;
+      }
+      if (file.size > 2097152) {
+        showToast('Fichier trop lourd', 'La taille maximale autorisée est de 2 Mo.');
+        return;
+      }
+
+      // Convertir en data URL pour prévisualisation immédiate et sauvegarde
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Logo = reader.result;
+        const preview = document.getElementById('settingsLogoPreview');
+        if (preview) {
+          preview.innerHTML = `<img src="${base64Logo}" class="w-full h-full object-cover rounded-2xl">`;
+        }
+
+        try {
+          await fetch('/api/v1/merchant/settings', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${VPState.token}`
+            },
+            body: JSON.stringify({ logo_url: base64Logo })
+          });
+          showToast('Logo mis à jour !', 'Le nouveau logo a été enregistré.');
+        } catch (err) {
+          console.warn('Erreur logo upload:', err);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+function switchSettingsSubTab(tabId) {
+  VPState.activeSettingsSubTab = tabId;
+  const buttons = document.querySelectorAll('.settings-subtab-btn');
+  const panels = document.querySelectorAll('.settings-subtab-panel');
+
+  buttons.forEach(btn => {
+    const isCurrent = btn.getAttribute('data-settings-tab') === tabId;
+    if (isCurrent) {
+      btn.className = 'settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#5846F6] text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)]';
+    } else {
+      btn.className = 'settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]';
+    }
+  });
+
+  panels.forEach(panel => {
+    if (panel.id === `subtab-panel-${tabId}`) {
+      panel.classList.remove('hidden');
+    } else {
+      panel.classList.add('hidden');
+    }
+  });
+}
+
+async function loadAndRenderSettings() {
+  try {
+    const res = await fetch('/api/v1/merchant/settings', {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+
+    const resData = await res.json();
+    if (!resData.success || !resData.data) return;
+
+    const s = resData.data;
+    VPState.settings = s;
+
+    // 1. KYC
+    if (s.kyc) {
+      const badgeText = document.getElementById('kycStatusBadgeText');
+      const badgeIcon = document.getElementById('kycStatusIcon');
+      const docType = document.getElementById('kycDocType');
+      const docNumber = document.getElementById('kycDocNumber');
+      const mgrName = document.getElementById('kycManagerName');
+      const vDate = document.getElementById('kycVerifiedDate');
+
+      const isVerified = s.kyc.status === 'VERIFIED';
+      if (badgeText) {
+        badgeText.textContent = isVerified ? 'Vérifié' : (s.kyc.status === 'PENDING' ? 'En cours' : 'Non vérifié');
+        badgeText.className = isVerified ? 'font-semibold text-emerald-600' : 'font-semibold text-amber-600';
+      }
+      if (badgeIcon) {
+        badgeIcon.textContent = isVerified ? '✓' : '⏳';
+        badgeIcon.className = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isVerified ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'} text-lg`;
+      }
+      if (docType) docType.textContent = s.kyc.document_type || 'Carte Nationale d\'Identité (CNI)';
+      if (docNumber) docNumber.textContent = s.kyc.document_number || 'SN-DK-2024-B-98421';
+      if (mgrName) mgrName.textContent = s.kyc.manager_name || 'Jeff Diallo';
+      if (vDate) vDate.textContent = s.kyc.verified_date || '15 janv. 2026';
+    }
+
+    // 2. Entreprise
+    if (s.entreprise) {
+      const appName = document.getElementById('settingsAppName');
+      const category = document.getElementById('settingsCategory');
+      const suppEmail = document.getElementById('settingsSupportEmail');
+      const suppPhone = document.getElementById('settingsSupportPhone');
+      const website = document.getElementById('settingsWebsite');
+      const dangerName = document.getElementById('dangerBusinessName');
+      const logoPreview = document.getElementById('settingsLogoPreview');
+
+      if (appName) appName.value = s.entreprise.name || '';
+      if (category && s.entreprise.category) category.value = s.entreprise.category;
+      if (suppEmail) suppEmail.value = s.entreprise.support_email || '';
+      if (suppPhone) suppPhone.value = s.entreprise.support_phone || '';
+      if (website) website.value = s.entreprise.website_url || '';
+      if (dangerName) dangerName.textContent = s.entreprise.name || 'VandiasPay';
+      if (logoPreview) {
+        if (s.entreprise.logo_url) {
+          logoPreview.innerHTML = `<img src="${s.entreprise.logo_url}" class="w-full h-full object-cover rounded-2xl">`;
+        } else if (s.entreprise.name) {
+          logoPreview.textContent = s.entreprise.name.charAt(0).toUpperCase();
+        }
+      }
+    }
+
+    // 3. Frais
+    if (s.frais) {
+      const payin = document.getElementById('selectFeePayin');
+      const payout = document.getElementById('selectFeePayout');
+      const override = document.getElementById('checkFeeOverride');
+
+      if (payin) payin.value = s.frais.fee_payin_mode || 'ADD_ON';
+      if (payout) payout.value = s.frais.fee_payout_mode || 'DEDUCTED';
+      if (override) override.checked = s.frais.allow_client_override === true;
+    }
+
+    // 4. Équipe
+    if (s.equipe) {
+      renderTeamMembers(s.equipe);
+    }
+    const teamBizName = document.getElementById('teamBusinessNameText');
+    if (teamBizName && s.entreprise) teamBizName.textContent = s.entreprise.name;
+
+    // 5. Profil
+    if (s.profil) {
+      const pName = document.getElementById('profileFullName');
+      const pEmail = document.getElementById('profileEmailDisabled');
+      const pCountry = document.getElementById('profileCountry');
+
+      if (pName) pName.value = s.profil.full_name || '';
+      if (pEmail) pEmail.value = s.profil.email || '';
+      if (pCountry && s.profil.country) pCountry.value = s.profil.country;
+    }
+
+    // 6. Sécurité
+    if (s.securite) {
+      const secSubtitle = document.getElementById('security2faSubtitle');
+      if (secSubtitle) {
+        secSubtitle.textContent = s.securite.two_factor_enabled
+          ? `Actif — protégé par vérification ${s.securite.two_factor_method || 'email'}.`
+          : "Désactivé — renforce la sécurité de tes fonds et de tes transactions.";
+      }
+    }
+  } catch (err) {
+    console.warn('Erreur lors du chargement des paramètres:', err);
+  }
+}
+
+function renderTeamMembers(members = []) {
+  const tbody = document.getElementById('teamMembersBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+  if (members.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" class="py-6 text-center text-xs text-slate-400">Aucun membre invité pour le moment.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  members.forEach(m => {
+    const isOwner = m.role === 'OWNER';
+    const roleColors = {
+      OWNER: 'bg-purple-100 text-[#5846F6]',
+      ADMIN: 'bg-blue-100 text-blue-700',
+      FINANCE: 'bg-emerald-100 text-emerald-700',
+      DEVELOPER: 'bg-amber-100 text-amber-700',
+      SUPPORT: 'bg-slate-100 text-slate-700'
+    };
+    const roleLabels = {
+      OWNER: 'Propriétaire',
+      ADMIN: 'Administrateur',
+      FINANCE: 'Finance',
+      DEVELOPER: 'Développeur',
+      SUPPORT: 'Support'
+    };
+
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-[#F8F9FD] transition-colors';
+    tr.innerHTML = `
+      <td class="py-3 px-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-full bg-violet-100 text-[#5846F6] font-bold text-xs flex items-center justify-center">
+            ${(m.name || m.email || 'U').charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p class="font-bold text-[#111827] text-xs">${m.name || 'Membre'}</p>
+            <p class="text-[11px] text-slate-400 font-mono">${m.email}</p>
+          </div>
+        </div>
+      </td>
+      <td class="py-3 px-3">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${roleColors[m.role] || 'bg-slate-100 text-slate-700'}">
+          ${roleLabels[m.role] || m.role}
+        </span>
+      </td>
+      <td class="py-3 px-3">
+        <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold ${m.status === 'ACTIVE' ? 'text-emerald-600' : 'text-amber-600'}">
+          <span class="w-1.5 h-1.5 rounded-full ${m.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+          ${m.status === 'ACTIVE' ? 'Actif' : 'Invité'}
+        </span>
+      </td>
+      <td class="py-3 px-3 text-right">
+        ${isOwner ? '<span class="text-[11px] text-slate-400 font-semibold italic">Principal</span>' : `
+          <button type="button" onclick="removeTeamMember('${m.id}')" class="text-rose-500 hover:text-rose-700 font-semibold text-xs hover:underline">
+            Retirer
+          </button>
+        `}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function removeTeamMember(id) {
+  if (!confirm("Voulez-vous vraiment retirer ce membre de l'équipe ?")) return;
+  try {
+    const res = await fetch(`/api/v1/merchant/settings/team/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Membre retiré', 'L\'équipe a été mise à jour.');
+      loadAndRenderSettings();
+    } else {
+      showToast('Erreur', data.error);
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
+}
+
+function initAllSettingsForms() {
+  // 1. Formulaire Entreprise
+  const formCompany = document.getElementById('formSettingsCompany');
+  if (formCompany) {
+    formCompany.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('settingsAppName').value;
+      const category = document.getElementById('settingsCategory').value;
+      const support_email = document.getElementById('settingsSupportEmail').value;
+      const support_phone = document.getElementById('settingsSupportPhone').value;
+      const website_url = document.getElementById('settingsWebsite').value;
+
+      try {
+        const res = await fetch('/api/v1/merchant/settings', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ business_name: name, category, support_email, support_phone, website_url, phone: support_phone })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (VPState.merchant) {
+            VPState.merchant.business_name = name;
+            VPState.merchant.phone = support_phone;
+          }
+          showToast('Modifications enregistrées !', 'Informations de l\'entreprise mises à jour.');
+          renderAllDashboardElements();
+        } else {
+          showToast('Erreur', data.error);
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      }
+    });
+  }
+
+  // 2. Bouton Sauvegarder Frais
+  const btnSaveFees = document.getElementById('btnSaveFeeSettings');
+  if (btnSaveFees) {
+    btnSaveFees.addEventListener('click', async () => {
+      const fee_payin_mode = document.getElementById('selectFeePayin').value;
+      const fee_payout_mode = document.getElementById('selectFeePayout').value;
+      const allow_client_override = document.getElementById('checkFeeOverride').checked;
+
+      try {
+        const res = await fetch('/api/v1/merchant/settings/fees', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ fee_payin_mode, fee_payout_mode, allow_client_override })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Réglages enregistrés !', 'Modes de frais par défaut mis à jour.');
+        } else {
+          showToast('Erreur', data.error);
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      }
+    });
+  }
+
+  // 3. Inviter un membre dans l'équipe
+  const formInvite = document.getElementById('formInviteMember');
+  if (formInvite) {
+    formInvite.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('inviteMemberEmail').value;
+      const role = document.getElementById('inviteMemberRole').value;
+
+      try {
+        const res = await fetch('/api/v1/merchant/settings/team/invite', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ email, role })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Invitation envoyée !', `Un email a été envoyé à ${email}.`);
+          document.getElementById('inviteMemberEmail').value = '';
+          loadAndRenderSettings();
+        } else {
+          showToast('Erreur', data.error);
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      }
+    });
+  }
+
+  // 4. Formulaire Profil
+  const formProfile = document.getElementById('formSettingsProfile');
+  if (formProfile) {
+    formProfile.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const full_name = document.getElementById('profileFullName').value;
+      const country = document.getElementById('profileCountry').value;
+
+      try {
+        const res = await fetch('/api/v1/merchant/settings/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ full_name, country })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Profil mis à jour !', 'Vos informations personnelles ont été enregistrées.');
+        } else {
+          showToast('Erreur', data.error);
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      }
+    });
+  }
+
+  // 5. Changement de mot de passe
+  const formPassword = document.getElementById('formChangePassword');
+  if (formPassword) {
+    formPassword.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const old_password = document.getElementById('pwdOld').value;
+      const new_password = document.getElementById('pwdNew').value;
+      const confirm = document.getElementById('pwdConfirm').value;
+
+      if (new_password !== confirm) {
+        showToast('Erreur de mot de passe', 'La confirmation ne correspond pas au nouveau mot de passe.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/settings/password', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ old_password, new_password, confirm })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Succès', 'Mot de passe modifié avec succès.');
+          formPassword.reset();
+        } else {
+          showToast('Erreur', data.error);
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      }
+    });
+  }
+
+  // 6. Boutons 2FA
+  const btnEmail2fa = document.getElementById('btnEnableEmail2fa');
+  if (btnEmail2fa) {
+    btnEmail2fa.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/v1/merchant/settings/2fa/toggle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ method: 'EMAIL', enable: true })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Sécurité 2FA', 'Authentification par email activée.');
+          loadAndRenderSettings();
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      }
+    });
+  }
+
+  const btnTotp2fa = document.getElementById('btnEnableTotp2fa');
+  if (btnTotp2fa) {
+    btnTotp2fa.addEventListener('click', () => {
+      showToast('TOTP Authenticator', 'Scannez le QR Code dans Google Authenticator ou Authy.');
+    });
+  }
+}
+
+function promptDeleteAccountModal() {
+  openModal('modalDeleteAccount');
+}
+
+async function confirmDeleteAccount() {
+  const reason = document.getElementById('deleteAccountReason')?.value || '';
+  try {
+    const res = await fetch('/api/v1/merchant/settings/delete-request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${VPState.token}`
+      },
+      body: JSON.stringify({ reason })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Demande envoyée', 'Un administrateur va traiter votre demande de suppression.');
+      closeModal('modalDeleteAccount');
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
 }

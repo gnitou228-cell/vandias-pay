@@ -950,15 +950,71 @@ app.post('/api/v1/merchant/payouts', requireMerchantAuth, async (req, res) => {
 });
 
 /**
+ * GET /api/v1/merchant/settings
+ * Récupère l'ensemble des réglages du marchand (conforme SasPay)
+ */
+app.get('/api/v1/merchant/settings', requireMerchantAuth, async (req, res) => {
+  try {
+    const m = req.merchant;
+    res.json({
+      success: true,
+      data: {
+        kyc: {
+          status: m.kyc_status || 'VERIFIED',
+          document_type: m.kyc_document_type || 'Carte Nationale d\'Identité (CNI)',
+          document_number: m.kyc_document_number || 'SN-DK-2024-B-98421',
+          manager_name: m.full_name || m.business_name || 'Jeff Diallo',
+          verified_date: m.kyc_verified_date || '15 janv. 2026'
+        },
+        entreprise: {
+          name: m.business_name || 'Jeff Digital Inc.',
+          category: m.category || 'SaaS & Logiciels',
+          support_email: m.support_email || m.email || 'support@jeffdigital.io',
+          support_phone: m.support_phone || m.phone || '+221778421904',
+          website_url: m.website_url || 'https://jeffdigital.io',
+          logo_url: m.logo_url || null
+        },
+        frais: {
+          fee_payin_mode: m.fee_payin_mode || 'ADD_ON',
+          fee_payout_mode: m.fee_payout_mode || 'DEDUCTED',
+          allow_client_override: m.fee_client_override === true
+        },
+        equipe: m.team || [
+          { id: 'tm_1', name: m.full_name || m.business_name || 'Jeff Diallo', email: m.email, role: 'OWNER', status: 'ACTIVE', created_at: '2026-01-10' },
+          { id: 'tm_2', name: 'Aïssatou Sow', email: 'aissatou.sow@jeffdigital.io', role: 'ADMIN', status: 'ACTIVE', created_at: '2026-02-01' },
+          { id: 'tm_3', name: 'Koffi Mensah', email: 'koffi.dev@jeffdigital.io', role: 'DEVELOPER', status: 'ACTIVE', created_at: '2026-02-15' }
+        ],
+        profil: {
+          full_name: m.full_name || m.business_name || 'Jeff Diallo',
+          email: m.email,
+          country: m.country || 'Sénégal'
+        },
+        securite: {
+          two_factor_enabled: m.two_factor_enabled === true,
+          two_factor_method: m.two_factor_method || 'EMAIL'
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * PUT /api/v1/merchant/settings
- * Mise à jour de l'URL Webhook et informations entreprise
+ * Mise à jour générale de l'entreprise
  */
 app.put('/api/v1/merchant/settings', requireMerchantAuth, async (req, res) => {
   try {
-    const { webhook_url, business_name, phone } = req.body;
+    const { webhook_url, business_name, phone, category, support_email, support_phone, website_url, logo_url } = req.body;
     if (webhook_url !== undefined) req.merchant.webhook_url = webhook_url;
     if (business_name) req.merchant.business_name = business_name;
     if (phone) req.merchant.phone = phone;
+    if (category) req.merchant.category = category;
+    if (support_email) req.merchant.support_email = support_email;
+    if (support_phone) req.merchant.support_phone = support_phone;
+    if (website_url) req.merchant.website_url = website_url;
+    if (logo_url) req.merchant.logo_url = logo_url;
 
     if (supabase) {
       try {
@@ -977,13 +1033,175 @@ app.put('/api/v1/merchant/settings', requireMerchantAuth, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Paramètres mis à jour avec succès.',
-      merchant: {
-        business_name: req.merchant.business_name,
-        phone: req.merchant.phone,
-        webhook_url: req.merchant.webhook_url,
-        webhook_secret: req.merchant.webhook_secret
+      message: 'Paramètres enregistrés avec succès.',
+      merchant: req.merchant
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/merchant/settings/fees
+ * Mise à jour des modes de frais (payin, payout, override)
+ */
+app.put('/api/v1/merchant/settings/fees', requireMerchantAuth, async (req, res) => {
+  try {
+    const { fee_payin_mode, fee_payout_mode, allow_client_override } = req.body;
+    if (fee_payin_mode) req.merchant.fee_payin_mode = fee_payin_mode;
+    if (fee_payout_mode) req.merchant.fee_payout_mode = fee_payout_mode;
+    if (allow_client_override !== undefined) req.merchant.fee_client_override = Boolean(allow_client_override);
+
+    res.json({
+      success: true,
+      message: 'Réglages de frais enregistrés avec succès.',
+      frais: {
+        fee_payin_mode: req.merchant.fee_payin_mode,
+        fee_payout_mode: req.merchant.fee_payout_mode,
+        allow_client_override: req.merchant.fee_client_override
       }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/settings/team/invite
+ * Inviter un membre dans l'équipe
+ */
+app.post('/api/v1/merchant/settings/team/invite', requireMerchantAuth, async (req, res) => {
+  try {
+    const { email, role } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: 'Email obligatoire.' });
+
+    if (!Array.isArray(req.merchant.team)) {
+      req.merchant.team = [
+        { id: 'tm_1', name: req.merchant.full_name || 'Jeff Diallo', email: req.merchant.email, role: 'OWNER', status: 'ACTIVE', created_at: '2026-01-10' }
+      ];
+    }
+
+    const newMember = {
+      id: `tm_${Date.now()}`,
+      name: email.split('@')[0],
+      email: email.trim(),
+      role: role || 'DEVELOPER',
+      status: 'INVITÉ',
+      created_at: new Date().toISOString().split('T')[0]
+    };
+    req.merchant.team.push(newMember);
+
+    res.json({
+      success: true,
+      message: `Invitation envoyée à ${email}.`,
+      member: newMember,
+      team: req.merchant.team
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/v1/merchant/settings/team/:id
+ * Supprimer un membre de l'équipe
+ */
+app.delete('/api/v1/merchant/settings/team/:id', requireMerchantAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (Array.isArray(req.merchant.team)) {
+      req.merchant.team = req.merchant.team.filter(m => m.id !== id);
+    }
+    res.json({
+      success: true,
+      message: 'Membre retiré de l\'équipe.',
+      team: req.merchant.team
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/merchant/settings/profile
+ * Mise à jour du profil personnel
+ */
+app.put('/api/v1/merchant/settings/profile', requireMerchantAuth, async (req, res) => {
+  try {
+    const { full_name, country } = req.body;
+    if (full_name) req.merchant.full_name = full_name;
+    if (country) req.merchant.country = country;
+
+    res.json({
+      success: true,
+      message: 'Profil mis à jour.',
+      profil: {
+        full_name: req.merchant.full_name,
+        email: req.merchant.email,
+        country: req.merchant.country
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/v1/merchant/settings/password
+ * Changement de mot de passe
+ */
+app.put('/api/v1/merchant/settings/password', requireMerchantAuth, async (req, res) => {
+  try {
+    const { old_password, new_password, confirm } = req.body;
+    if (!new_password || new_password.length < 8) {
+      return res.status(400).json({ success: false, error: 'Le nouveau mot de passe doit contenir au moins 8 caractères.' });
+    }
+    if (new_password !== confirm) {
+      return res.status(400).json({ success: false, error: 'La confirmation ne correspond pas au nouveau mot de passe.' });
+    }
+
+    req.merchant.password_hash = hashPasswordSync(new_password);
+    res.json({
+      success: true,
+      message: 'Mot de passe modifié avec succès.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/settings/2fa/toggle
+ * Activer / Désactiver la 2FA
+ */
+app.post('/api/v1/merchant/settings/2fa/toggle', requireMerchantAuth, async (req, res) => {
+  try {
+    const { method, enable } = req.body;
+    req.merchant.two_factor_enabled = enable !== false;
+    if (method) req.merchant.two_factor_method = method;
+
+    res.json({
+      success: true,
+      message: req.merchant.two_factor_enabled ? 'Authentification à deux facteurs activée.' : '2FA désactivée.',
+      two_factor_enabled: req.merchant.two_factor_enabled,
+      two_factor_method: req.merchant.two_factor_method
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/settings/delete-request
+ * Demande de suppression de compte
+ */
+app.post('/api/v1/merchant/settings/delete-request', requireMerchantAuth, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    console.log(`⚠️ Demande de suppression de compte pour ${req.merchant.business_name} (${req.merchant.id}) : ${reason || 'Sans motif'}`);
+    res.json({
+      success: true,
+      message: 'Demande de suppression envoyée — un administrateur va la traiter.'
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

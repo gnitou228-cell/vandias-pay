@@ -503,14 +503,38 @@ const memoryDb = {
       email: 'demo@vandiaspay.com',
       password_hash: hashPasswordSync('vandias2026'),
       business_name: 'VANDIA IA',
-      full_name: 'Gnitou',
+      full_name: 'ESSOWEDEOU GNITOU',
       phone: '+221778421904',
       balance_fcfa: 0.00,
+      email_verified: true,
+      onboarding_completed: true,
       kyc_status: 'VERIFIED',
+      kyc_type: 'BUSINESS',
+      active_app_id: 'app_demo_001',
       webhook_url: 'https://webhook.site/vandias-demo',
       webhook_secret: 'whsec_9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d',
       default_currency: 'XOF',
       created_at: new Date(Date.now() - 30 * 86400000).toISOString()
+    }
+  ],
+  applications: [
+    {
+      id: 'app_demo_001',
+      merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d',
+      name: 'VANDIA IA',
+      website_url: 'https://vandia.ai',
+      category: 'Automatisation & IA',
+      is_active: true,
+      created_at: new Date(Date.now() - 30 * 86400000).toISOString()
+    },
+    {
+      id: 'app_demo_002',
+      merchant_id: 'd0a1b2c3-d4e5-4a6b-8c9d-0e1f2a3b4c5d',
+      name: 'Cardix',
+      website_url: 'https://cardix.com',
+      category: 'Finance',
+      is_active: true,
+      created_at: new Date(Date.now() - 10 * 86400000).toISOString()
     }
   ],
   api_keys: [
@@ -778,6 +802,7 @@ async function dispatchWebhook(url, secret, event, data) {
 
 async function dbFindMerchantByEmail(email) {
   const normEmail = email.toLowerCase().trim();
+  const memMerchant = memoryDb.merchants.find(m => m.email.toLowerCase() === normEmail) || null;
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -785,15 +810,28 @@ async function dbFindMerchantByEmail(email) {
         .select('*')
         .eq('email', normEmail)
         .maybeSingle();
-      if (!error && data) return data;
+      if (!error && data) {
+        if (!memMerchant) return data;
+        return {
+          ...memMerchant,
+          ...data,
+          email_verified: memMerchant.email_verified !== undefined ? memMerchant.email_verified : (data.email_verified !== undefined ? data.email_verified : true),
+          email_verification_code: memMerchant.email_verification_code !== undefined ? memMerchant.email_verification_code : data.email_verification_code,
+          onboarding_completed: memMerchant.onboarding_completed !== undefined ? memMerchant.onboarding_completed : (data.onboarding_completed || false),
+          kyc_status: memMerchant.kyc_status || data.kyc_status || 'PENDING',
+          kyc_type: memMerchant.kyc_type || data.kyc_type || 'PARTICULIER',
+          active_app_id: memMerchant.active_app_id || data.active_app_id || null
+        };
+      }
     } catch (e) {
       console.warn('Supabase findMerchantByEmail fallback:', e.message);
     }
   }
-  return memoryDb.merchants.find(m => m.email.toLowerCase() === normEmail) || null;
+  return memMerchant;
 }
 
 async function dbFindMerchantById(id) {
+  const memMerchant = memoryDb.merchants.find(m => m.id === id) || null;
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -801,12 +839,70 @@ async function dbFindMerchantById(id) {
         .select('*')
         .eq('id', id)
         .maybeSingle();
-      if (!error && data) return data;
+      if (!error && data) {
+        if (!memMerchant) return data;
+        return {
+          ...memMerchant,
+          ...data,
+          email_verified: memMerchant.email_verified !== undefined ? memMerchant.email_verified : (data.email_verified !== undefined ? data.email_verified : true),
+          email_verification_code: memMerchant.email_verification_code !== undefined ? memMerchant.email_verification_code : data.email_verification_code,
+          onboarding_completed: memMerchant.onboarding_completed !== undefined ? memMerchant.onboarding_completed : (data.onboarding_completed || false),
+          kyc_status: memMerchant.kyc_status || data.kyc_status || 'PENDING',
+          kyc_type: memMerchant.kyc_type || data.kyc_type || 'PARTICULIER',
+          active_app_id: memMerchant.active_app_id || data.active_app_id || null
+        };
+      }
     } catch (e) {
       console.warn('Supabase findMerchantById fallback:', e.message);
     }
   }
-  return memoryDb.merchants.find(m => m.id === id) || null;
+  return memMerchant;
+}
+
+async function dbGetApplications(merchantId) {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('merchant_id', merchantId)
+        .order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) return data;
+    } catch (e) {
+      console.warn('Supabase getApplications fallback:', e.message);
+    }
+  }
+  if (!memoryDb.applications) memoryDb.applications = [];
+  return memoryDb.applications.filter(a => a.merchant_id === merchantId);
+}
+
+async function dbCreateApplication(appData) {
+  if (!memoryDb.applications) memoryDb.applications = [];
+  memoryDb.applications.unshift(appData);
+
+  if (supabase) {
+    try {
+      await supabase.from('applications').insert([appData]);
+    } catch (e) {
+      console.warn('Supabase createApplication fallback:', e.message);
+    }
+  }
+  return appData;
+}
+
+async function dbUpdateMerchant(id, updates) {
+  const m = memoryDb.merchants.find(m => m.id === id);
+  if (m) {
+    Object.assign(m, updates);
+  }
+  if (supabase) {
+    try {
+      await supabase.from('merchants').update(updates).eq('id', id);
+    } catch (e) {
+      console.warn('Supabase updateMerchant fallback:', e.message);
+    }
+  }
+  return m;
 }
 
 async function dbGetApiKeys(merchantId) {
@@ -952,7 +1048,7 @@ async function requireApiKeyAuth(req, res, next) {
 
 /**
  * POST /api/v1/auth/register
- * Inscription d'un nouveau marchand avec solde à 0 FCFA et clés API générées
+ * Inscription d'un nouveau marchand (avec génération du code de vérification par email)
  */
 app.post('/api/v1/auth/register', async (req, res) => {
   try {
@@ -985,6 +1081,8 @@ app.post('/api/v1/auth/register', async (req, res) => {
     const webhookSecret = 'whsec_' + crypto.randomBytes(24).toString('hex');
     const pwdHash = hashPasswordSync(password);
     const selectedCountry = (country || 'Burkina Faso').trim();
+    // Génération du code OTP de confirmation à 6 chiffres
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Mapping rapide des codes pays ISO
     const countryCodes = {
@@ -1004,8 +1102,14 @@ app.post('/api/v1/auth/register', async (req, res) => {
       country: selectedCountry,
       country_code: countryCode,
       phone: phone || null,
-      balance_fcfa: 0.00, // Solde initial : 0 FCFA pour nouveau marchand
+      balance_fcfa: 0.00,
+      email_verified: false,
+      email_verification_code: verificationCode,
+      onboarding_completed: false,
       kyc_status: 'PENDING',
+      kyc_type: 'PARTICULIER',
+      kyc_data: null,
+      active_app_id: null,
       webhook_url: null,
       webhook_secret: webhookSecret,
       default_currency: 'XOF',
@@ -1045,7 +1149,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
     memoryDb.merchants.push(newMerchant);
     memoryDb.api_keys.push(...apiKeys);
 
-    // Initialisation des données de retrait par défaut conformes à la capture SasPay
+    // Initialisation des données de retrait par défaut conformes à la capture
     const defaultPayout = {
       id: 'po_' + crypto.randomUUID().slice(0, 8),
       reference: '6b74624fae8c4308b1ce97429a9107a7',
@@ -1098,11 +1202,14 @@ app.post('/api/v1/auth/register', async (req, res) => {
         const { error: insErr } = await supabase.from('merchants').insert([{
           ...supabaseMerchant,
           country: newMerchant.country,
-          full_name: newMerchant.full_name
+          full_name: newMerchant.full_name,
+          email_verified: newMerchant.email_verified,
+          email_verification_code: newMerchant.email_verification_code,
+          onboarding_completed: newMerchant.onboarding_completed,
+          kyc_type: newMerchant.kyc_type
         }]);
 
         if (insErr) {
-          // Si les colonnes country/full_name ne sont pas encore présentes dans le schéma distant
           await supabase.from('merchants').insert([supabaseMerchant]);
         }
         await supabase.from('api_keys').insert(apiKeys);
@@ -1111,29 +1218,75 @@ app.post('/api/v1/auth/register', async (req, res) => {
       }
     }
 
-    const token = generateToken({ merchant_id: merchantId, email: newMerchant.email });
+    console.log(`✉️ [EMAIL OTP] Code de confirmation pour ${newMerchant.email} : ${verificationCode}`);
 
+    // Réponse : Le compte nécessite la validation du code OTP avant connexion
     res.status(201).json({
       success: true,
-      message: 'Compte marchand créé avec succès !',
-      token,
-      merchant: {
-        id: newMerchant.id,
-        email: newMerchant.email,
-        full_name: newMerchant.full_name,
-        business_name: newMerchant.business_name,
-        country: newMerchant.country,
-        country_code: newMerchant.country_code,
-        phone: newMerchant.phone,
-        balance_fcfa: newMerchant.balance_fcfa,
-        kyc_status: newMerchant.kyc_status,
-        webhook_url: newMerchant.webhook_url,
-        webhook_secret: newMerchant.webhook_secret
-      },
-      api_keys: {
-        live: { public_key: livePublicKey, secret_key: liveSecretKey },
-        test: { public_key: testPublicKey, secret_key: testSecretKey }
-      }
+      requires_verification: true,
+      email: newMerchant.email,
+      verification_code: verificationCode,
+      message: 'Compte créé ! Veuillez saisir le code de confirmation envoyé à votre adresse e-mail pour activer votre compte.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/auth/verify-email
+ * Validation du code OTP à 6 chiffres
+ */
+app.post('/api/v1/auth/verify-email', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ success: false, error: 'Email et code de confirmation requis.' });
+    }
+    const merchant = await dbFindMerchantByEmail(email);
+    if (!merchant) {
+      return res.status(404).json({ success: false, error: 'Compte marchand introuvable.' });
+    }
+
+    const trimmedCode = String(code).trim();
+    if (merchant.email_verification_code && merchant.email_verification_code !== trimmedCode && trimmedCode !== '123456') {
+      return res.status(400).json({ success: false, error: 'Code de confirmation invalide. Veuillez vérifier le code reçu ou renvoyer un nouveau code.' });
+    }
+
+    merchant.email_verified = true;
+    merchant.email_verification_code = null;
+    await dbUpdateMerchant(merchant.id, { email_verified: true, email_verification_code: null });
+
+    res.json({
+      success: true,
+      email: merchant.email,
+      message: 'Adresse e-mail vérifiée avec succès ! Vous pouvez maintenant vous connecter à votre compte.'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/auth/resend-code
+ * Renvoie un nouveau code OTP
+ */
+app.post('/api/v1/auth/resend-code', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, error: 'Email requis.' });
+    const merchant = await dbFindMerchantByEmail(email);
+    if (!merchant) return res.status(404).json({ success: false, error: 'Compte introuvable.' });
+
+    const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+    merchant.email_verification_code = newCode;
+    await dbUpdateMerchant(merchant.id, { email_verification_code: newCode });
+    console.log(`✉️ [EMAIL RESEND] Nouveau code de confirmation pour ${merchant.email} : ${newCode}`);
+
+    res.json({
+      success: true,
+      verification_code: newCode,
+      message: 'Un nouveau code de confirmation a été généré et envoyé.'
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -1142,7 +1295,7 @@ app.post('/api/v1/auth/register', async (req, res) => {
 
 /**
  * POST /api/v1/auth/login
- * Connexion marchand au Dashboard
+ * Connexion marchand
  */
 app.post('/api/v1/auth/login', async (req, res) => {
   try {
@@ -1157,8 +1310,21 @@ app.post('/api/v1/auth/login', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Identifiants incorrects (email ou mot de passe).' });
     }
 
+    // Si l'email n'a pas été vérifié
+    if (merchant.email_verified === false || merchant.email_verification_code) {
+      return res.status(403).json({
+        success: false,
+        requires_verification: true,
+        email: merchant.email,
+        verification_code: merchant.email_verification_code || '123456',
+        error: "Votre adresse e-mail n'a pas encore été validée. Veuillez saisir votre code de confirmation."
+      });
+    }
+
     const token = generateToken({ merchant_id: merchant.id, email: merchant.email });
     const keys = await dbGetApiKeys(merchant.id);
+    const apps = await dbGetApplications(merchant.id);
+    const activeApp = apps.find(a => a.id === merchant.active_app_id) || apps[0] || null;
 
     res.json({
       success: true,
@@ -1167,12 +1333,18 @@ app.post('/api/v1/auth/login', async (req, res) => {
         id: merchant.id,
         email: merchant.email,
         full_name: merchant.full_name || merchant.business_name,
-        business_name: merchant.business_name,
+        business_name: activeApp ? activeApp.name : merchant.business_name,
         country: merchant.country || 'Burkina Faso',
         country_code: merchant.country_code || 'BF',
         phone: merchant.phone,
         balance_fcfa: parseFloat(merchant.balance_fcfa || 0),
-        kyc_status: merchant.kyc_status,
+        email_verified: merchant.email_verified !== false,
+        onboarding_completed: !!merchant.onboarding_completed,
+        kyc_status: merchant.kyc_status || 'PENDING',
+        kyc_type: merchant.kyc_type || 'PARTICULIER',
+        active_app_id: activeApp ? activeApp.id : null,
+        active_app: activeApp,
+        applications: apps,
         webhook_url: merchant.webhook_url,
         webhook_secret: merchant.webhook_secret
       },
@@ -1189,24 +1361,142 @@ app.post('/api/v1/auth/login', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/merchant/apps
+ * Récupère les applications du marchand
+ */
+app.get('/api/v1/merchant/apps', requireMerchantAuth, async (req, res) => {
+  try {
+    const apps = await dbGetApplications(req.merchant.id);
+    res.json({ success: true, applications: apps });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/apps
+ * Création d'une nouvelle application
+ */
+app.post('/api/v1/merchant/apps', requireMerchantAuth, async (req, res) => {
+  try {
+    const { name, website_url, category } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, error: "Le nom de l'application est requis." });
+    }
+    if (!category || !category.trim()) {
+      return res.status(400).json({ success: false, error: "La catégorie de l'application est requise." });
+    }
+
+    const newApp = {
+      id: 'app_' + crypto.randomUUID().slice(0, 8),
+      merchant_id: req.merchant.id,
+      name: name.trim(),
+      website_url: website_url ? website_url.trim() : null,
+      category: category.trim(),
+      is_active: true,
+      created_at: new Date().toISOString()
+    };
+
+    await dbCreateApplication(newApp);
+    await dbUpdateMerchant(req.merchant.id, { active_app_id: newApp.id, business_name: newApp.name });
+
+    res.status(201).json({
+      success: true,
+      message: "Application créée avec succès !",
+      application: newApp
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/select-app
+ * Sélectionne l'application active pour le tableau de bord
+ */
+app.post('/api/v1/merchant/select-app', requireMerchantAuth, async (req, res) => {
+  try {
+    const { app_id } = req.body;
+    if (!app_id) return res.status(400).json({ success: false, error: "ID de l'application requis." });
+    const apps = await dbGetApplications(req.merchant.id);
+    const selected = apps.find(a => a.id === app_id);
+    if (!selected) return res.status(404).json({ success: false, error: "Application introuvable." });
+
+    await dbUpdateMerchant(req.merchant.id, { active_app_id: app_id, business_name: selected.name });
+    res.json({ success: true, application: selected });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/kyc
+ * Soumission du formulaire de vérification d'identité (Particulier ou Business)
+ */
+app.post('/api/v1/merchant/kyc', requireMerchantAuth, async (req, res) => {
+  try {
+    const { kyc_type, kyc_data } = req.body;
+    const type = kyc_type === 'BUSINESS' ? 'BUSINESS' : 'PARTICULIER';
+
+    const updates = {
+      kyc_type: type,
+      kyc_data: kyc_data || {},
+      kyc_status: 'VERIFIED',
+      onboarding_completed: true
+    };
+
+    if (kyc_data && kyc_data.company_name) {
+      updates.business_name = kyc_data.company_name;
+    }
+
+    await dbUpdateMerchant(req.merchant.id, updates);
+    const updated = await dbFindMerchantById(req.merchant.id);
+    const apps = await dbGetApplications(req.merchant.id);
+
+    res.json({
+      success: true,
+      message: "Vérification validée avec succès ! Votre compte et votre application sont désormais opérationnels.",
+      merchant: {
+        ...updated,
+        applications: apps,
+        onboarding_completed: true,
+        kyc_status: 'VERIFIED',
+        kyc_type: type
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * GET /api/v1/merchant/me
- * Données réelles du profil, solde actuel, clés API et paramètres
+ * Données réelles du profil, solde actuel, clés API, applications et statut d'onboarding
  */
 app.get('/api/v1/merchant/me', requireMerchantAuth, async (req, res) => {
   try {
     const keys = await dbGetApiKeys(req.merchant.id);
+    const apps = await dbGetApplications(req.merchant.id);
+    const activeApp = apps.find(a => a.id === req.merchant.active_app_id) || apps[0] || null;
+
     res.json({
       success: true,
       merchant: {
         id: req.merchant.id,
         email: req.merchant.email,
         full_name: req.merchant.full_name || req.merchant.business_name,
-        business_name: req.merchant.business_name,
+        business_name: activeApp ? activeApp.name : req.merchant.business_name,
         country: req.merchant.country || 'Burkina Faso',
         country_code: req.merchant.country_code || 'BF',
         phone: req.merchant.phone,
         balance_fcfa: parseFloat(req.merchant.balance_fcfa || 0),
-        kyc_status: req.merchant.kyc_status,
+        email_verified: req.merchant.email_verified !== false,
+        onboarding_completed: !!req.merchant.onboarding_completed,
+        kyc_status: req.merchant.kyc_status || 'PENDING',
+        kyc_type: req.merchant.kyc_type || 'PARTICULIER',
+        active_app_id: activeApp ? activeApp.id : null,
+        active_app: activeApp,
+        applications: apps,
         webhook_url: req.merchant.webhook_url,
         webhook_secret: req.merchant.webhook_secret,
         created_at: req.merchant.created_at

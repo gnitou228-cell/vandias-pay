@@ -31,9 +31,31 @@ CREATE TABLE IF NOT EXISTS public.merchants (
 -- Migration rétrocompatible pour bases existantes
 ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);
 ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS country VARCHAR(100) DEFAULT 'Burkina Faso';
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS email_verification_code VARCHAR(10);
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS kyc_type VARCHAR(20) DEFAULT 'PARTICULIER';
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS kyc_data JSONB;
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS active_app_id UUID;
 
 -- Index pour recherche rapide
 CREATE INDEX IF NOT EXISTS idx_merchants_email ON public.merchants(email);
+
+-- ========================================================
+-- 1.b. TABLE DES APPLICATIONS (APPS)
+-- Permet à un compte marchand de gérer plusieurs applications distinctes
+-- ========================================================
+CREATE TABLE IF NOT EXISTS public.applications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL REFERENCES public.merchants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    website_url VARCHAR(255),
+    category VARCHAR(100) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_applications_merchant_id ON public.applications(merchant_id);
 
 -- ========================================================
 -- 2. TABLE DES CLÉS D'API (API_KEYS)

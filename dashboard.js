@@ -89,7 +89,11 @@ const VPState = {
   webhookLogsFilterStatus: '',
   webhookLogsFilterEvent: '',
   webhookIdToDelete: null,
-  selectedWebhookLog: null
+  selectedWebhookLog: null,
+  applications: [],
+  currentApp: null,
+  pendingEmail: '',
+  selectedKycType: 'PARTICULIER'
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -98,6 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initProfileDropdown();
   initAuthModalEvents();
   initActionModals();
+  initOnboardingFlow();
   initSettingsAndWebhookHandlers();
   initCopyButtons();
   initPricingSection();
@@ -149,7 +154,14 @@ async function loadMerchantDashboard() {
 
     VPState.merchant = meData.merchant;
     VPState.apiKeys = meData.api_keys || [];
+    VPState.applications = meData.merchant.applications || [];
     localStorage.setItem('vandias_merchant', JSON.stringify(meData.merchant));
+
+    // Si le marchand n'a pas encore terminé son parcours d'onboarding (Apps -> Choix -> KYC)
+    if (meData.merchant.onboarding_completed === false) {
+      showOnboardingFlow(meData.merchant);
+      return true;
+    }
 
     // 2. Transactions réelles
     const txRes = await fetch('/api/v1/merchant/transactions', {
@@ -169,7 +181,7 @@ async function loadMerchantDashboard() {
       VPState.paymentLinks = linksData.links || [];
     }
 
-    // 4. Tarification réseau (conforme SasPay)
+    // 4. Tarification réseau
     await fetchPricingRates();
 
     // Mise à jour de l'interface complète
@@ -188,18 +200,28 @@ function renderAllDashboardElements() {
   const initial = (m.business_name || 'V').charAt(0).toUpperCase();
   const balanceFCFA = parseFloat(m.balance_fcfa || 0);
 
+  // Application active (Sidebar Top Workspace)
+  const activeApp = m.active_app || (m.applications && m.applications.find(a => a.id === m.active_app_id)) || null;
+  const activeAppName = activeApp ? activeApp.name : (m.business_name || 'VANDIAS PAY');
+  const activeAppCat = activeApp ? activeApp.category : 'Automatisation & IA';
+  
+  const sbAppName = document.getElementById('sidebarActiveAppName');
+  if (sbAppName) sbAppName.textContent = activeAppName;
+  const sbAppCat = document.getElementById('sidebarActiveAppCategory');
+  if (sbAppCat) sbAppCat.textContent = activeAppCat;
+
   // 1. Topbar & Profile Trigger
   const topbarLetter = document.getElementById('topbarAvatarLetter');
   const topbarName = document.getElementById('topbarMerchantName');
   if (topbarLetter) topbarLetter.textContent = initial;
-  if (topbarName) topbarName.textContent = m.business_name;
+  if (topbarName) topbarName.textContent = activeAppName;
 
   // 2. Profile Dropdown
   const menuLetter = document.getElementById('menuAvatarLetter');
   const menuName = document.getElementById('menuMerchantName');
   const menuEmail = document.getElementById('menuMerchantEmail');
   if (menuLetter) menuLetter.textContent = initial;
-  if (menuName) menuName.textContent = m.business_name;
+  if (menuName) menuName.textContent = activeAppName;
   if (menuEmail) menuEmail.textContent = m.email;
 
   // 3. Sidebar Bottom User Pill
@@ -2628,6 +2650,7 @@ function initAuthModalEvents() {
   const tabRegister = document.getElementById('authTabRegister');
   const formLogin = document.getElementById('authLoginForm');
   const formRegister = document.getElementById('authRegisterForm');
+  const formVerifyEmail = document.getElementById('authVerifyEmailForm');
   const title = document.getElementById('authModalTitle');
   const subtitle = document.getElementById('authModalSubtitle');
   const btnQuickDemo = document.getElementById('btnQuickDemoLogin');
@@ -2640,6 +2663,7 @@ function initAuthModalEvents() {
       tabRegister.classList.add('text-slate-500');
       formLogin.classList.remove('hidden');
       formRegister.classList.add('hidden');
+      if (formVerifyEmail) formVerifyEmail.classList.add('hidden');
       if (title) title.textContent = "Connecte-toi à ton compte";
       if (subtitle) subtitle.textContent = "Ravi de te revoir sur VandiasPay.";
     });
@@ -2651,11 +2675,12 @@ function initAuthModalEvents() {
       tabLogin.classList.add('text-slate-500');
       formRegister.classList.remove('hidden');
       formLogin.classList.add('hidden');
+      if (formVerifyEmail) formVerifyEmail.classList.add('hidden');
       if (title) title.textContent = "Crée ton compte";
-      if (subtitle) subtitle.textContent = "Commence à encaisser avec SasPay en quelques minutes.";
+      if (subtitle) subtitle.textContent = "Commence à encaisser avec VandiasPay en quelques minutes.";
     });
 
-    // Support des ancres d'URL pour présélectionner l'onglet (par défaut Inscription selon la maquette)
+    // Support des ancres d'URL pour présélectionner l'onglet
     if (window.location.hash === '#login' || window.location.search.includes('tab=login')) {
       tabLogin.click();
     }
@@ -2665,7 +2690,7 @@ function initAuthModalEvents() {
   if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
+      const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
       const submitBtn = document.getElementById('btnSubmitLogin');
 
@@ -2682,12 +2707,36 @@ function initAuthModalEvents() {
         });
         const data = await res.json();
 
+        // Cas : L'email n'est pas encore vérifié
+        if (data.requires_verification) {
+          VPState.pendingEmail = email;
+          if (formLogin) formLogin.classList.add('hidden');
+          if (formRegister) formRegister.classList.add('hidden');
+          if (formVerifyEmail) formVerifyEmail.classList.remove('hidden');
+          const emailDisplay = document.getElementById('verifyEmailDisplay');
+          if (emailDisplay) emailDisplay.textContent = email;
+          const otpDisplay = document.getElementById('testOtpCodeDisplay');
+          if (otpDisplay && data.verification_code) otpDisplay.textContent = data.verification_code;
+          if (title) title.textContent = "Vérifie ton adresse e-mail";
+          if (subtitle) subtitle.textContent = "Saisis le code reçu par e-mail pour activer ton compte.";
+          showToast('Vérification requise', data.error || "Veuillez valider votre adresse e-mail.");
+          return;
+        }
+
         if (data.success && data.token) {
           localStorage.setItem('vandias_token', data.token);
           VPState.token = data.token;
+          VPState.merchant = data.merchant;
+          VPState.applications = data.merchant.applications || [];
           closeModal('modalAuth');
-          showToast('Connexion réussie !', `Bienvenue, ${data.merchant.business_name || data.merchant.full_name || 'Marchand'}.`);
-          await loadMerchantDashboard();
+
+          // Si l'onboarding n'est pas terminé, lancer le portail Onboarding
+          if (data.merchant.onboarding_completed === false) {
+            showOnboardingFlow(data.merchant);
+          } else {
+            showToast('Connexion réussie !', `Bienvenue, ${data.merchant.business_name || data.merchant.full_name || 'Marchand'}.`);
+            await loadMerchantDashboard();
+          }
         } else {
           showToast('Erreur', data.error || 'Identifiants incorrects.');
         }
@@ -2770,12 +2819,27 @@ function initAuthModalEvents() {
         });
         const data = await res.json();
 
-        if (data.success && data.token) {
+        if (data.success && data.requires_verification) {
+          VPState.pendingEmail = email.toLowerCase().trim();
+          formRegister.classList.add('hidden');
+          if (formVerifyEmail) formVerifyEmail.classList.remove('hidden');
+          const emailDisplay = document.getElementById('verifyEmailDisplay');
+          if (emailDisplay) emailDisplay.textContent = email;
+          const otpDisplay = document.getElementById('testOtpCodeDisplay');
+          if (otpDisplay && data.verification_code) otpDisplay.textContent = data.verification_code;
+          const codeInput = document.getElementById('verifyEmailCode');
+          if (codeInput) {
+            codeInput.value = '';
+            codeInput.focus();
+          }
+          if (title) title.textContent = "Vérifie ton adresse e-mail";
+          if (subtitle) subtitle.textContent = "Saisis le code reçu par e-mail pour activer ton compte VandiasPay.";
+          showToast('Code envoyé !', `Un code de confirmation a été transmis à ${email}.`);
+        } else if (data.success && data.token) {
           localStorage.setItem('vandias_token', data.token);
           VPState.token = data.token;
           closeModal('modalAuth');
-          showToast('Bienvenue sur VandiasPay !', `Compte ${data.merchant?.full_name || data.merchant?.business_name || full_name} créé avec succès (Pays: ${country}).`);
-          await loadMerchantDashboard();
+          showOnboardingFlow(data.merchant);
         } else {
           showToast('Erreur', data.error || "Impossible de créer le compte.");
         }
@@ -2789,6 +2853,514 @@ function initAuthModalEvents() {
         }
       }
     });
+  }
+
+  // Soumission Formulaire Validation OTP Email (Conforme Audio : Redirige vers Connexion sans ouvrir le dashboard)
+  if (formVerifyEmail) {
+    formVerifyEmail.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const codeInput = document.getElementById('verifyEmailCode');
+      const code = (codeInput?.value || '').trim();
+      const email = VPState.pendingEmail || document.getElementById('regEmail')?.value?.trim() || document.getElementById('loginEmail')?.value?.trim();
+      const submitBtn = document.getElementById('btnSubmitVerifyEmail');
+
+      if (!code) {
+        showToast('Code requis', 'Veuillez saisir votre code à 6 chiffres.');
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Validation du code...</span>';
+      }
+
+      try {
+        const res = await fetch('/api/v1/auth/verify-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast('E-mail validé avec succès !', 'Votre compte est actif. Connectez-vous maintenant pour continuer.');
+          // Conforme consigne audio : Basculer directement sur l'onglet Connexion avec email pré-rempli
+          if (tabLogin) tabLogin.click();
+          const loginEmailEl = document.getElementById('loginEmail');
+          if (loginEmailEl) loginEmailEl.value = email;
+          const loginPwdEl = document.getElementById('loginPassword');
+          if (loginPwdEl) {
+            loginPwdEl.value = '';
+            loginPwdEl.focus();
+          }
+        } else {
+          showToast('Code incorrect', data.error || 'Code invalide.');
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Valider mon adresse e-mail</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
+        }
+      }
+    });
+  }
+
+  // Bouton Renvoyer le code OTP
+  const btnResend = document.getElementById('btnResendVerificationCode');
+  if (btnResend) {
+    btnResend.addEventListener('click', async () => {
+      const email = VPState.pendingEmail || document.getElementById('regEmail')?.value?.trim();
+      if (!email) return;
+      try {
+        const res = await fetch('/api/v1/auth/resend-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const otpDisplay = document.getElementById('testOtpCodeDisplay');
+          if (otpDisplay && data.verification_code) otpDisplay.textContent = data.verification_code;
+          showToast('Nouveau code envoyé !', `Un nouveau code a été transmis à ${email}.`);
+        } else {
+          showToast('Erreur', data.error);
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      }
+    });
+  }
+
+  // Bouton Modifier l'e-mail (Retour au formulaire d'inscription)
+  const btnBackToReg = document.getElementById('btnBackToRegister');
+  if (btnBackToReg) {
+    btnBackToReg.addEventListener('click', () => {
+      if (tabRegister) tabRegister.click();
+    });
+  }
+}
+
+/* ========================================================
+   PARCOURS ONBOARDING CONFORME AUX CAPTURES (1, 2, 3, 4)
+   ======================================================== */
+
+function initOnboardingFlow() {
+  const container = document.getElementById('onboardingFlowContainer');
+  if (!container) return;
+
+  // 1. Bouton Déclencher Création Nouvelle Application
+  const btnTrigger = document.getElementById('btnTriggerCreateApp');
+  if (btnTrigger) {
+    btnTrigger.addEventListener('click', () => {
+      const form = document.getElementById('formCreateNewApp');
+      if (form) form.reset();
+      openModal('modalCreateApp');
+    });
+  }
+
+  // 2. Soumission Modal Création Première Application (Capture 2)
+  const formCreateApp = document.getElementById('formCreateNewApp');
+  if (formCreateApp) {
+    formCreateApp.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('inputAppName')?.value?.trim();
+      const website_url = document.getElementById('inputAppWebsite')?.value?.trim() || null;
+      const category = document.getElementById('selectAppCategory')?.value;
+      const submitBtn = document.getElementById('btnSubmitCreateApp');
+
+      if (!name || !category) {
+        showToast('Champs requis', "Veuillez saisir le nom et la catégorie de l'application.");
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Création en cours...';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/apps', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ name, website_url, category })
+        });
+        const data = await res.json();
+
+        if (data.success && data.application) {
+          VPState.currentApp = data.application;
+          if (!VPState.applications) VPState.applications = [];
+          VPState.applications.push(data.application);
+          if (VPState.merchant) {
+            VPState.merchant.active_app_id = data.application.id;
+            VPState.merchant.business_name = data.application.name;
+          }
+
+          closeModal('modalCreateApp');
+          showToast('Application créée !', `Configurez votre profil d'encaissement pour ${data.application.name}.`);
+
+          // Transition immédiate vers l'étape 2 (Comment veux-tu encaisser ? - Capture 3)
+          transitionOnboardingStep('onboardingStepAccountType', '2 / 3');
+        } else {
+          showToast('Erreur', data.error || "Impossible de créer l'application.");
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Créer une application';
+        }
+      }
+    });
+  }
+
+  // 3. Choix du type de compte (Capture 3 : Particulier vs Business)
+  const cardPart = document.getElementById('cardChoiceParticulier');
+  if (cardPart) {
+    cardPart.addEventListener('click', () => {
+      VPState.selectedKycType = 'PARTICULIER';
+      transitionOnboardingStep('onboardingStepKycParticulier', '3 / 3');
+    });
+  }
+
+  const cardBiz = document.getElementById('cardChoiceBusiness');
+  if (cardBiz) {
+    cardBiz.addEventListener('click', () => {
+      VPState.selectedKycType = 'BUSINESS';
+      transitionOnboardingStep('onboardingStepKycBusiness', '3 / 3');
+    });
+  }
+
+  // 4. Boutons Retour depuis KYC
+  const btnBackPart = document.getElementById('btnBackFromKycPart');
+  if (btnBackPart) {
+    btnBackPart.addEventListener('click', () => {
+      transitionOnboardingStep('onboardingStepAccountType', '2 / 3');
+    });
+  }
+  const btnBackBiz = document.getElementById('btnBackFromKycBiz');
+  if (btnBackBiz) {
+    btnBackBiz.addEventListener('click', () => {
+      transitionOnboardingStep('onboardingStepAccountType', '2 / 3');
+    });
+  }
+
+  // 5. Gestion des Dropzones (Mise à jour du nom de fichier)
+  const fileInputs = document.querySelectorAll('.file-input');
+  fileInputs.forEach(input => {
+    input.addEventListener('change', () => {
+      if (input.files && input.files[0]) {
+        const previewId = input.getAttribute('data-preview');
+        const previewEl = document.getElementById(previewId);
+        if (previewEl) {
+          previewEl.textContent = `✓ ${input.files[0].name}`;
+          previewEl.classList.remove('text-slate-500');
+          previewEl.classList.add('text-[#5846F6]', 'font-bold');
+        }
+      }
+    });
+  });
+
+  // 6. Soumission Formulaire KYC Particulier (Capture 4)
+  const formKycPart = document.getElementById('formKycParticulier');
+  if (formKycPart) {
+    formKycPart.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const firstName = document.getElementById('kycPartFirstName')?.value?.trim();
+      const lastName = document.getElementById('kycPartLastName')?.value?.trim();
+      const birthDate = document.getElementById('kycPartBirthDate')?.value;
+      const idType = document.getElementById('kycPartIdType')?.value;
+      const submitBtn = document.getElementById('btnSubmitKycPart');
+
+      if (!document.getElementById('checkKycPartTerms')?.checked) {
+        showToast('Conditions requises', "Veuillez accepter les conditions d'utilisation.");
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Validation en cours...</span>';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/kyc', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({
+            kyc_type: 'PARTICULIER',
+            kyc_data: { firstName, lastName, birthDate, idType }
+          })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          if (VPState.merchant) {
+            VPState.merchant.onboarding_completed = true;
+            VPState.merchant.kyc_status = 'VERIFIED';
+            VPState.merchant.kyc_type = 'PARTICULIER';
+          }
+          const appName = VPState.currentApp?.name || VPState.merchant?.business_name || 'Votre application';
+          const successNameEl = document.getElementById('successAppFinalName');
+          if (successNameEl) successNameEl.textContent = appName;
+
+          transitionOnboardingStep('onboardingStepSuccess', 'Terminé');
+          showToast('Identité validée !', 'Votre compte est prêt pour encaisser.');
+        } else {
+          showToast('Erreur', data.error || 'Erreur lors de la vérification.');
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Soumettre pour vérification</span><span>→</span>';
+        }
+      }
+    });
+  }
+
+  // 7. Soumission Formulaire KYC Business
+  const formKycBiz = document.getElementById('formKycBusiness');
+  if (formKycBiz) {
+    formKycBiz.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const companyName = document.getElementById('kycBizCompanyName')?.value?.trim();
+      const rccm = document.getElementById('kycBizRccm')?.value?.trim();
+      const country = document.getElementById('kycBizCountry')?.value?.trim();
+      const address = document.getElementById('kycBizAddress')?.value?.trim();
+      const submitBtn = document.getElementById('btnSubmitKycBiz');
+
+      if (!document.getElementById('checkKycBizTerms')?.checked) {
+        showToast('Attestation requise', "Veuillez attester sur l'honneur et accepter les conditions.");
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Validation en cours...</span>';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/kyc', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({
+            kyc_type: 'BUSINESS',
+            kyc_data: { companyName, rccm, country, address }
+          })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          if (VPState.merchant) {
+            VPState.merchant.onboarding_completed = true;
+            VPState.merchant.kyc_status = 'VERIFIED';
+            VPState.merchant.kyc_type = 'BUSINESS';
+          }
+          const appName = VPState.currentApp?.name || companyName || VPState.merchant?.business_name || 'Votre entreprise';
+          const successNameEl = document.getElementById('successAppFinalName');
+          if (successNameEl) successNameEl.textContent = appName;
+
+          transitionOnboardingStep('onboardingStepSuccess', 'Terminé');
+          showToast('Entreprise validée !', 'Votre compte Business (50M FCFA/mois) est actif.');
+        } else {
+          showToast('Erreur', data.error || 'Erreur lors de la vérification.');
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Soumettre pour vérification</span><span>→</span>';
+        }
+      }
+    });
+  }
+
+  // 8. Bouton Accéder au Tableau de Bord après Succès
+  const btnEnter = document.getElementById('btnEnterFullDashboard');
+  if (btnEnter) {
+    btnEnter.addEventListener('click', async () => {
+      container.classList.add('hidden');
+      await loadMerchantDashboard();
+      showToast('Bienvenue sur VandiasPay !', 'Votre tableau de bord complet est ouvert.');
+    });
+  }
+
+  // 9. Clic sur le Workspace Sidebar pour ouvrir le portail d'applications
+  const workspaceTrigger = document.getElementById('sidebarWorkspaceTrigger');
+  if (workspaceTrigger) {
+    workspaceTrigger.addEventListener('click', () => {
+      openAppsPortal();
+    });
+  }
+}
+
+function transitionOnboardingStep(stepId, badgeText) {
+  const stepIds = [
+    'onboardingStepApps',
+    'onboardingStepAccountType',
+    'onboardingStepKycParticulier',
+    'onboardingStepKycBusiness',
+    'onboardingStepSuccess'
+  ];
+
+  stepIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (id === stepId) {
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+      }
+    }
+  });
+
+  const badge = document.getElementById('onboardingStepBadge');
+  if (badge && badgeText) badge.textContent = badgeText;
+
+  const container = document.getElementById('onboardingFlowContainer');
+  if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showOnboardingFlow(merchant) {
+  const container = document.getElementById('onboardingFlowContainer');
+  if (!container) return;
+
+  container.classList.remove('hidden');
+  transitionOnboardingStep('onboardingStepApps', '1 / 3');
+
+  const fullNameEl = document.getElementById('onboardingUserFullName');
+  if (fullNameEl) {
+    fullNameEl.textContent = merchant.business_name || merchant.full_name || 'Marchand';
+  }
+
+  renderOnboardingApps();
+}
+
+function openAppsPortal() {
+  if (VPState.merchant) {
+    showOnboardingFlow(VPState.merchant);
+  }
+}
+
+async function renderOnboardingApps() {
+  const listContainer = document.getElementById('onboardingAppsList');
+  if (!listContainer) return;
+
+  // Récupérer les applications depuis le serveur
+  let apps = VPState.applications || [];
+  if (VPState.token) {
+    try {
+      const res = await fetch('/api/v1/merchant/apps', {
+        headers: { 'Authorization': `Bearer ${VPState.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.applications) {
+          apps = data.applications;
+          VPState.applications = apps;
+        }
+      }
+    } catch (e) {
+      console.warn("Erreur chargement applications:", e);
+    }
+  }
+
+  // Vider le conteneur en conservant le bouton d'ajout
+  const btnTrigger = document.getElementById('btnTriggerCreateApp');
+  listContainer.innerHTML = '';
+  if (btnTrigger) {
+    listContainer.appendChild(btnTrigger);
+  }
+
+  // Rendu de chaque application existante
+  apps.forEach(app => {
+    const isActive = (VPState.merchant && VPState.merchant.active_app_id === app.id);
+    const card = document.createElement('div');
+    card.className = `p-6 rounded-2xl bg-white border-2 transition-all cursor-pointer flex flex-col justify-between group hover:shadow-md ${
+      isActive ? 'border-[#5846F6] shadow-sm bg-purple-50/10' : 'border-slate-200 hover:border-purple-300'
+    }`;
+    card.innerHTML = `
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-50 text-[#5846F6] flex items-center justify-center font-bold text-base group-hover:scale-105 transition-transform">
+            ${(app.name || 'A').charAt(0).toUpperCase()}
+          </div>
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+            isActive ? 'bg-[#5846F6] text-white' : 'bg-emerald-50 text-emerald-600'
+          }">
+            ${isActive ? 'Active' : 'Prête'}
+          </span>
+        </div>
+        <h3 class="text-base font-bold text-[#111827] group-hover:text-[#5846F6] transition-colors truncate">${app.name}</h3>
+        <p class="text-xs text-slate-500 mt-0.5 font-medium truncate">${app.category || 'Général'}</p>
+        ${app.website_url ? `<p class="text-[11px] text-slate-400 mt-1 font-mono truncate">${app.website_url}</p>` : ''}
+      </div>
+      <div class="pt-4 mt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#5846F6]">
+        <span>Sélectionner</span>
+        <span class="group-hover:translate-x-1 transition-transform">→</span>
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      selectAndOpenApp(app.id);
+    });
+
+    // Insérer avant le bouton d'ajout pour un rendu naturel
+    if (btnTrigger) {
+      listContainer.insertBefore(card, btnTrigger);
+    } else {
+      listContainer.appendChild(card);
+    }
+  });
+}
+
+async function selectAndOpenApp(appId) {
+  if (!VPState.token) return;
+
+  try {
+    const res = await fetch('/api/v1/merchant/select-app', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${VPState.token}`
+      },
+      body: JSON.stringify({ app_id: appId })
+    });
+    const data = await res.json();
+
+    if (data.success && data.application) {
+      VPState.currentApp = data.application;
+      if (VPState.merchant) {
+        VPState.merchant.active_app_id = appId;
+        VPState.merchant.business_name = data.application.name;
+      }
+
+      // Si l'onboarding général n'a pas encore été validé, continuer vers le choix du mode d'encaissement
+      if (VPState.merchant && VPState.merchant.onboarding_completed === false) {
+        transitionOnboardingStep('onboardingStepAccountType', '2 / 3');
+      } else {
+        // Sinon, fermer l'onboarding et entrer sur le dashboard
+        const container = document.getElementById('onboardingFlowContainer');
+        if (container) container.classList.add('hidden');
+        await loadMerchantDashboard();
+        showToast('Application sélectionnée', `Vous travaillez désormais sur ${data.application.name}.`);
+      }
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
   }
 }
 

@@ -43,7 +43,8 @@
   </script>
 
   <link rel="stylesheet" href="dashboard.css">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235846F6'><circle cx='12' cy='12' r='10'/><path d='M8 12l3 3 5-6' stroke='white' stroke-width='2' fill='none'/></svg>">
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
 </head>
 <body class="bg-[#F8F9FD] text-[#111827] font-sans antialiased min-h-screen flex selection:bg-purple-600 selection:text-white">
 
@@ -60,9 +61,7 @@
       <div class="p-4 border-b border-[#F0F2F9]">
         <div class="flex items-center justify-between p-2 rounded-2xl hover:bg-[#F9FAFC] cursor-pointer transition-colors border border-transparent hover:border-[#ECEEF6]">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#5846F6] to-[#7C6EF8] text-white flex items-center justify-center font-bold text-sm shadow-md shadow-purple-500/20">
-              VI
-            </div>
+            <img src="logo.png" alt="VandiasPay Logo" class="w-10 h-10 object-contain rounded-2xl p-1 bg-white border border-[#ECEEF6] shadow-sm">
             <div class="flex flex-col">
               <span class="text-sm font-extrabold text-[#111827] tracking-tight">VANDIAS PAY</span>
               <span class="text-[11px] text-[#6B7280]">Automatisation & IA</span>
@@ -1826,10 +1825,13 @@
         </button>
       </div>
 
-      <!-- En-tête : Titre & Sous-titre -->
-      <div class="text-left mb-5">
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight" id="authModalTitle">Crée ton compte</h2>
-        <p class="text-sm text-slate-500 mt-1 font-normal" id="authModalSubtitle">Commence à encaisser avec SasPay en quelques minutes.</p>
+      <!-- En-tête : Logo, Titre & Sous-titre -->
+      <div class="flex items-center gap-3.5 mb-5">
+        <img src="logo.png" alt="VandiasPay Logo" class="w-12 h-12 object-contain rounded-2xl shadow-sm border border-slate-100 p-1 bg-white flex-shrink-0">
+        <div class="text-left">
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight" id="authModalTitle">Crée ton compte</h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5 font-normal" id="authModalSubtitle">Commence à encaisser avec SasPay en quelques minutes.</p>
+        </div>
       </div>
 
       <!-- Ligne de séparation de marque -->

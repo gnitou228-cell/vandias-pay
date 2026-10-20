@@ -15,16 +15,22 @@ CREATE TABLE IF NOT EXISTS public.merchants (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     business_name VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255),
+    country VARCHAR(100) DEFAULT 'Burkina Faso',
     phone VARCHAR(50),
     balance_fcfa NUMERIC(15, 2) DEFAULT 0.00 NOT NULL CHECK (balance_fcfa >= 0),
     kyc_status VARCHAR(20) DEFAULT 'PENDING' CHECK (kyc_status IN ('PENDING', 'VERIFIED', 'REJECTED')),
     webhook_url TEXT,
     webhook_secret VARCHAR(100) DEFAULT ('whsec_' || encode(gen_random_bytes(24), 'hex')),
     default_currency VARCHAR(10) DEFAULT 'XOF' NOT NULL,
-    country_code VARCHAR(5) DEFAULT 'SN',
+    country_code VARCHAR(5) DEFAULT 'BF',
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
+
+-- Migration rétrocompatible pour bases existantes
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);
+ALTER TABLE public.merchants ADD COLUMN IF NOT EXISTS country VARCHAR(100) DEFAULT 'Burkina Faso';
 
 -- Index pour recherche rapide
 CREATE INDEX IF NOT EXISTS idx_merchants_email ON public.merchants(email);

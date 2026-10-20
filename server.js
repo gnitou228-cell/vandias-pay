@@ -956,12 +956,20 @@ async function requireApiKeyAuth(req, res, next) {
  */
 app.post('/api/v1/auth/register', async (req, res) => {
   try {
-    const { email, password, business_name, phone } = req.body;
+    const { email, password, business_name, full_name, country, phone } = req.body;
+    const name = (full_name || business_name || '').trim();
 
-    if (!email || !password || !business_name) {
+    if (!email || !password || !name) {
       return res.status(400).json({
         success: false,
-        error: 'Veuillez renseigner un email valide, un mot de passe et le nom de votre entreprise.'
+        error: 'Veuillez renseigner votre nom complet, une adresse e-mail valide et un mot de passe.'
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Le mot de passe doit comporter au moins 8 caractères.'
       });
     }
 
@@ -976,14 +984,27 @@ app.post('/api/v1/auth/register', async (req, res) => {
     const merchantId = crypto.randomUUID();
     const webhookSecret = 'whsec_' + crypto.randomBytes(24).toString('hex');
     const pwdHash = hashPasswordSync(password);
+    const selectedCountry = (country || 'Burkina Faso').trim();
+
+    // Mapping rapide des codes pays ISO
+    const countryCodes = {
+      'Burkina Faso': 'BF', 'Sénégal': 'SN', 'Côte d\'Ivoire': 'CI', 'Bénin': 'BJ',
+      'Togo': 'TG', 'Mali': 'ML', 'Niger': 'NE', 'Guinée': 'GN', 'Cameroun': 'CM',
+      'Gabon': 'GA', 'Congo (Brazzaville)': 'CG', 'Congo (RDC)': 'CD', 'France': 'FR',
+      'États-Unis': 'US', 'Canada': 'CA', 'Ghana': 'GH', 'Nigéria': 'NG'
+    };
+    const countryCode = countryCodes[selectedCountry] || selectedCountry.slice(0, 2).toUpperCase();
 
     const newMerchant = {
       id: merchantId,
       email: email.toLowerCase().trim(),
       password_hash: pwdHash,
-      business_name: business_name.trim(),
+      business_name: name,
+      full_name: name,
+      country: selectedCountry,
+      country_code: countryCode,
       phone: phone || null,
-      balance_fcfa: 0.00, // Défaut : 0 FCFA pour nouveau marchand
+      balance_fcfa: 0.00, // Solde initial : 0 FCFA pour nouveau marchand
       kyc_status: 'PENDING',
       webhook_url: null,
       webhook_secret: webhookSecret,
@@ -1057,10 +1078,33 @@ app.post('/api/v1/auth/register', async (req, res) => {
     if (!memoryDb.payout_methods) memoryDb.payout_methods = [];
     memoryDb.payout_methods.push(defaultMethod);
 
-    // Sauvegarde dans Supabase si connecté
+    // Sauvegarde dans Supabase si connecté avec compatibilité ascendante de schéma
     if (supabase) {
       try {
-        await supabase.from('merchants').insert([newMerchant]);
+        const supabaseMerchant = {
+          id: newMerchant.id,
+          email: newMerchant.email,
+          password_hash: newMerchant.password_hash,
+          business_name: newMerchant.business_name,
+          phone: newMerchant.phone,
+          balance_fcfa: newMerchant.balance_fcfa,
+          kyc_status: newMerchant.kyc_status,
+          webhook_url: newMerchant.webhook_url,
+          webhook_secret: newMerchant.webhook_secret,
+          default_currency: newMerchant.default_currency,
+          country_code: newMerchant.country_code
+        };
+
+        const { error: insErr } = await supabase.from('merchants').insert([{
+          ...supabaseMerchant,
+          country: newMerchant.country,
+          full_name: newMerchant.full_name
+        }]);
+
+        if (insErr) {
+          // Si les colonnes country/full_name ne sont pas encore présentes dans le schéma distant
+          await supabase.from('merchants').insert([supabaseMerchant]);
+        }
         await supabase.from('api_keys').insert(apiKeys);
       } catch (err) {
         console.warn('Supabase register sync warning:', err.message);
@@ -1076,7 +1120,10 @@ app.post('/api/v1/auth/register', async (req, res) => {
       merchant: {
         id: newMerchant.id,
         email: newMerchant.email,
+        full_name: newMerchant.full_name,
         business_name: newMerchant.business_name,
+        country: newMerchant.country,
+        country_code: newMerchant.country_code,
         phone: newMerchant.phone,
         balance_fcfa: newMerchant.balance_fcfa,
         kyc_status: newMerchant.kyc_status,
@@ -1119,7 +1166,10 @@ app.post('/api/v1/auth/login', async (req, res) => {
       merchant: {
         id: merchant.id,
         email: merchant.email,
+        full_name: merchant.full_name || merchant.business_name,
         business_name: merchant.business_name,
+        country: merchant.country || 'Burkina Faso',
+        country_code: merchant.country_code || 'BF',
         phone: merchant.phone,
         balance_fcfa: parseFloat(merchant.balance_fcfa || 0),
         kyc_status: merchant.kyc_status,
@@ -1150,7 +1200,10 @@ app.get('/api/v1/merchant/me', requireMerchantAuth, async (req, res) => {
       merchant: {
         id: req.merchant.id,
         email: req.merchant.email,
+        full_name: req.merchant.full_name || req.merchant.business_name,
         business_name: req.merchant.business_name,
+        country: req.merchant.country || 'Burkina Faso',
+        country_code: req.merchant.country_code || 'BF',
         phone: req.merchant.phone,
         balance_fcfa: parseFloat(req.merchant.balance_fcfa || 0),
         kyc_status: req.merchant.kyc_status,

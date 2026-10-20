@@ -2634,26 +2634,31 @@ function initAuthModalEvents() {
 
   if (tabLogin && tabRegister && formLogin && formRegister) {
     tabLogin.addEventListener('click', () => {
-      tabLogin.classList.add('bg-white', 'text-[#111827]', 'shadow-sm');
-      tabLogin.classList.remove('text-[#6B7280]');
-      tabRegister.classList.remove('bg-white', 'text-[#111827]', 'shadow-sm');
-      tabRegister.classList.add('text-[#6B7280]');
+      tabLogin.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+      tabLogin.classList.remove('text-slate-500');
+      tabRegister.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+      tabRegister.classList.add('text-slate-500');
       formLogin.classList.remove('hidden');
       formRegister.classList.add('hidden');
-      if (title) title.textContent = "Connexion au Dashboard";
-      if (subtitle) subtitle.textContent = "Accédez à vos wallets, liens de paiement et clés API.";
+      if (title) title.textContent = "Connecte-toi à ton compte";
+      if (subtitle) subtitle.textContent = "Ravi de te revoir sur VandiasPay.";
     });
 
     tabRegister.addEventListener('click', () => {
-      tabRegister.classList.add('bg-white', 'text-[#111827]', 'shadow-sm');
-      tabRegister.classList.remove('text-[#6B7280]');
-      tabLogin.classList.remove('bg-white', 'text-[#111827]', 'shadow-sm');
-      tabLogin.classList.add('text-[#6B7280]');
+      tabRegister.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+      tabRegister.classList.remove('text-slate-500');
+      tabLogin.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+      tabLogin.classList.add('text-slate-500');
       formRegister.classList.remove('hidden');
       formLogin.classList.add('hidden');
-      if (title) title.textContent = "Nouveau Compte Marchand";
-      if (subtitle) subtitle.textContent = "Démarrez avec 0 FCFA de solde et générez vos clés d'API instantanément.";
+      if (title) title.textContent = "Crée ton compte";
+      if (subtitle) subtitle.textContent = "Commence à encaisser avec SasPay en quelques minutes.";
     });
+
+    // Support des ancres d'URL pour présélectionner l'onglet (par défaut Inscription selon la maquette)
+    if (window.location.hash === '#login' || window.location.search.includes('tab=login')) {
+      tabLogin.click();
+    }
   }
 
   // Soumission Formulaire Connexion
@@ -2681,7 +2686,7 @@ function initAuthModalEvents() {
           localStorage.setItem('vandias_token', data.token);
           VPState.token = data.token;
           closeModal('modalAuth');
-          showToast('Connexion réussie !', `Bienvenue, ${data.merchant.business_name}.`);
+          showToast('Connexion réussie !', `Bienvenue, ${data.merchant.business_name || data.merchant.full_name || 'Marchand'}.`);
           await loadMerchantDashboard();
         } else {
           showToast('Erreur', data.error || 'Identifiants incorrects.');
@@ -2691,7 +2696,7 @@ function initAuthModalEvents() {
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Se connecter';
+          submitBtn.innerHTML = '<span>Se connecter</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
         }
       }
     });
@@ -2728,42 +2733,40 @@ function initAuthModalEvents() {
   if (formRegister) {
     formRegister.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const business_name = document.getElementById('regBusinessName')?.value?.trim();
+      const full_name = (document.getElementById('regFullName')?.value || document.getElementById('regBusinessName')?.value || '').trim();
       const email = document.getElementById('regEmail')?.value?.trim();
+      const country = document.getElementById('regCountry')?.value || 'Burkina Faso';
       const phone = document.getElementById('regPhone')?.value?.trim();
       const password = document.getElementById('regPassword')?.value;
-      const passwordConfirm = document.getElementById('regPasswordConfirm')?.value;
-      const mismatchEl = document.getElementById('regPasswordMismatchError');
       const submitBtn = document.getElementById('btnSubmitRegister');
 
-      if (!business_name || !email || !password) {
-        showToast('Champs requis', 'Veuillez renseigner le nom de l\'entreprise, l\'email et le mot de passe.');
+      if (!full_name || !email || !password) {
+        showToast('Champs requis', 'Veuillez renseigner votre nom complet, votre adresse e-mail et votre mot de passe.');
         return;
       }
 
-      if (password.length < 6) {
-        showToast('Mot de passe trop court', 'Le mot de passe doit comporter au moins 6 caractères.');
+      if (password.length < 8) {
+        showToast('Mot de passe trop court', 'Le mot de passe doit comporter au moins 8 caractères.');
         return;
-      }
-
-      if (passwordConfirm !== undefined && passwordConfirm !== null && password !== passwordConfirm) {
-        if (mismatchEl) mismatchEl.classList.remove('hidden');
-        showToast('Mots de passe non identiques', 'Veuillez retaper le même mot de passe dans la confirmation.');
-        return;
-      } else if (mismatchEl) {
-        mismatchEl.classList.add('hidden');
       }
 
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Création du compte...';
+        submitBtn.innerHTML = '<span>Création du compte...</span>';
       }
 
       try {
         const res = await fetch('/api/v1/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ business_name, email, phone, password })
+          body: JSON.stringify({ 
+            full_name, 
+            business_name: full_name, 
+            email, 
+            country, 
+            phone, 
+            password 
+          })
         });
         const data = await res.json();
 
@@ -2771,7 +2774,7 @@ function initAuthModalEvents() {
           localStorage.setItem('vandias_token', data.token);
           VPState.token = data.token;
           closeModal('modalAuth');
-          showToast('Bienvenue sur VandiasPay !', `Compte ${data.merchant?.business_name || business_name} actif (Solde: 0 FCFA).`);
+          showToast('Bienvenue sur VandiasPay !', `Compte ${data.merchant?.full_name || data.merchant?.business_name || full_name} créé avec succès (Pays: ${country}).`);
           await loadMerchantDashboard();
         } else {
           showToast('Erreur', data.error || "Impossible de créer le compte.");
@@ -2782,7 +2785,7 @@ function initAuthModalEvents() {
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Créer mon compte marchand (Solde 0 FCFA)';
+          submitBtn.innerHTML = '<span>Créer mon compte</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
         }
       }
     });

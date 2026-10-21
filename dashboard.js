@@ -27,7 +27,7 @@ const VPState = {
   transactions: [],
   paymentLinks: [],
   wallets: [
-    { code: "XOF", country: "TG", name: "Togo", balance: 80, flag: "🇹🇬", symbol: "XOF" },
+    { code: "XOF", country: "TG", name: "Togo", balance: 0, flag: "🇹🇬", symbol: "XOF" },
     { code: "USD", country: "XC", name: "XC", balance: 0, flag: "🌐", symbol: "USD" },
     { code: "ZMW", country: "ZM", name: "Zambie", balance: 0, flag: "🇿🇲", symbol: "ZMW" },
     { code: "USD", country: "US_INTL", name: "International (USD)", balance: 0, flag: "🇺🇸", symbol: "USD" },
@@ -93,7 +93,33 @@ const VPState = {
   applications: [],
   currentApp: null,
   pendingEmail: '',
-  selectedKycType: 'PARTICULIER'
+  selectedKycType: 'PARTICULIER',
+  txSearchQuery: '',
+  txStatusFilter: 'ALL',
+  txDirectionFilter: 'ALL',
+  txCountryFilter: 'ALL',
+  txNetworkFilter: 'ALL',
+  txDateFrom: '',
+  txDateTo: '',
+  txPage: 1,
+  txPageSize: 20,
+  txTotal: 0,
+  paymentLinksSearchQuery: '',
+  paymentLinksPage: 1,
+  paymentLinksPageSize: 20,
+  paymentLinksTotal: 0,
+  checkoutSessions: [],
+  checkoutSessionsSearchQuery: '',
+  checkoutSessionsPage: 1,
+  checkoutSessionsPageSize: 20,
+  checkoutSessionsTotal: 0,
+  customers: [],
+  customersSearchQuery: '',
+  customersPage: 1,
+  customersPageSize: 20,
+  customersTotal: 0,
+  disputes: [],
+  disputesStatusFilter: 'ALL'
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -113,6 +139,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDeveloperSection();
   initWebhooksSection();
   initWebhookLogsSection();
+  initTransactionsSection();
+  initPaymentLinksSection();
+  initCheckoutSessionsSection();
+  initCustomersSection();
+  initDisputesSection();
 
   // Vérification de la session et chargement dynamique
   if (VPState.token) {
@@ -130,11 +161,54 @@ document.addEventListener('DOMContentLoaded', async () => {
    1. AUTHENTIFICATION & CHARGEMENT DYNAMIQUE DU MARCHAND
    ======================================================== */
 
+function hideMainDashboard() {
+  const sidebar = document.getElementById('dashboardSidebar');
+  const main = document.getElementById('dashboardMainLayout');
+  if (sidebar) sidebar.classList.add('hidden');
+  if (main) main.classList.add('hidden');
+}
+
+function showMainDashboard() {
+  const sidebar = document.getElementById('dashboardSidebar');
+  const main = document.getElementById('dashboardMainLayout');
+  if (sidebar) sidebar.classList.remove('hidden');
+  if (main) main.classList.remove('hidden');
+}
+
 function promptAuthModal() {
+  hideMainDashboard();
+  const onboardingContainer = document.getElementById('onboardingFlowContainer');
+  if (onboardingContainer) onboardingContainer.classList.add('hidden');
   openModal('modalAuth');
 }
 
+window.closeAuthModalIfAllowed = function() {
+  if (!VPState.token) {
+    showToast('Accès restreint', 'Veuillez vous connecter ou créer un compte pour accéder au tableau de bord.');
+    return;
+  }
+  closeModal('modalAuth');
+};
+
+window.handleSignOut = function() {
+  localStorage.removeItem('vandias_token');
+  localStorage.removeItem('vandias_merchant');
+  VPState.token = null;
+  VPState.merchant = null;
+  VPState.applications = [];
+  hideMainDashboard();
+  const onboardingContainer = document.getElementById('onboardingFlowContainer');
+  if (onboardingContainer) onboardingContainer.classList.add('hidden');
+  promptAuthModal();
+  showToast('Déconnexion réussie', 'Vous avez été déconnecté avec succès.');
+};
+
 async function loadMerchantDashboard() {
+  if (!VPState.token) {
+    promptAuthModal();
+    return false;
+  }
+
   try {
     // 1. Profil Marchand & Clés API
     const meRes = await fetch('/api/v1/merchant/me', {
@@ -146,22 +220,38 @@ async function loadMerchantDashboard() {
         localStorage.removeItem('vandias_token');
         VPState.token = null;
       }
+      promptAuthModal();
       return false;
     }
 
     const meData = await meRes.json();
-    if (!meData.success || !meData.merchant) return false;
+    if (!meData.success || !meData.merchant) {
+      promptAuthModal();
+      return false;
+    }
 
     VPState.merchant = meData.merchant;
     VPState.apiKeys = meData.api_keys || [];
     VPState.applications = meData.merchant.applications || [];
     localStorage.setItem('vandias_merchant', JSON.stringify(meData.merchant));
 
-    // Si le marchand n'a pas encore terminé son parcours d'onboarding (Apps -> Choix -> KYC)
-    if (meData.merchant.onboarding_completed === false) {
+    // VÉRIFICATION STRICTE DU PARCOURS D'ONBOARDING :
+    // Si l'onboarding n'est pas terminé OU si le marchand n'a pas encore créé d'application
+    const hasApps = VPState.applications && VPState.applications.length > 0;
+    const isCompleted = meData.merchant.onboarding_completed === true;
+
+    if (!isCompleted || !hasApps) {
+      hideMainDashboard();
+      closeModal('modalAuth');
       showOnboardingFlow(meData.merchant);
       return true;
     }
+
+    // Le marchand est entièrement validé : Révéler le grand tableau de bord
+    showMainDashboard();
+    closeModal('modalAuth');
+    const container = document.getElementById('onboardingFlowContainer');
+    if (container) container.classList.add('hidden');
 
     // 2. Transactions réelles
     const txRes = await fetch('/api/v1/merchant/transactions', {
@@ -242,6 +332,7 @@ function renderAllDashboardElements() {
   const xofObj = VPState.wallets.find(w => w.code === 'XOF');
   if (xofObj) xofObj.balance = balanceFCFA;
   renderDetailedWallets();
+  renderOverviewDashboardKPIs();
 
   // 5. Clés API et Whitelist dans l'onglet Développeur (100% conforme SasPay)
   const devMerchantName = document.getElementById('devMerchantName');
@@ -265,17 +356,28 @@ function renderAllDashboardElements() {
   if (settingsEmailInput) settingsEmailInput.value = m.email;
   if (settingsPhoneInput) settingsPhoneInput.value = m.phone || '';
 
-  // 8. Rendu des transactions (avec état vide élégant si 0 transactions)
+  // Synchronisation dynamique du nom de l'application active dans tous les sous-titres
+  document.querySelectorAll('.active-app-name-display').forEach(el => {
+    el.textContent = activeAppName;
+  });
+
+  // 8. Rendu des transactions (avec mise en page 100% conforme capture)
   renderTransactionsList();
   renderFullTransactionsList();
 
-  // 9. Liens de paiement
+  // 9. Liens de paiement (table + pagination conforme capture)
   renderPaymentLinksList();
 
-  // 10. Clients CRM
+  // 10. Sessions de checkout (table + pagination conforme capture)
+  renderCheckoutSessionsList();
+
+  // 11. Clients CRM (table + pagination conforme capture)
   renderCustomersList();
 
-  // 11. Tarification réseau (conforme SasPay)
+  // 12. Litiges (conforme capture)
+  renderDisputes();
+
+  // 13. Tarification réseau (conforme SasPay)
   renderPricingRates();
 
   // 12. Paramètres avancés (100% conforme SasPay)
@@ -296,8 +398,154 @@ function renderAllDashboardElements() {
 }
 
 /* ========================================================
-   2. RENDU DES TRANSACTIONS & ÉTAT VIDE ÉLÉGANT
+   2. RENDU DU TABLEAU DE BORD (KPIS, VOLUME & LIENS RAPIDES)
    ======================================================== */
+
+function formatOverviewTxDate(isoString) {
+  if (!isoString) return '—';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    const day = d.getDate();
+    const month = d.toLocaleDateString('fr-FR', { month: 'short' });
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${month}, ${hours}:${minutes}`;
+  } catch {
+    return isoString;
+  }
+}
+
+function renderOverviewRecentTransactions() {
+  const container = document.getElementById('overviewRecentTxList');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const txs = VPState.transactions || [];
+
+  if (txs.length === 0) {
+    container.innerHTML = `
+      <div class="py-12 px-4 text-center">
+        <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-sm mx-auto mb-2">
+          +
+        </div>
+        <p class="text-xs font-semibold text-slate-600">Aucune transaction pour le moment</p>
+        <p class="text-[11px] text-slate-400 mt-1">Vos transactions récentes s'afficheront ici en direct.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Affiche les 5 transactions les plus récentes (100% conforme au screenshot SasPay)
+  const recents = txs.slice(0, 5);
+  recents.forEach(t => {
+    const rawId = String(t.id || t.reference || '');
+    const displayId = rawId.length > 15 ? (rawId.substring(0, 15) + '...') : rawId;
+    const dateFormatted = formatOverviewTxDate(t.created_at);
+    const amountVal = parseFloat(t.amount_gross || t.amount || 0);
+    const amountFormatted = amountVal.toLocaleString('fr-FR');
+    const currency = t.currency || 'XOF';
+
+    let statusLabel = 'Échoué';
+    let statusClass = 'text-[#F43F5E]';
+    const st = (t.status || '').toUpperCase();
+    if (st === 'SUCCESS' || st === 'REUSSI' || st === 'COMPLETED' || st === 'SUCCEEDED') {
+      statusLabel = 'Réussi';
+      statusClass = 'text-[#10B981]';
+    } else if (st === 'PENDING' || st === 'WAITING' || st === 'PROCESSING') {
+      statusLabel = 'En attente';
+      statusClass = 'text-[#F59E0B]';
+    } else if (st === 'CANCELLED' || st === 'ANNULE') {
+      statusLabel = 'Annulé';
+      statusClass = 'text-slate-400';
+    } else {
+      statusLabel = 'Échoué';
+      statusClass = 'text-[#F43F5E]';
+    }
+
+    const item = document.createElement('div');
+    item.className = 'flex items-center justify-between py-2.5 px-2 hover:bg-[#F8FAFC] rounded-xl transition-colors cursor-pointer group';
+    item.title = `Transaction ${rawId} — Cliquer pour voir les détails`;
+    item.onclick = () => {
+      switchTab('transactions');
+    };
+
+    item.innerHTML = `
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F3F4F6] text-[#9CA3AF] flex items-center justify-center font-bold text-sm shrink-0 group-hover:bg-blue-50 group-hover:text-[#0052FF] transition-colors">
+          +
+        </div>
+        <div class="min-w-0">
+          <span class="text-xs sm:text-sm font-bold text-[#111827] block truncate" title="${rawId}">
+            ${displayId}
+          </span>
+          <span class="text-[11px] text-[#6B7280] block mt-0.5">
+            ${dateFormatted}
+          </span>
+        </div>
+      </div>
+      <div class="text-right shrink-0 ml-3">
+        <span class="text-xs sm:text-sm font-bold text-[#111827] block font-mono">
+          +${amountFormatted} ${currency}
+        </span>
+        <span class="text-[11px] font-semibold ${statusClass} block mt-0.5">
+          ${statusLabel}
+        </span>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+
+function renderOverviewDashboardKPIs() {
+  if (!VPState.merchant) return;
+  const balanceFCFA = parseFloat(VPState.merchant.balance_fcfa || 0);
+
+  // 1. Solde disponible principal
+  const xofWalletEl = document.getElementById('xofWalletBalance');
+  if (xofWalletEl) xofWalletEl.textContent = balanceFCFA.toLocaleString('fr-FR');
+
+  const keyXofEl = document.getElementById('keyWalletXOF');
+  if (keyXofEl) keyXofEl.textContent = balanceFCFA.toLocaleString('fr-FR');
+
+  // Helper pour trouver le solde disponible par devise
+  const getCurrencyBal = (code) => {
+    if (code === 'XOF') return balanceFCFA;
+    if (VPState.walletsList && VPState.walletsList.length > 0) {
+      const match = VPState.walletsList.find(w => (w.currency || '').toUpperCase() === code);
+      if (match) return parseFloat(match.available_amount || 0);
+    }
+    const wMatch = (VPState.wallets || []).find(w => (w.code || '').toUpperCase() === code);
+    return wMatch ? parseFloat(wMatch.balance || 0) : 0;
+  };
+
+  const formatBal = (val) => {
+    if (val === 0) return '0';
+    return val % 1 === 0 ? val.toLocaleString('fr-FR') : val.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  };
+
+  // 2. Mise à jour des 6 devises du tableau de bord (exactement selon capture SasPay)
+  const balUSD = document.getElementById('overviewBalUSD');
+  if (balUSD) balUSD.textContent = formatBal(getCurrencyBal('USD'));
+
+  const balZMW = document.getElementById('overviewBalZMW');
+  if (balZMW) balZMW.textContent = formatBal(getCurrencyBal('ZMW'));
+
+  const balUGX = document.getElementById('overviewBalUGX');
+  if (balUGX) balUGX.textContent = formatBal(getCurrencyBal('UGX'));
+
+  const balTZS = document.getElementById('overviewBalTZS');
+  if (balTZS) balTZS.textContent = formatBal(getCurrencyBal('TZS'));
+
+  const balXOF = document.getElementById('overviewBalXOF');
+  if (balXOF) balXOF.textContent = formatBal(getCurrencyBal('XOF'));
+
+  const balRWF = document.getElementById('overviewBalRWF');
+  if (balRWF) balRWF.textContent = formatBal(getCurrencyBal('RWF'));
+
+  // 3. Rendu des transactions récentes sur le tableau de bord
+  renderOverviewRecentTransactions();
+}
 
 function renderTransactionsList() {
   const container = document.getElementById('recentTxList');
@@ -309,14 +557,14 @@ function renderTransactionsList() {
   if (!VPState.transactions || VPState.transactions.length === 0) {
     container.innerHTML = `
       <div id="emptyTxState" class="p-6 text-center bg-[#F8F9FD] rounded-2xl border border-dashed border-[#ECEEF6] my-2">
-        <div class="w-12 h-12 rounded-2xl bg-purple-50 text-[#5846F6] font-bold flex items-center justify-center text-xl mx-auto mb-3 shadow-sm">
+        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-[#0052FF] font-bold flex items-center justify-center text-xl mx-auto mb-3 shadow-sm">
           ⚡
         </div>
         <h3 class="text-sm font-bold text-[#111827] mb-1">Aucune transaction pour le moment</h3>
         <p class="text-xs text-slate-500 mb-4 max-w-xs mx-auto leading-relaxed">
           Créez votre premier lien de paiement pour commencer à encaisser vos clients !
         </p>
-        <button onclick="openCreateLinkModal()" class="px-4 py-2.5 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/20 transition-all inline-flex items-center gap-2">
+        <button onclick="openCreateLinkModal()" class="px-4 py-2.5 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-all inline-flex items-center gap-2">
           <span>+ Créer un premier lien</span>
         </button>
       </div>
@@ -359,190 +607,946 @@ function renderTransactionsList() {
     `;
     container.appendChild(card);
   });
+  renderOverviewRecentTransactions();
 }
 
-function renderFullTransactionsList() {
+function formatTxDateSplit(isoString) {
+  if (!isoString) return { day: '—', month: '—', year: '—' };
+  try {
+    const d = new Date(isoString);
+    const day = d.getDate();
+    const month = d.toLocaleDateString('fr-FR', { month: 'short' });
+    const year = d.getFullYear();
+    return { day, month, year };
+  } catch {
+    return { day: '—', month: '—', year: '—' };
+  }
+}
+
+function getOperatorDotColor(net) {
+  const n = (net || '').toUpperCase();
+  if (n.includes('ORANGE')) return 'bg-[#FF7900] ring-1 ring-orange-300';
+  if (n.includes('MTN')) return 'bg-[#FFCC00] ring-1 ring-yellow-400';
+  if (n.includes('MOOV')) return 'bg-[#008080] ring-1 ring-teal-400';
+  if (n.includes('WAVE')) return 'bg-[#1DC4FA] ring-1 ring-sky-300';
+  return 'bg-slate-800';
+}
+
+function getOperatorDisplayLabel(t) {
+  if (t.operator_name) return t.operator_name;
+  const pm = (t.payment_method || '').toUpperCase();
+  const country = (t.country || '').toUpperCase();
+  const countryName = getCountryName(country);
+
+  if (pm === 'ORANGE') return `Orange ${countryName}`;
+  if (pm === 'MTN') return `MTN MoMo ${countryName}`;
+  if (pm === 'MOOV') return `Moov Money ${countryName}`;
+  if (pm === 'WAVE') return `Wave ${countryName}`;
+  if (pm === 'CARD') return `Carte Bancaire`;
+  return t.payment_method || 'Mobile Money';
+}
+
+function getTransactionCountry(t) {
+  if (t.country) {
+    return { code: t.country.toUpperCase(), name: getCountryName(t.country) };
+  }
+  const phone = (t.customer_phone || '').replace(/[^0-9]/g, '');
+  if (phone.startsWith('226')) return { code: 'BF', name: 'Burkina Faso' };
+  if (phone.startsWith('229')) return { code: 'BJ', name: 'Bénin' };
+  if (phone.startsWith('228')) return { code: 'TG', name: 'Togo' };
+  if (phone.startsWith('225')) return { code: 'CI', name: "Côte d'Ivoire" };
+  if (phone.startsWith('221')) return { code: 'SN', name: 'Sénégal' };
+  if (phone.startsWith('223')) return { code: 'ML', name: 'Mali' };
+  if (phone.startsWith('227')) return { code: 'NE', name: 'Niger' };
+  if (phone.startsWith('224')) return { code: 'GN', name: 'Guinée' };
+  if (phone.startsWith('237')) return { code: 'CM', name: 'Cameroun' };
+  return { code: 'BF', name: 'Burkina Faso' };
+}
+
+/* ========================================================
+   SECTION 3 : RENDU DES TRANSACTIONS (100% CONFORME CAPTURE)
+   ======================================================== */
+
+async function renderFullTransactionsList() {
   const tbody = document.getElementById('fullTransactionsBody');
   if (!tbody) return;
 
-  tbody.innerHTML = '';
+  tbody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-slate-400 text-xs">Chargement des transactions...</td></tr>';
 
-  if (!VPState.transactions || VPState.transactions.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" class="py-12 text-center text-slate-400">
-          <div class="flex flex-col items-center justify-center">
-            <span class="text-2xl mb-2">🧾</span>
-            <span class="text-xs font-semibold text-[#111827]">Aucune transaction enregistrée</span>
-            <span class="text-[11px] text-slate-400 mt-0.5">Partagez votre lien de paiement pour recevoir vos premiers règlements.</span>
+  try {
+    const params = new URLSearchParams({
+      page: VPState.txPage,
+      limit: VPState.txPageSize
+    });
+    if (VPState.txStatusFilter && VPState.txStatusFilter !== 'ALL') params.append('status', VPState.txStatusFilter);
+    if (VPState.txSearchQuery) params.append('search', VPState.txSearchQuery);
+    if (VPState.txCountryFilter && VPState.txCountryFilter !== 'ALL') params.append('country', VPState.txCountryFilter);
+    if (VPState.txNetworkFilter && VPState.txNetworkFilter !== 'ALL') params.append('network', VPState.txNetworkFilter);
+    if (VPState.txDirectionFilter && VPState.txDirectionFilter !== 'ALL') params.append('direction', VPState.txDirectionFilter);
+    if (VPState.txDateFrom) params.append('date_from', VPState.txDateFrom);
+    if (VPState.txDateTo) params.append('date_to', VPState.txDateTo);
+
+    const res = await fetch(`/api/v1/merchant/transactions?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    const list = (data.success && data.transactions) ? data.transactions : (VPState.transactions || []);
+    const total = data.pagination?.total ?? list.length;
+    VPState.txTotal = total;
+
+    tbody.innerHTML = '';
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="py-12 text-center text-slate-400 text-xs">
+            <div class="flex flex-col items-center justify-center">
+              <span class="text-2xl mb-2">🧾</span>
+              <span class="text-xs font-semibold text-[#111827]">Aucune transaction trouvée</span>
+              <span class="text-[11px] text-slate-400 mt-0.5">Vos règlements clients s'afficheront ici en temps réel.</span>
+            </div>
+          </td>
+        </tr>
+      `;
+      updateTxPagination(0, 0, 0);
+      return;
+    }
+
+    list.forEach(t => {
+      const isSuccess = t.status === 'SUCCESS';
+      const isPending = t.status === 'PENDING';
+      const isFailed = t.status === 'FAILED';
+      const isCancelled = t.status === 'CANCELLED';
+
+      const statusBadge = isSuccess
+        ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#E6F8F0] text-[#10B981]">Réussi</span>'
+        : (isPending
+          ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FFF8E6] text-[#D97706]">En attente</span>'
+          : (isCancelled
+            ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">Annulé</span>'
+            : '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FEECEE] text-[#EF4444]">Échoué</span>'));
+
+      const isPayout = (t.type === 'OUT' || (t.id && t.id.startsWith('po_')));
+      const typeBadge = isPayout
+        ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#0052FF]">Décaissement</span><span class="text-[10px] text-slate-400 block mt-0.5">Retrait</span>`
+        : `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#EAF2FF] text-[#2563EB]">Encaissement</span><span class="text-[10px] text-slate-400 block mt-0.5">Paiement</span>`;
+
+      const countryInfo = getTransactionCountry(t);
+      const networkLabel = getOperatorDisplayLabel(t);
+      const dotClass = getOperatorDotColor(t.payment_method || networkLabel);
+      const dateSplit = formatTxDateSplit(t.created_at);
+      const phone = t.customer_phone || t.recipient_phone || '—';
+      const grossAmount = parseFloat(t.amount_gross || t.amount || 0).toLocaleString('fr-FR');
+      const currency = t.currency || 'XOF';
+      const sign = isPayout ? '-' : '+';
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-[#F8F9FD] transition-colors';
+      tr.innerHTML = `
+        <td class="py-3 px-3">
+          <span class="font-mono text-xs font-semibold text-[#111827] block truncate max-w-[150px]" title="${t.id}">${t.id}</span>
+        </td>
+        <td class="py-3 px-3">${typeBadge}</td>
+        <td class="py-3 px-3">
+          <span class="text-[10px] text-slate-400 font-bold tracking-wider block">${countryInfo.code}</span>
+          <span class="text-xs text-slate-700 font-medium block whitespace-nowrap">${countryInfo.name}</span>
+        </td>
+        <td class="py-3 px-3">
+          <div class="flex items-center gap-2 whitespace-nowrap">
+            <span class="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0 ${dotClass}"></span>
+            <span class="text-xs text-slate-700 font-medium">${networkLabel}</span>
           </div>
         </td>
-      </tr>
-    `;
-    return;
+        <td class="py-3 px-3">
+          <span class="text-xs font-mono text-slate-600 block">${phone}</span>
+        </td>
+        <td class="py-3 px-3">
+          <div class="text-xs text-slate-700 font-medium leading-tight">
+            <span>${dateSplit.day}</span><br>
+            <span>${dateSplit.month}</span><br>
+            <span>${dateSplit.year}</span>
+          </div>
+        </td>
+        <td class="py-3 px-3">${statusBadge}</td>
+        <td class="py-3 px-3 text-right">
+          <span class="text-xs font-extrabold text-[#111827] font-mono whitespace-nowrap">${sign}${grossAmount} ${currency}</span>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const start = (VPState.txPage - 1) * VPState.txPageSize + 1;
+    const end = Math.min(VPState.txPage * VPState.txPageSize, total);
+    updateTxPagination(start, end, total);
+  } catch (err) {
+    console.error('Erreur renderFullTransactionsList:', err);
+    tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-rose-500 text-xs">Erreur de chargement: ${err.message}</td></tr>`;
+  }
+}
+
+function updateTxPagination(start, end, total) {
+  const info = document.getElementById('txPaginationInfo');
+  if (info) info.textContent = `${total === 0 ? 0 : start}-${end} sur ${total}`;
+  const btnPrev = document.getElementById('btnPrevTx');
+  const btnNext = document.getElementById('btnNextTx');
+  if (btnPrev) btnPrev.disabled = VPState.txPage <= 1;
+  if (btnNext) btnNext.disabled = end >= total;
+}
+
+function initTransactionsSection() {
+  const searchInput = document.getElementById('txSearchInput');
+  if (searchInput) {
+    let debounce;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        VPState.txSearchQuery = e.target.value;
+        VPState.txPage = 1;
+        renderFullTransactionsList();
+      }, 300);
+    });
   }
 
-  VPState.transactions.forEach(t => {
-    const isSuccess = t.status === 'SUCCESS';
-    const isPending = t.status === 'PENDING';
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-[#F8F9FD] transition-colors';
-    tr.innerHTML = `
-      <td class="py-3 px-3 font-mono font-bold text-[#111827]">${t.id}</td>
-      <td class="py-3 px-3 text-slate-400 font-mono text-[11px]">${formatTxDate(t.created_at)}</td>
-      <td class="py-3 px-3 font-medium text-slate-700">${t.customer_name || t.customer_phone || 'Anonyme'}</td>
-      <td class="py-3 px-3 font-mono font-bold text-[#111827]">${parseFloat(t.amount_gross || 0).toLocaleString('fr-FR')}</td>
-      <td class="py-3 px-3 font-mono font-semibold text-slate-500">${t.currency || 'XOF'}</td>
-      <td class="py-3 px-3">
-        <span class="px-2 py-0.5 rounded-full font-bold text-[10px] ${isSuccess ? 'bg-emerald-50 text-emerald-600' : isPending ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-500'}">
-          ${isSuccess ? 'Réussi' : isPending ? 'En attente' : 'Échoué'}
-        </span>
-      </td>
-    `;
-    tbody.appendChild(tr);
+  const pills = document.querySelectorAll('.tx-status-pill');
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => {
+        p.classList.remove('active', 'bg-[#0052FF]', 'text-white');
+        p.classList.add('text-slate-600');
+      });
+      pill.classList.add('active', 'bg-[#0052FF]', 'text-white');
+      pill.classList.remove('text-slate-600');
+
+      VPState.txStatusFilter = pill.getAttribute('data-status') || 'ALL';
+      VPState.txPage = 1;
+      renderFullTransactionsList();
+    });
   });
+
+  const directionFilter = document.getElementById('txDirectionFilter');
+  if (directionFilter) {
+    directionFilter.addEventListener('change', (e) => {
+      VPState.txDirectionFilter = e.target.value;
+      VPState.txPage = 1;
+      renderFullTransactionsList();
+    });
+  }
+
+  const countryFilter = document.getElementById('txCountryFilter');
+  if (countryFilter) {
+    countryFilter.addEventListener('change', (e) => {
+      VPState.txCountryFilter = e.target.value;
+      VPState.txPage = 1;
+      renderFullTransactionsList();
+    });
+  }
+
+  const networkFilter = document.getElementById('txNetworkFilter');
+  if (networkFilter) {
+    networkFilter.addEventListener('change', (e) => {
+      VPState.txNetworkFilter = e.target.value;
+      VPState.txPage = 1;
+      renderFullTransactionsList();
+    });
+  }
+
+  const dateFrom = document.getElementById('txDateFrom');
+  if (dateFrom) {
+    dateFrom.addEventListener('change', (e) => {
+      VPState.txDateFrom = e.target.value;
+      VPState.txPage = 1;
+      renderFullTransactionsList();
+    });
+  }
+
+  const dateTo = document.getElementById('txDateTo');
+  if (dateTo) {
+    dateTo.addEventListener('change', (e) => {
+      VPState.txDateTo = e.target.value;
+      VPState.txPage = 1;
+      renderFullTransactionsList();
+    });
+  }
+
+  const pageSize = document.getElementById('txPageSize');
+  if (pageSize) {
+    pageSize.addEventListener('change', (e) => {
+      VPState.txPageSize = parseInt(e.target.value);
+      VPState.txPage = 1;
+      renderFullTransactionsList();
+    });
+  }
+
+  const btnPrev = document.getElementById('btnPrevTx');
+  if (btnPrev) {
+    btnPrev.addEventListener('click', () => {
+      if (VPState.txPage > 1) {
+        VPState.txPage -= 1;
+        renderFullTransactionsList();
+      }
+    });
+  }
+
+  const btnNext = document.getElementById('btnNextTx');
+  if (btnNext) {
+    btnNext.addEventListener('click', () => {
+      VPState.txPage += 1;
+      renderFullTransactionsList();
+    });
+  }
 
   const exportBtn = document.getElementById('btnExportCsv');
   if (exportBtn) {
     exportBtn.onclick = () => {
-      const csv = "ID,Date,Client,Montant,Devise,Statut\n" + VPState.transactions.map(t =>
-        `${t.id},"${formatTxDate(t.created_at)}","${t.customer_name || ''}",${t.amount_gross},${t.currency},${t.status}`
-      ).join("\n");
-      const blob = new Blob([csv], { type: 'text/csv' });
+      const csv = "RÉFÉRENCE,TYPE,PAYS,RÉSEAU,NUMÉRO,DATE,STATUT,MONTANT,DEVISE\n" + (VPState.transactions || []).map(t => {
+        const c = getTransactionCountry(t);
+        const net = getOperatorDisplayLabel(t);
+        const date = t.created_at || '';
+        return `"${t.id}","${t.type || 'Encaissement'}","${c.code} ${c.name}","${net}","${t.customer_phone || ''}","${date}","${t.status || ''}",${t.amount_gross || t.amount || 0},"${t.currency || 'XOF'}"`;
+      }).join("\n");
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.setAttribute('href', url);
-      a.setAttribute('download', `vandias_transactions_${Date.now()}.csv`);
+      a.setAttribute('download', `transactions_export_${Date.now()}.csv`);
       a.click();
       showToast("Exporté !", "Fichier CSV téléchargé avec succès.");
     };
   }
 }
 
-function formatTxDate(isoString) {
-  if (!isoString) return 'Récemment';
-  try {
-    const d = new Date(isoString);
-    return `${d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-  } catch {
-    return 'Récemment';
-  }
-}
-
 /* ========================================================
-   3. RENDU DES LIENS DE PAIEMENT
+   SECTION 4 : RENDU DES LIENS DE PAIEMENT (100% CONFORME CAPTURE)
    ======================================================== */
 
-function renderPaymentLinksList() {
-  const container = document.getElementById('paymentLinksListContainer');
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  if (!VPState.paymentLinks || VPState.paymentLinks.length === 0) {
-    container.innerHTML = `
-      <div class="col-span-full p-8 text-center bg-white rounded-3xl border border-[#ECEEF6] shadow-sm">
-        <div class="w-12 h-12 rounded-2xl bg-purple-50 text-[#5846F6] font-bold flex items-center justify-center text-xl mx-auto mb-3">
-          🔗
-        </div>
-        <h3 class="text-sm font-bold text-[#111827] mb-1">Aucun lien de paiement pour le moment</h3>
-        <p class="text-xs text-slate-500 mb-4 max-w-sm mx-auto">
-          Générez un lien en 1 clic pour vendre vos produits ou services sur WhatsApp, Telegram, TikTok ou votre site web.
-        </p>
-        <button onclick="openCreateLinkModal()" class="px-4 py-2.5 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/20 transition-all">
-          + Créer un nouveau lien
-        </button>
-      </div>
-    `;
-    return;
-  }
-
-  VPState.paymentLinks.forEach(lnk => {
-    const card = document.createElement('div');
-    card.className = 'p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm flex flex-col justify-between hover:border-purple-200 transition-all';
-    card.innerHTML = `
-      <div>
-        <div class="flex items-center justify-between text-xs text-slate-400 mb-2 font-mono">
-          <span class="truncate max-w-[140px]">${lnk.slug || lnk.id}</span>
-          <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-bold text-[10px]">Actif</span>
-        </div>
-        <h4 class="text-sm font-bold text-[#111827] mb-2 truncate">${lnk.title}</h4>
-        <div class="text-2xl font-black text-[#111827] font-mono mb-3">
-          ${parseFloat(lnk.amount_fcfa || lnk.amount || 0).toLocaleString('fr-FR')} ${lnk.currency || 'XOF'}
-        </div>
-        <span class="text-xs text-slate-400 block">${lnk.sales_count || 0} ventes réalisées</span>
-      </div>
-
-      <div class="pt-4 border-t border-[#F0F2F9] mt-4 flex items-center justify-between gap-2">
-        <button class="flex-1 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-bold text-[#111827] transition-colors" onclick="navigator.clipboard.writeText('${lnk.url}'); showToast('Copié !', 'Lien copié dans le presse-papier.');">
-          Copier le lien
-        </button>
-        <a href="${lnk.url}" target="_blank" class="p-2 rounded-xl bg-purple-50 text-[#5846F6] hover:bg-purple-100 transition-colors" title="Ouvrir le checkout">
-          ⚡
-        </a>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
-
-/* ========================================================
-   4. CLIENTS CRM LIST
-   ======================================================== */
-
-function renderCustomersList() {
-  const tbody = document.getElementById('customersTableBody');
+async function renderPaymentLinksList() {
+  const tbody = document.getElementById('paymentLinksTableBody');
   if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/v1/merchant/links', {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    if (data.success && data.links) {
+      VPState.paymentLinks = data.links;
+    }
+  } catch (e) {
+    console.warn('Fallback local paymentLinks:', e.message);
+  }
+
+  let list = [...(VPState.paymentLinks || [])];
+  if (VPState.paymentLinksSearchQuery) {
+    const q = VPState.paymentLinksSearchQuery.toLowerCase().trim();
+    list = list.filter(l =>
+      (l.title && l.title.toLowerCase().includes(q)) ||
+      (l.description && l.description.toLowerCase().includes(q)) ||
+      (l.slug && l.slug.toLowerCase().includes(q))
+    );
+  }
+
+  const total = list.length;
+  VPState.paymentLinksTotal = total;
+
+  const pageSize = VPState.paymentLinksPageSize;
+  const startIndex = (VPState.paymentLinksPage - 1) * pageSize;
+  const paginated = list.slice(startIndex, startIndex + pageSize);
 
   tbody.innerHTML = '';
 
-  // Extraction des clients uniques à partir des transactions réelles
-  const customerMap = new Map();
-  VPState.transactions.forEach(t => {
-    if (t.customer_phone || t.customer_name) {
-      const key = t.customer_phone || t.customer_email || t.customer_name;
-      if (!customerMap.has(key)) {
-        customerMap.set(key, {
-          name: t.customer_name || 'Client VandiasPay',
-          phone: t.customer_phone || 'N/A',
-          email: t.customer_email || 'N/A',
-          purchases: 0,
-          total: 0
-        });
-      }
-      const entry = customerMap.get(key);
-      entry.purchases += 1;
-      if (t.status === 'SUCCESS') {
-        entry.total += parseFloat(t.amount_gross || 0);
-      }
-    }
-  });
-
-  const list = Array.from(customerMap.values());
-
-  if (list.length === 0) {
+  if (paginated.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" class="py-10 text-center text-slate-400 text-xs">
-          Aucun client répertorié. Vos acheteurs s'afficheront automatiquement ici dès leur premier paiement.
+        <td colspan="5" class="py-12 text-center text-slate-400 text-xs">
+          <div class="flex flex-col items-center justify-center">
+            <span class="text-2xl mb-2">🔗</span>
+            <span class="text-xs font-semibold text-[#111827]">Aucun lien de paiement trouvé</span>
+            <span class="text-[11px] text-slate-400 mt-0.5">Cliquez sur « + Créer un lien » pour générer un lien instantané.</span>
+          </div>
         </td>
       </tr>
     `;
+    updatePaymentLinksPagination(0, 0, 0);
     return;
   }
 
-  list.forEach(c => {
+  paginated.forEach(lnk => {
+    const amountStr = parseFloat(lnk.amount_fcfa || lnk.amount || 0).toLocaleString('fr-FR');
+    const currencyStr = lnk.currency || 'XOF';
+    const uses = lnk.sales_count ?? 0;
+    const desc = lnk.description || 'Sans description';
+
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-[#F8F9FD] transition-colors';
     tr.innerHTML = `
-      <td class="py-3 px-3 font-bold text-[#111827]">${c.name}</td>
-      <td class="py-3 px-3 font-mono text-slate-600">${c.phone}</td>
-      <td class="py-3 px-3 font-mono text-slate-400 text-[11px]">${c.email}</td>
-      <td class="py-3 px-3 font-bold text-[#111827]">${c.purchases}</td>
-      <td class="py-3 px-3 font-bold text-emerald-600 font-mono">${c.total.toLocaleString('fr-FR')} XOF</td>
+      <td class="py-3.5 px-3">
+        <div class="font-bold text-xs text-[#111827]">${lnk.title}</div>
+        <div class="text-[11px] text-slate-400 mt-0.5">${desc}</div>
+      </td>
+      <td class="py-3.5 px-3">
+        <span class="text-xs font-bold text-[#111827] font-mono">${amountStr} ${currencyStr}</span>
+      </td>
+      <td class="py-3.5 px-3">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E6F8F0] text-[#10B981]">Actif</span>
+      </td>
+      <td class="py-3.5 px-3">
+        <span class="text-xs text-slate-700 font-medium">${uses}</span>
+      </td>
+      <td class="py-3.5 px-3 text-right">
+        <div class="flex items-center justify-end gap-1">
+          <button class="text-slate-400 hover:text-[#0052FF] p-1.5 transition-colors" title="Copier le lien" onclick="navigator.clipboard.writeText('${lnk.url}'); showToast('Copié !', 'Lien copié dans le presse-papier.');">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+          </button>
+          <button class="text-rose-500 hover:text-rose-700 p-1.5 transition-colors" title="Supprimer" onclick="deletePaymentLink('${lnk.id}')">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </td>
     `;
     tbody.appendChild(tr);
   });
+
+  const start = startIndex + 1;
+  const end = Math.min(startIndex + pageSize, total);
+  updatePaymentLinksPagination(start, end, total);
+}
+
+function updatePaymentLinksPagination(start, end, total) {
+  const info = document.getElementById('paymentLinksPaginationInfo');
+  if (info) info.textContent = `${total === 0 ? 0 : start}-${end} sur ${total}`;
+  const btnPrev = document.getElementById('btnPrevPaymentLinks');
+  const btnNext = document.getElementById('btnNextPaymentLinks');
+  if (btnPrev) btnPrev.disabled = VPState.paymentLinksPage <= 1;
+  if (btnNext) btnNext.disabled = end >= total;
+}
+
+async function deletePaymentLink(id) {
+  if (!confirm('Voulez-vous vraiment supprimer ce lien de paiement ?')) return;
+  try {
+    const res = await fetch(`/api/v1/merchant/links/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      VPState.paymentLinks = VPState.paymentLinks.filter(l => l.id !== id);
+      renderPaymentLinksList();
+      showToast('Supprimé', 'Le lien a été supprimé.');
+    } else {
+      showToast('Erreur', data.error || 'Erreur lors de la suppression.');
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
+}
+
+function initPaymentLinksSection() {
+  const searchInput = document.getElementById('paymentLinksSearchInput');
+  if (searchInput) {
+    let debounce;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        VPState.paymentLinksSearchQuery = e.target.value;
+        VPState.paymentLinksPage = 1;
+        renderPaymentLinksList();
+      }, 300);
+    });
+  }
+
+  const pageSize = document.getElementById('paymentLinksPageSize');
+  if (pageSize) {
+    pageSize.addEventListener('change', (e) => {
+      VPState.paymentLinksPageSize = parseInt(e.target.value);
+      VPState.paymentLinksPage = 1;
+      renderPaymentLinksList();
+    });
+  }
+
+  const btnPrev = document.getElementById('btnPrevPaymentLinks');
+  if (btnPrev) {
+    btnPrev.addEventListener('click', () => {
+      if (VPState.paymentLinksPage > 1) {
+        VPState.paymentLinksPage -= 1;
+        renderPaymentLinksList();
+      }
+    });
+  }
+
+  const btnNext = document.getElementById('btnNextPaymentLinks');
+  if (btnNext) {
+    btnNext.addEventListener('click', () => {
+      VPState.paymentLinksPage += 1;
+      renderPaymentLinksList();
+    });
+  }
+}
+
+/* ========================================================
+   SECTION 5 : RENDU DES SESSIONS DE CHECKOUT (100% CONFORME CAPTURE)
+   ======================================================== */
+
+function formatCheckoutSessionDate(isoString) {
+  if (!isoString) return '—';
+  try {
+    const d = new Date(isoString);
+    const day = d.getDate();
+    const month = d.toLocaleDateString('fr-FR', { month: 'short' });
+    const year = d.getFullYear();
+    const time = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return `${day} ${month} ${year}, ${time}`;
+  } catch {
+    return '—';
+  }
+}
+
+async function renderCheckoutSessionsList() {
+  const tbody = document.getElementById('checkoutSessionsTableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-slate-400 text-xs">Chargement des sessions...</td></tr>';
+
+  try {
+    const params = new URLSearchParams({
+      page: VPState.checkoutSessionsPage,
+      limit: VPState.checkoutSessionsPageSize
+    });
+    if (VPState.checkoutSessionsSearchQuery) params.append('search', VPState.checkoutSessionsSearchQuery);
+
+    const res = await fetch(`/api/v1/merchant/checkout-sessions?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    const list = (data.success && data.sessions) ? data.sessions : [];
+    const total = data.pagination?.total ?? list.length;
+    VPState.checkoutSessions = list;
+    VPState.checkoutSessionsTotal = total;
+
+    tbody.innerHTML = '';
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="py-12 text-center text-slate-400 text-xs">
+            <div class="flex flex-col items-center justify-center">
+              <span class="text-2xl mb-2">⚡</span>
+              <span class="text-xs font-semibold text-[#111827]">Aucune session de checkout</span>
+              <span class="text-[11px] text-slate-400 mt-0.5">Créez une session à usage unique pré-remplie pour vos clients.</span>
+            </div>
+          </td>
+        </tr>
+      `;
+      updateCheckoutSessionsPagination(0, 0, 0);
+      return;
+    }
+
+    list.forEach(s => {
+      const isPaid = s.status === 'PAID' || s.status === 'SUCCESS';
+      const isExpired = s.status === 'EXPIRED' || s.status === 'FAILED';
+      const statusBadge = isPaid
+        ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E6F8F0] text-[#10B981]">Payée</span>'
+        : (isExpired
+          ? '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Expirée</span>'
+          : '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#FFF8E6] text-[#D97706]">En attente</span>');
+
+      const amountStr = parseFloat(s.amount || 0).toLocaleString('fr-FR');
+      const currencyStr = s.currency || 'XOF';
+      const clientName = s.customer_name || 'Client';
+      const clientEmail = s.customer_email || 'client@vandiaspay.com';
+      const sessionUrl = s.checkout_url || `${window.location.origin}/checkout.html?session=${encodeURIComponent(s.id)}`;
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-[#F8F9FD] transition-colors';
+      tr.innerHTML = `
+        <td class="py-3.5 px-3">
+          <div class="font-bold text-xs text-[#111827]">${clientName}</div>
+          <div class="text-[11px] text-slate-400 font-mono mt-0.5">${clientEmail}</div>
+        </td>
+        <td class="py-3.5 px-3">
+          <span class="font-mono text-xs text-slate-600 truncate max-w-[150px] inline-block" title="${s.id}">${s.id}</span>
+        </td>
+        <td class="py-3.5 px-3">
+          <span class="text-xs font-semibold text-[#111827] font-mono">${amountStr} ${currencyStr}</span>
+        </td>
+        <td class="py-3.5 px-3">${statusBadge}</td>
+        <td class="py-3.5 px-3 text-slate-600 text-xs">${formatCheckoutSessionDate(s.created_at)}</td>
+        <td class="py-3.5 px-3 text-right">
+          <button onclick="navigator.clipboard.writeText('${sessionUrl}'); showToast('Copié !', 'Lien de la session copié dans le presse-papier.');" class="px-3.5 py-1.5 rounded-xl bg-white border border-[#ECEEF6] hover:bg-slate-50 text-xs font-semibold text-[#111827] transition-colors shadow-sm">
+            Copier le lien
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const start = (VPState.checkoutSessionsPage - 1) * VPState.checkoutSessionsPageSize + 1;
+    const end = Math.min(VPState.checkoutSessionsPage * VPState.checkoutSessionsPageSize, total);
+    updateCheckoutSessionsPagination(start, end, total);
+  } catch (err) {
+    console.error('Erreur renderCheckoutSessionsList:', err);
+    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-rose-500 text-xs">Erreur: ${err.message}</td></tr>`;
+  }
+}
+
+function updateCheckoutSessionsPagination(start, end, total) {
+  const info = document.getElementById('checkoutSessionsPaginationInfo');
+  if (info) info.textContent = `${total === 0 ? 0 : start}-${end} sur ${total}`;
+  const btnPrev = document.getElementById('btnPrevCheckoutSessions');
+  const btnNext = document.getElementById('btnNextCheckoutSessions');
+  if (btnPrev) btnPrev.disabled = VPState.checkoutSessionsPage <= 1;
+  if (btnNext) btnNext.disabled = end >= total;
+}
+
+function openCreateCheckoutSessionModal() {
+  openModal('modalCreateCheckoutSession');
+}
+
+function initCheckoutSessionsSection() {
+  const searchInput = document.getElementById('checkoutSessionsSearchInput');
+  if (searchInput) {
+    let debounce;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        VPState.checkoutSessionsSearchQuery = e.target.value;
+        VPState.checkoutSessionsPage = 1;
+        renderCheckoutSessionsList();
+      }, 300);
+    });
+  }
+
+  const pageSize = document.getElementById('checkoutSessionsPageSize');
+  if (pageSize) {
+    pageSize.addEventListener('change', (e) => {
+      VPState.checkoutSessionsPageSize = parseInt(e.target.value);
+      VPState.checkoutSessionsPage = 1;
+      renderCheckoutSessionsList();
+    });
+  }
+
+  const btnPrev = document.getElementById('btnPrevCheckoutSessions');
+  if (btnPrev) {
+    btnPrev.addEventListener('click', () => {
+      if (VPState.checkoutSessionsPage > 1) {
+        VPState.checkoutSessionsPage -= 1;
+        renderCheckoutSessionsList();
+      }
+    });
+  }
+
+  const btnNext = document.getElementById('btnNextCheckoutSessions');
+  if (btnNext) {
+    btnNext.addEventListener('click', () => {
+      VPState.checkoutSessionsPage += 1;
+      renderCheckoutSessionsList();
+    });
+  }
+
+  const form = document.getElementById('createCheckoutSessionForm');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const customer_name = document.getElementById('newSessionCustomerName').value;
+      const customer_email = document.getElementById('newSessionCustomerEmail').value;
+      const customer_phone = document.getElementById('newSessionCustomerPhone')?.value || '';
+      const amount = parseFloat(document.getElementById('newSessionAmount').value);
+      const currency = document.getElementById('newSessionCurrency')?.value || 'XOF';
+      const title = document.getElementById('newSessionTitle')?.value || '';
+
+      if (!amount || isNaN(amount) || amount <= 0 || !customer_name || !customer_email) {
+        showToast("Erreur", "Remplissez tous les champs obligatoires avec un montant valide.");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/checkout-sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ customer_name, customer_email, customer_phone, amount, currency, title })
+        });
+        const data = await res.json();
+        if (data.success && data.session) {
+          VPState.checkoutSessions.unshift(data.session);
+          renderCheckoutSessionsList();
+          renderCustomersList();
+          closeModal('modalCreateCheckoutSession');
+          form.reset();
+          showToast("Session créée !", `Lien généré pour ${customer_name}`);
+        } else {
+          showToast("Erreur", data.error || "Impossible de créer la session.");
+        }
+      } catch (err) {
+        showToast("Erreur", err.message);
+      }
+    });
+  }
+}
+
+/* ========================================================
+   SECTION 6 : RENDU DU RÉPERTOIRE CLIENTS (100% CONFORME CAPTURE)
+   ======================================================== */
+
+async function renderCustomersList() {
+  const tbody = document.getElementById('customersTableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="4" class="py-10 text-center text-slate-400 text-xs">Chargement des clients...</td></tr>';
+
+  try {
+    const params = new URLSearchParams({
+      page: VPState.customersPage,
+      limit: VPState.customersPageSize
+    });
+    if (VPState.customersSearchQuery) params.append('search', VPState.customersSearchQuery);
+
+    const res = await fetch(`/api/v1/merchant/customers?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    const list = (data.success && data.customers) ? data.customers : [];
+    const total = data.pagination?.total ?? list.length;
+    VPState.customers = list;
+    VPState.customersTotal = total;
+
+    tbody.innerHTML = '';
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" class="py-12 text-center text-slate-400 text-xs">
+            <div class="flex flex-col items-center justify-center">
+              <span class="text-2xl mb-2">👥</span>
+              <span class="text-xs font-semibold text-[#111827]">Aucun client répertorié</span>
+              <span class="text-[11px] text-slate-400 mt-0.5">Vos acheteurs apparaîtront automatiquement lors de leurs paiements.</span>
+            </div>
+          </td>
+        </tr>
+      `;
+      updateCustomersPagination(0, 0, 0);
+      return;
+    }
+
+    list.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-[#F8F9FD] transition-colors';
+      tr.innerHTML = `
+        <td class="py-3.5 px-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-[#EDE9FE] text-[#0052FF] flex items-center justify-center font-bold text-xs flex-shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            </div>
+            <span class="font-bold text-xs text-[#111827]">${c.name}</span>
+          </div>
+        </td>
+        <td class="py-3.5 px-3">
+          <div class="text-xs text-slate-600 font-mono">${c.email}</div>
+          <div class="text-[11px] text-slate-400 font-mono mt-0.5">${c.phone}</div>
+        </td>
+        <td class="py-3.5 px-3">
+          <span class="text-xs text-slate-700 font-medium">${c.country_code} ${c.country_name}</span>
+        </td>
+        <td class="py-3.5 px-3 text-right">
+          <div class="flex items-center justify-end gap-1">
+            <button onclick="openCustomerDetailsModal('${c.id}')" class="text-slate-400 hover:text-[#0052FF] p-1.5 transition-colors" title="Détails du client">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+            <button onclick="deleteCustomer('${c.id}')" class="text-rose-500 hover:text-rose-700 p-1.5 transition-colors" title="Supprimer client">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const start = (VPState.customersPage - 1) * VPState.customersPageSize + 1;
+    const end = Math.min(VPState.customersPage * VPState.customersPageSize, total);
+    updateCustomersPagination(start, end, total);
+  } catch (err) {
+    console.error('Erreur renderCustomersList:', err);
+    tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-rose-500 text-xs">Erreur: ${err.message}</td></tr>`;
+  }
+}
+
+function updateCustomersPagination(start, end, total) {
+  const info = document.getElementById('customersPaginationInfo');
+  if (info) info.textContent = `${total === 0 ? 0 : start}-${end} sur ${total}`;
+  const btnPrev = document.getElementById('btnPrevCustomers');
+  const btnNext = document.getElementById('btnNextCustomers');
+  if (btnPrev) btnPrev.disabled = VPState.customersPage <= 1;
+  if (btnNext) btnNext.disabled = end >= total;
+}
+
+function openCreateCustomerModal() {
+  openModal('modalCreateCustomer');
+}
+
+function openCustomerDetailsModal(id) {
+  const c = (VPState.customers || []).find(item => item.id === id);
+  if (!c) return;
+  const content = document.getElementById('customerDetailsContent');
+  if (!content) return;
+  content.innerHTML = `
+    <div class="flex items-center gap-3 p-3 bg-blue-50/50 rounded-2xl border border-purple-100">
+      <div class="w-12 h-12 rounded-full bg-[#EDE9FE] text-[#0052FF] flex items-center justify-center font-bold text-lg flex-shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      </div>
+      <div>
+        <h4 class="text-sm font-bold text-[#111827]">${c.name}</h4>
+        <p class="text-xs text-slate-500 font-mono">${c.email}</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 text-xs">
+      <div class="p-3 bg-[#F8F9FD] rounded-xl border border-[#ECEEF6]">
+        <span class="text-slate-400 block text-[10px]">Téléphone</span>
+        <span class="font-mono font-bold text-[#111827]">${c.phone}</span>
+      </div>
+      <div class="p-3 bg-[#F8F9FD] rounded-xl border border-[#ECEEF6]">
+        <span class="text-slate-400 block text-[10px]">Pays</span>
+        <span class="font-bold text-[#111827]">${c.country_code} — ${c.country_name}</span>
+      </div>
+      <div class="p-3 bg-[#F8F9FD] rounded-xl border border-[#ECEEF6]">
+        <span class="text-slate-400 block text-[10px]">Achats effectués</span>
+        <span class="font-bold text-[#111827]">${c.purchases || 0}</span>
+      </div>
+      <div class="p-3 bg-[#F8F9FD] rounded-xl border border-[#ECEEF6]">
+        <span class="text-slate-400 block text-[10px]">Volume Total Dépensé</span>
+        <span class="font-mono font-bold text-emerald-600">${parseFloat(c.total || 0).toLocaleString('fr-FR')} XOF</span>
+      </div>
+    </div>
+  `;
+  openModal('modalCustomerDetails');
+}
+
+async function deleteCustomer(id) {
+  if (!confirm('Supprimer ce client de votre répertoire ?')) return;
+  try {
+    const res = await fetch(`/api/v1/merchant/customers/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      VPState.customers = (VPState.customers || []).filter(c => c.id !== id);
+      renderCustomersList();
+      showToast('Supprimé', 'Client supprimé avec succès.');
+    } else {
+      showToast('Erreur', data.error || 'Impossible de supprimer.');
+    }
+  } catch (err) {
+    showToast('Erreur', err.message);
+  }
+}
+
+function initCustomersSection() {
+  const searchInput = document.getElementById('customersSearchInput');
+  if (searchInput) {
+    let debounce;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        VPState.customersSearchQuery = e.target.value;
+        VPState.customersPage = 1;
+        renderCustomersList();
+      }, 300);
+    });
+  }
+
+  const pageSize = document.getElementById('customersPageSize');
+  if (pageSize) {
+    pageSize.addEventListener('change', (e) => {
+      VPState.customersPageSize = parseInt(e.target.value);
+      VPState.customersPage = 1;
+      renderCustomersList();
+    });
+  }
+
+  const btnPrev = document.getElementById('btnPrevCustomers');
+  if (btnPrev) {
+    btnPrev.addEventListener('click', () => {
+      if (VPState.customersPage > 1) {
+        VPState.customersPage -= 1;
+        renderCustomersList();
+      }
+    });
+  }
+
+  const btnNext = document.getElementById('btnNextCustomers');
+  if (btnNext) {
+    btnNext.addEventListener('click', () => {
+      VPState.customersPage += 1;
+      renderCustomersList();
+    });
+  }
+
+  const form = document.getElementById('createCustomerForm');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('newCustomerName').value;
+      const email = document.getElementById('newCustomerEmail').value;
+      const phone = document.getElementById('newCustomerPhone').value;
+      const country = document.getElementById('newCustomerCountry')?.value || 'CI';
+
+      if (!name || !email) {
+        showToast("Erreur", "Le nom et l'email sont obligatoires.");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/customers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({ name, email, phone, country })
+        });
+        const data = await res.json();
+        if (data.success && data.customer) {
+          if (!VPState.customers) VPState.customers = [];
+          VPState.customers.unshift(data.customer);
+          renderCustomersList();
+          closeModal('modalCreateCustomer');
+          form.reset();
+          showToast("Client ajouté !", `${data.customer.name} est enregistré.`);
+        } else {
+          showToast("Erreur", data.error || "Impossible d'enregistrer le client.");
+        }
+      } catch (err) {
+        showToast("Erreur", err.message);
+      }
+    });
+  }
+}
+
+/* ========================================================
+   SECTION 12 : LITIGES (100% CONFORME CAPTURE)
+   ======================================================== */
+
+async function renderDisputes() {
+  try {
+    const res = await fetch('/api/v1/merchant/disputes', {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    const data = await res.json();
+    VPState.disputes = (data.success && data.disputes) ? data.disputes : [];
+  } catch (e) {
+    VPState.disputes = [];
+  }
+}
+
+function initDisputesSection() {
+  const filter = document.getElementById('disputesStatusFilter');
+  if (filter) {
+    filter.addEventListener('change', (e) => {
+      VPState.disputesStatusFilter = e.target.value;
+      renderDisputes();
+    });
+  }
 }
 
 /* ========================================================
@@ -678,7 +1682,7 @@ function renderDetailedWallets() {
   container.innerHTML = '';
   VPState.wallets.forEach(w => {
     const card = document.createElement('div');
-    card.className = 'p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm hover:border-purple-200 transition-all flex flex-col justify-between';
+    card.className = 'p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm hover:border-blue-200 transition-all flex flex-col justify-between';
     card.innerHTML = `
       <div>
         <div class="flex items-center justify-between mb-2">
@@ -691,7 +1695,7 @@ function renderDetailedWallets() {
         </div>
       </div>
       <div class="pt-3 border-t border-[#F0F2F9] flex items-center justify-between text-xs">
-        <button class="text-[#5846F6] font-bold hover:underline" onclick="showToast('Dépôt', 'Option de rechargement disponible.');">Dépôt</button>
+        <button class="text-[#0052FF] font-bold hover:underline" onclick="showToast('Dépôt', 'Option de rechargement disponible.');">Dépôt</button>
         <button class="text-slate-500 font-medium hover:text-[#111827]" onclick="openWalletTransferModal()">Transférer</button>
       </div>
     `;
@@ -745,7 +1749,7 @@ async function loadAndRenderWallets() {
         const frozen = parseFloat(w.frozen_amount || 0);
 
         const card = document.createElement('div');
-        card.className = 'rounded-3xl border border-[#ECEEF6] bg-white p-5 sm:p-6 shadow-sm hover:border-violet-200 transition-all flex flex-col justify-between min-h-[145px]';
+        card.className = 'rounded-3xl border border-[#ECEEF6] bg-white p-5 sm:p-6 shadow-sm hover:border-blue-200 transition-all flex flex-col justify-between min-h-[145px]';
         card.innerHTML = `
           <div>
             <div class="flex items-center justify-between">
@@ -762,11 +1766,11 @@ async function loadAndRenderWallets() {
           </div>
           ${(pending > 0 || frozen > 0) ? `
           <div class="grid grid-cols-2 gap-2 pt-2.5 mt-3 border-t border-[#F0F2F9]">
-            <div class="rounded-xl bg-violet-50/50 p-2">
+            <div class="rounded-xl bg-blue-50/50 p-2">
               <span class="text-[10px] font-medium text-[#6B7280] block">En attente</span>
               <p class="text-xs font-bold text-[#111827] font-mono mt-0.5">${formatWalletMoney(pending)} ${w.currency}</p>
             </div>
-            <div class="rounded-xl bg-violet-50/50 p-2">
+            <div class="rounded-xl bg-blue-50/50 p-2">
               <span class="text-[10px] font-medium text-[#6B7280] block">Gelé (litige)</span>
               <p class="text-xs font-bold ${frozen > 0 ? 'text-rose-600' : 'text-[#111827]'} font-mono mt-0.5">${formatWalletMoney(frozen)} ${w.currency}</p>
             </div>
@@ -776,8 +1780,9 @@ async function loadAndRenderWallets() {
       });
     }
 
-    // Mettre à jour les filtres pays
+    // Mettre à jour les filtres pays et les cartes d'overview
     populateWalletCountryFilter(data.wallets);
+    renderOverviewDashboardKPIs();
   } catch (err) {
     console.error('Erreur chargement wallets:', err);
   }
@@ -863,7 +1868,7 @@ async function loadAndRenderWalletLedger() {
           : `<span class="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 text-rose-600 font-bold text-xs">↑</span>`;
 
         if (m.type === 'ADJUSTMENT') {
-          typeIcon = `<span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-600 font-bold text-xs">↕</span>`;
+          typeIcon = `<span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-[#0052FF] font-bold text-xs">↕</span>`;
         }
 
         const dateStr = formatTxDate(m.created_at);
@@ -916,7 +1921,7 @@ async function loadAndRenderWalletLedger() {
         for (let i = 1; i <= totalPages; i++) {
           const pageBtn = document.createElement('button');
           const isCurr = i === VPState.ledgerPage;
-          pageBtn.className = `px-2.5 py-1 rounded-lg text-xs font-semibold ${isCurr ? 'bg-[#5846F6] text-white shadow-sm' : 'border border-[#ECEEF6] bg-white text-[#111827] hover:bg-slate-50'}`;
+          pageBtn.className = `px-2.5 py-1 rounded-lg text-xs font-semibold ${isCurr ? 'bg-[#0052FF] text-white shadow-sm' : 'border border-[#ECEEF6] bg-white text-[#111827] hover:bg-slate-50'}`;
           pageBtn.textContent = i;
           pageBtn.onclick = () => {
             VPState.ledgerPage = i;
@@ -1003,7 +2008,7 @@ async function loadAndRenderWalletTransfers() {
           ${statusBadge}
         </td>
         <td class="py-3 px-3 text-right">
-          <button type="button" onclick="openWalletTransferDetailModal('${t.id}')" class="text-xs font-semibold text-[#5846F6] hover:underline">
+          <button type="button" onclick="openWalletTransferDetailModal('${t.id}')" class="text-xs font-semibold text-[#0052FF] hover:underline">
             Détail
           </button>
         </td>
@@ -1138,7 +2143,7 @@ function openWalletTransferDetailModal(transferId) {
         <span class="text-slate-500">Frais inter-wallets</span>
         <span class="font-bold text-emerald-600 font-mono">0 ${t.to_currency} (Gratuit)</span>
       </div>
-      <div class="py-3 flex items-center justify-between bg-violet-50/40 p-3 rounded-2xl">
+      <div class="py-3 flex items-center justify-between bg-blue-50/40 p-3 rounded-2xl">
         <span class="font-bold text-[#111827]">Montant net crédité</span>
         <span class="font-black text-emerald-600 font-mono text-base">${formatWalletMoney(t.to_amount, t.to_currency)}</span>
       </div>
@@ -1412,7 +2417,7 @@ async function loadAndRenderPayoutMethods() {
         tbody.innerHTML = VPState.payoutMethods.map(m => {
           const isMobile = m.type === 'MOBILE_MONEY';
           const typeBadge = isMobile
-            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-[#5846F6]">Mobile Money</span>`
+            ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#0052FF]">Mobile Money</span>`
             : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">Virement</span>`;
           
           const details = isMobile
@@ -1465,9 +2470,9 @@ function switchPayoutSubTab(tabKey) {
   buttons.forEach(btn => {
     const k = btn.getAttribute('data-payout-tab');
     if (k === tabKey) {
-      btn.className = 'payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#5846F6] text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)]';
+      btn.className = 'payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#0052FF] text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)]';
     } else {
-      btn.className = 'payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]';
+      btn.className = 'payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]';
     }
   });
 
@@ -1995,9 +3000,9 @@ function switchDevSubTab(tabId) {
   buttons.forEach(btn => {
     const isCurrent = btn.getAttribute('data-dev-tab') === tabId;
     if (isCurrent) {
-      btn.className = 'dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#5846F6] text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)]';
+      btn.className = 'dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#0052FF] text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)]';
     } else {
-      btn.className = 'dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]';
+      btn.className = 'dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]';
     }
   });
 
@@ -2055,7 +3060,7 @@ async function loadAndRenderApiKeys(search = '') {
       tr.innerHTML = `
         <td class="py-3.5 px-4">
           <div class="flex items-center gap-3">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[#5846F6]">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[#0052FF]">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
             </div>
             <div>
@@ -2371,7 +3376,7 @@ async function loadAndRenderWebhooks(search = '') {
       tr.innerHTML = `
         <td class="py-3.5 px-4">
           <div class="flex items-center gap-2.5">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-50 text-[#5846F6]">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#0052FF]">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
             </span>
             <span class="font-mono font-bold text-xs text-[#111827] select-all">${w.url}</span>
@@ -2388,7 +3393,7 @@ async function loadAndRenderWebhooks(search = '') {
         </td>
         <td class="py-3.5 px-4 text-right">
           <div class="inline-flex items-center justify-end gap-2.5">
-            <button type="button" class="rounded-lg border border-violet-200 bg-violet-50/60 px-2.5 py-1 text-xs font-semibold text-[#5846F6] hover:bg-violet-100 transition-colors inline-flex items-center gap-1" onclick="testWebhook('${w.id}')">
+            <button type="button" class="rounded-lg border border-blue-200 bg-blue-50/60 px-2.5 py-1 text-xs font-semibold text-[#0052FF] hover:bg-blue-100 transition-colors inline-flex items-center gap-1" onclick="testWebhook('${w.id}')">
               <span>⚡ Tester</span>
             </button>
             <button type="button" class="text-slate-400 hover:text-rose-600 transition-colors p-1" onclick="openDeleteWebhookModal('${w.id}', '${w.url.replace(/'/g, "\\'")}')" title="Supprimer">
@@ -2595,7 +3600,7 @@ async function loadAndRenderWebhookLogs() {
           ${formatShortDate(log.delivered_at)} • <span class="font-mono">${log.duration_ms || 80}ms</span>
         </td>
         <td class="py-3.5 px-4 text-right">
-          <button type="button" class="text-xs font-semibold text-[#5846F6] hover:underline" onclick='openWebhookLogDetailModal(${JSON.stringify(log).replace(/'/g, "&apos;")})'>
+          <button type="button" class="text-xs font-semibold text-[#0052FF] hover:underline" onclick='openWebhookLogDetailModal(${JSON.stringify(log).replace(/'/g, "&apos;")})'>
             Détails
           </button>
         </td>
@@ -2730,10 +3735,12 @@ function initAuthModalEvents() {
           VPState.applications = data.merchant.applications || [];
           closeModal('modalAuth');
 
-          // Si l'onboarding n'est pas terminé, lancer le portail Onboarding
-          if (data.merchant.onboarding_completed === false) {
+          // Si l'onboarding n'est pas terminé ou aucune app, lancer le portail Onboarding
+          const hasApps = VPState.applications && VPState.applications.length > 0;
+          if (data.merchant.onboarding_completed === false || !hasApps) {
             showOnboardingFlow(data.merchant);
           } else {
+            showMainDashboard();
             showToast('Connexion réussie !', `Bienvenue, ${data.merchant.business_name || data.merchant.full_name || 'Marchand'}.`);
             await loadMerchantDashboard();
           }
@@ -2769,7 +3776,7 @@ function initAuthModalEvents() {
       if (input) {
         if (input.type === 'password') {
           input.type = 'text';
-          btn.innerHTML = `<svg class="w-4 h-4 text-[#5846F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>`;
+          btn.innerHTML = `<svg class="w-4 h-4 text-[#0052FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>`;
         } else {
           input.type = 'password';
           btn.innerHTML = `<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
@@ -3060,7 +4067,7 @@ function initOnboardingFlow() {
         if (previewEl) {
           previewEl.textContent = `✓ ${input.files[0].name}`;
           previewEl.classList.remove('text-slate-500');
-          previewEl.classList.add('text-[#5846F6]', 'font-bold');
+          previewEl.classList.add('text-[#0052FF]', 'font-bold');
         }
       }
     });
@@ -3193,6 +4200,7 @@ function initOnboardingFlow() {
   if (btnEnter) {
     btnEnter.addEventListener('click', async () => {
       container.classList.add('hidden');
+      showMainDashboard();
       await loadMerchantDashboard();
       showToast('Bienvenue sur VandiasPay !', 'Votre tableau de bord complet est ouvert.');
     });
@@ -3235,18 +4243,32 @@ function transitionOnboardingStep(stepId, badgeText) {
 }
 
 function showOnboardingFlow(merchant) {
+  hideMainDashboard();
   const container = document.getElementById('onboardingFlowContainer');
   if (!container) return;
 
   container.classList.remove('hidden');
-  transitionOnboardingStep('onboardingStepApps', '1 / 3');
 
   const fullNameEl = document.getElementById('onboardingUserFullName');
   if (fullNameEl) {
     fullNameEl.textContent = merchant.business_name || merchant.full_name || 'Marchand';
   }
 
-  renderOnboardingApps();
+  const hasApps = VPState.applications && VPState.applications.length > 0;
+  if (!hasApps) {
+    transitionOnboardingStep('onboardingStepApps', '1 / 3');
+    renderOnboardingApps();
+    // Afficher directement la modal de création d'application pour l'utilisateur
+    setTimeout(() => {
+      const form = document.getElementById('formCreateNewApp');
+      if (form) form.reset();
+      openModal('modalCreateApp');
+    }, 200);
+  } else if (merchant.kyc_status !== 'VERIFIED') {
+    transitionOnboardingStep('onboardingStepAccountType', '2 / 3');
+  } else {
+    transitionOnboardingStep('onboardingStepSuccess', 'Terminé');
+  }
 }
 
 function openAppsPortal() {
@@ -3290,25 +4312,25 @@ async function renderOnboardingApps() {
     const isActive = (VPState.merchant && VPState.merchant.active_app_id === app.id);
     const card = document.createElement('div');
     card.className = `p-6 rounded-2xl bg-white border-2 transition-all cursor-pointer flex flex-col justify-between group hover:shadow-md ${
-      isActive ? 'border-[#5846F6] shadow-sm bg-purple-50/10' : 'border-slate-200 hover:border-purple-300'
+      isActive ? 'border-[#0052FF] shadow-sm bg-blue-50/10' : 'border-slate-200 hover:border-blue-300'
     }`;
     card.innerHTML = `
       <div>
         <div class="flex items-center justify-between mb-3">
-          <div class="w-10 h-10 rounded-xl bg-purple-50 text-[#5846F6] flex items-center justify-center font-bold text-base group-hover:scale-105 transition-transform">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0052FF] flex items-center justify-center font-bold text-base group-hover:scale-105 transition-transform">
             ${(app.name || 'A').charAt(0).toUpperCase()}
           </div>
           <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-            isActive ? 'bg-[#5846F6] text-white' : 'bg-emerald-50 text-emerald-600'
+            isActive ? 'bg-[#0052FF] text-white' : 'bg-emerald-50 text-emerald-600'
           }">
             ${isActive ? 'Active' : 'Prête'}
           </span>
         </div>
-        <h3 class="text-base font-bold text-[#111827] group-hover:text-[#5846F6] transition-colors truncate">${app.name}</h3>
+        <h3 class="text-base font-bold text-[#111827] group-hover:text-[#0052FF] transition-colors truncate">${app.name}</h3>
         <p class="text-xs text-slate-500 mt-0.5 font-medium truncate">${app.category || 'Général'}</p>
         ${app.website_url ? `<p class="text-[11px] text-slate-400 mt-1 font-mono truncate">${app.website_url}</p>` : ''}
       </div>
-      <div class="pt-4 mt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#5846F6]">
+      <div class="pt-4 mt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-[#0052FF]">
         <span>Sélectionner</span>
         <span class="group-hover:translate-x-1 transition-transform">→</span>
       </div>
@@ -3404,6 +4426,26 @@ function switchTab(tabKey) {
   if (tabKey === 'developer') {
     loadAndRenderApiKeys(VPState.devKeySearchQuery);
     loadAndRenderIpWhitelist();
+  }
+
+  if (tabKey === 'transactions') {
+    renderFullTransactionsList();
+  }
+
+  if (tabKey === 'links') {
+    renderPaymentLinksList();
+  }
+
+  if (tabKey === 'checkout-sessions') {
+    renderCheckoutSessionsList();
+  }
+
+  if (tabKey === 'customers') {
+    renderCustomersList();
+  }
+
+  if (tabKey === 'disputes') {
+    renderDisputes();
   }
 
   if (tabKey === 'webhooks') {
@@ -3541,6 +4583,7 @@ function initActionModals() {
       e.preventDefault();
       const title = document.getElementById('newLinkTitle').value;
       const amount = parseFloat(document.getElementById('newLinkAmount').value);
+      const currency = document.getElementById('newLinkCurrency')?.value || 'XOF';
 
       if (!title || !amount || isNaN(amount) || amount <= 0) {
         showToast("Erreur", "Veuillez renseigner un titre et un montant valide.");
@@ -3554,16 +4597,17 @@ function initActionModals() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${VPState.token}`
           },
-          body: JSON.stringify({ title, amount_fcfa: amount })
+          body: JSON.stringify({ title, amount_fcfa: amount, currency })
         });
         const data = await res.json();
 
         if (data.success && data.payment_link) {
           VPState.paymentLinks.unshift(data.payment_link);
           renderPaymentLinksList();
+          renderOverviewDashboardKPIs();
           closeModal('modalCreateLink');
           createForm.reset();
-          showToast("Lien créé avec succès !", data.payment_link.title);
+          showToast("Lien créé avec succès !", `${data.payment_link.title} (${data.payment_link.currency || 'XOF'})`);
         } else {
           showToast("Erreur", data.error || "Impossible de créer le lien.");
         }
@@ -3728,6 +4772,1008 @@ function showToast(title, desc = "") {
 
 let pricingSearchDebounce = null;
 
+const defaultClientPricingRates = [
+  // 1. Bénin (BJ)
+  {
+    country_code: 'BJ',
+    country_name: 'Bénin',
+    flag: '🇧🇯',
+    network_code: 'CELTIIS_BJ',
+    network_name: 'Celtiis Cash Bénin',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.0, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'BJ',
+    country_name: 'Bénin',
+    flag: '🇧🇯',
+    network_code: 'MTN_MOMO_BJ',
+    network_name: 'MTN MoMo Benin',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'BJ',
+    country_name: 'Bénin',
+    flag: '🇧🇯',
+    network_code: 'MOOV_MONEY_BJ',
+    network_name: 'Moov Money Benin',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.7, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 2. Burkina Faso (BF)
+  {
+    country_code: 'BF',
+    country_name: 'Burkina Faso',
+    flag: '🇧🇫',
+    network_code: 'MOOV_MONEY_BF',
+    network_name: 'Moov Burkina Faso',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.2, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'BF',
+    country_name: 'Burkina Faso',
+    flag: '🇧🇫',
+    network_code: 'ORANGE_MONEY_BF',
+    network_name: 'Orange Burkina Faso',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 3. Cameroun (CM)
+  {
+    country_code: 'CM',
+    country_name: 'Cameroun',
+    flag: '🇨🇲',
+    network_code: 'MTN_MOMO_CM',
+    network_name: 'MTN MoMo Cameroon',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 0, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: 'min -0,01 XAF' }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.5, fixed: 50, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CM',
+    country_name: 'Cameroun',
+    flag: '🇨🇲',
+    network_code: 'ORANGE_MONEY_CM',
+    network_name: 'Orange Money Cameroon',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 0, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.2, fixed: 50, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 4. Congo (CG)
+  {
+    country_code: 'CG',
+    country_name: 'Congo',
+    flag: '🇨🇬',
+    network_code: 'AIRTEL_CG',
+    network_name: 'Airtel Congo Brazzaville',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.7, fixed: 0, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.2, fixed: 50, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CG',
+    country_name: 'Congo',
+    flag: '🇨🇬',
+    network_code: 'MTN_CG',
+    network_name: 'MTN Congo Brazzaville',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.7, fixed: 0, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 5. Côte d'Ivoire (CI)
+  {
+    country_code: 'CI',
+    country_name: "Côte d'Ivoire",
+    flag: '🇨🇮',
+    network_code: 'DJAMO_CI',
+    network_name: 'Djamo Côte d\'Ivoire',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 2.5, fixed: 100, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CI',
+    country_name: "Côte d'Ivoire",
+    flag: '🇨🇮',
+    network_code: 'MTN_MOMO_CI',
+    network_name: 'MTN MoMo CI',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.9, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CI',
+    country_name: "Côte d'Ivoire",
+    flag: '🇨🇮',
+    network_code: 'MOOV_MONEY_CI',
+    network_name: 'Moov Money CI',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.9, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CI',
+    country_name: "Côte d'Ivoire",
+    flag: '🇨🇮',
+    network_code: 'ORANGE_MONEY_CI',
+    network_name: 'Orange Money CI',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.9, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CI',
+    country_name: "Côte d'Ivoire",
+    flag: '🇨🇮',
+    network_code: 'WAVE_CI',
+    network_name: 'Wave CI',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.9, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 6. Crypto (USD)
+  {
+    country_code: 'CRYPTO',
+    country_name: 'Crypto (USD)',
+    flag: '🪙',
+    network_code: 'CRYPTO_STABLECOIN',
+    network_name: 'Crypto / Stablecoin',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.0, fixed: 0, currency: 'USD', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: false,
+      is_custom: false,
+      tiers: []
+    }
+  },
+
+  // 7. Gabon (GA)
+  {
+    country_code: 'GA',
+    country_name: 'Gabon',
+    flag: '🇬🇦',
+    network_code: 'AIRTEL_GA',
+    network_name: 'Airtel Gabon',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.95, fixed: 0, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 2.0, fixed: 700, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'GA',
+    country_name: 'Gabon',
+    flag: '🇬🇦',
+    network_code: 'MOOV_MONEY_GA',
+    network_name: 'Moov Money Gabon',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.0, fixed: 0, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 2.5, fixed: 700, currency: 'XAF', fee_charge_mode: 'ADD_ON', note: 'min -0,01 XAF' }]
+    }
+  },
+
+  // 8. Ghana (GH)
+  {
+    country_code: 'GH',
+    country_name: 'Ghana',
+    flag: '🇬🇭',
+    network_code: 'AIRTELTIGO_GH',
+    network_name: 'Airtel/Tigo Ghana',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.5, fixed: 0, currency: 'GHS', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.0, fixed: 0, currency: 'GHS', fee_charge_mode: 'ADD_ON', note: 'min 15 GHS' }]
+    }
+  },
+  {
+    country_code: 'GH',
+    country_name: 'Ghana',
+    flag: '🇬🇭',
+    network_code: 'MTN_MOMO_GH',
+    network_name: 'MTN MoMo Ghana',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.5, fixed: 0, currency: 'GHS', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.0, fixed: 0, currency: 'GHS', fee_charge_mode: 'ADD_ON', note: 'min 15 GHS' }]
+    }
+  },
+  {
+    country_code: 'GH',
+    country_name: 'Ghana',
+    flag: '🇬🇭',
+    network_code: 'VODAFONE_GH',
+    network_name: 'Vodafone Ghana',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.5, fixed: 0, currency: 'GHS', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.0, fixed: 0, currency: 'GHS', fee_charge_mode: 'ADD_ON', note: 'min 15 GHS' }]
+    }
+  },
+
+  // 9. Guinée (GN)
+  {
+    country_code: 'GN',
+    country_name: 'Guinée',
+    flag: '🇬🇳',
+    network_code: 'MTN_MOMO_GN',
+    network_name: 'MTN MoMo Guinea',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.25, fixed: 0, currency: 'GNF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.0, fixed: 0, currency: 'GNF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 10. Kenya (KE)
+  {
+    country_code: 'KE',
+    country_name: 'Kenya',
+    flag: '🇰🇪',
+    network_code: 'AIRTEL_KE',
+    network_name: 'Airtel Money Kenya',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 0, currency: 'KES', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.5, fixed: 150, currency: 'KES', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'KE',
+    country_name: 'Kenya',
+    flag: '🇰🇪',
+    network_code: 'MPESA_KE',
+    network_name: 'M-Pesa Kenya',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 0, currency: 'KES', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.5, fixed: 150, currency: 'KES', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 11. Mali (ML)
+  {
+    country_code: 'ML',
+    country_name: 'Mali',
+    flag: '🇲🇱',
+    network_code: 'MOBI_CASH_ML',
+    network_name: 'Mobi Cash Mali',
+    payin: {
+      available: true,
+      configured: false,
+      is_custom: false,
+      tiers: []
+    },
+    payout: {
+      available: true,
+      configured: false,
+      is_custom: false,
+      tiers: []
+    }
+  },
+  {
+    country_code: 'ML',
+    country_name: 'Mali',
+    flag: '🇲🇱',
+    network_code: 'MOOV_MONEY_ML',
+    network_name: 'Moov Money Mali',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.2, fixed: 700, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'ML',
+    country_name: 'Mali',
+    flag: '🇲🇱',
+    network_code: 'ORANGE_MONEY_ML',
+    network_name: 'Orange Money Mali',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'ML',
+    country_name: 'Mali',
+    flag: '🇲🇱',
+    network_code: 'WAVE_ML',
+    network_name: 'Wave Mali',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.8, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 12. Niger (NE)
+  {
+    country_code: 'NE',
+    country_name: 'Niger',
+    flag: '🇳🇪',
+    network_code: 'AIRTEL_NE',
+    network_name: 'Airtel Niger',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: 'min 690 XOF' }]
+    }
+  },
+
+  // 13. Nigeria (NG)
+  {
+    country_code: 'NG',
+    country_name: 'Nigeria',
+    flag: '🇳🇬',
+    network_code: 'SWYCHR_NG',
+    network_name: 'Nigeria - Tous les réseaux bancaires (Swychr)',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.7, fixed: 0, currency: 'NGN', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: false,
+      is_custom: false,
+      tiers: []
+    }
+  },
+
+  // 14. Ouganda (UG)
+  {
+    country_code: 'UG',
+    country_name: 'Ouganda',
+    flag: '🇺🇬',
+    network_code: 'AIRTEL_UG',
+    network_name: 'Airtel Uganda',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.2, fixed: 0, currency: 'UGX', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.0, fixed: 50, currency: 'UGX', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'UG',
+    country_name: 'Ouganda',
+    flag: '🇺🇬',
+    network_code: 'MTN_MOMO_UG',
+    network_name: 'MTN MoMo Uganda',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.7, fixed: 0, currency: 'UGX', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.0, fixed: 50, currency: 'UGX', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 15. RDC (USD) (CD_USD)
+  {
+    country_code: 'CD_USD',
+    country_name: 'RDC (USD)',
+    flag: '🇨🇩',
+    network_code: 'AIRTEL_CD_USD',
+    network_name: 'Airtel Congo (USD)',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.7, fixed: 0, currency: 'USD', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 0, currency: 'USD', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CD_USD',
+    country_name: 'RDC (USD)',
+    flag: '🇨🇩',
+    network_code: 'ORANGE_CD_USD',
+    network_name: 'Orange Congo (USD)',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.7, fixed: 0, currency: 'USD', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.2, fixed: 0, currency: 'USD', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CD_USD',
+    country_name: 'RDC (USD)',
+    flag: '🇨🇩',
+    network_code: 'VODACOM_CD_USD',
+    network_name: 'Vodacom Congo (USD)',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.2, fixed: 0, currency: 'USD', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 0, currency: 'USD', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 16. République Démocratique du Congo (CD)
+  {
+    country_code: 'CD',
+    country_name: 'République Démocratique du Congo',
+    flag: '🇨🇩',
+    network_code: 'AFRIMONEY_CD',
+    network_name: 'Afrimoney Congo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.5, fixed: 0, currency: 'CDF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.8, fixed: 0, currency: 'CDF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CD',
+    country_name: 'République Démocratique du Congo',
+    flag: '🇨🇩',
+    network_code: 'AIRTEL_CD',
+    network_name: 'Airtel Congo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.7, fixed: 0, currency: 'CDF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'CDF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CD',
+    country_name: 'République Démocratique du Congo',
+    flag: '🇨🇩',
+    network_code: 'ORANGE_CD',
+    network_name: 'Orange Congo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.45, fixed: 0, currency: 'CDF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 3.2, fixed: 50, currency: 'CDF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'CD',
+    country_name: 'République Démocratique du Congo',
+    flag: '🇨🇩',
+    network_code: 'VODACOM_CD',
+    network_name: 'Vodacom Congo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.2, fixed: 0, currency: 'CDF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'CDF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 17. Rwanda (RW)
+  {
+    country_code: 'RW',
+    country_name: 'Rwanda',
+    flag: '🇷🇼',
+    network_code: 'AIRTEL_RW',
+    network_name: 'Airtel Rwanda',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.75, fixed: 0, currency: 'RWF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.8, fixed: 0, currency: 'RWF', fee_charge_mode: 'ADD_ON', note: 'min 2300 RWF' }]
+    }
+  },
+  {
+    country_code: 'RW',
+    country_name: 'Rwanda',
+    flag: '🇷🇼',
+    network_code: 'MTN_MOMO_RW',
+    network_name: 'MTN MoMo Rwanda',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.75, fixed: 0, currency: 'RWF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.8, fixed: 0, currency: 'RWF', fee_charge_mode: 'ADD_ON', note: 'min 2300 RWF' }]
+    }
+  },
+
+  // 18. Sénégal (SN)
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'PAYDUNYA_SN',
+    network_name: 'Compte PayDunya',
+    payin: {
+      available: true,
+      configured: false,
+      is_custom: false,
+      tiers: []
+    },
+    payout: {
+      available: true,
+      configured: false,
+      is_custom: false,
+      tiers: []
+    }
+  },
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'DJAMO_SN',
+    network_name: 'Djamo Sénégal',
+    payin: {
+      available: true,
+      configured: false,
+      is_custom: false,
+      tiers: []
+    },
+    payout: {
+      available: true,
+      configured: false,
+      is_custom: false,
+      tiers: []
+    }
+  },
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'EXPRESSO_SN',
+    network_name: 'Expresso Sénégal',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.9, fixed: 100, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'FREE_MONEY_SN',
+    network_name: 'Free Money Senegal',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.05, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.7, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'ORANGE_MONEY_SN',
+    network_name: 'Orange Money Senegal',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.15, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.7, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'WAVE_SN',
+    network_name: 'Wave Senegal',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.15, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.7, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'SN',
+    country_name: 'Sénégal',
+    flag: '🇸🇳',
+    network_code: 'WIZALL_SN',
+    network_name: 'Wizall Senegal',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.0, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 19. Sierra Leone (SL)
+  {
+    country_code: 'SL',
+    country_name: 'Sierra Leone',
+    flag: '🇸🇱',
+    network_code: 'ORANGE_SL',
+    network_name: 'Orange Sierra Leone',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.0, fixed: 0, currency: 'SLE', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.5, fixed: 50, currency: 'SLE', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 20. Tanzanie (TZ)
+  {
+    country_code: 'TZ',
+    country_name: 'Tanzanie',
+    flag: '🇹🇿',
+    network_code: 'AIRTEL_TZ',
+    network_name: 'Airtel Tanzania',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 7.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'TZ',
+    country_name: 'Tanzanie',
+    flag: '🇹🇿',
+    network_code: 'EZYPESA_TZ',
+    network_name: 'EzyPesa Tanzania',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.5, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 7.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'TZ',
+    country_name: 'Tanzanie',
+    flag: '🇹🇿',
+    network_code: 'HALOPESA_TZ',
+    network_name: 'Halopesa',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 7.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'TZ',
+    country_name: 'Tanzanie',
+    flag: '🇹🇿',
+    network_code: 'TTCL_TZ',
+    network_name: 'TTCL Tanzania',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.5, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 7.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'TZ',
+    country_name: 'Tanzanie',
+    flag: '🇹🇿',
+    network_code: 'TIGO_TZ',
+    network_name: 'Tigo Tanzania',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 7.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'TZ',
+    country_name: 'Tanzanie',
+    flag: '🇹🇿',
+    network_code: 'VODACOM_TZ',
+    network_name: 'Vodacom Tanzania',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 6.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 7.0, fixed: 0, currency: 'TZS', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+
+  // 21. Togo (TG)
+  {
+    country_code: 'TG',
+    country_name: 'Togo',
+    flag: '🇹🇬',
+    network_code: 'MOOV_MONEY_TG',
+    network_name: 'Moov Money Togo',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.1, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  },
+  {
+    country_code: 'TG',
+    country_name: 'Togo',
+    flag: '🇹🇬',
+    network_code: 'TOGOCEL_TG',
+    network_name: 'Togocel Money',
+    payin: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 5.1, fixed: 0, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    },
+    payout: {
+      available: true,
+      is_custom: false,
+      tiers: [{ percent: 4.2, fixed: 50, currency: 'XOF', fee_charge_mode: 'ADD_ON', note: null }]
+    }
+  }
+];
+
 function initPricingSection() {
   const searchInput = document.getElementById('pricingSearchInput');
   if (searchInput) {
@@ -3739,7 +5785,13 @@ function initPricingSection() {
     });
   }
 
-  // Charger immédiatement les tarifs dès l'initialisation
+  // Initialiser immédiatement avec les tarifs locaux par défaut si non chargés
+  if (!VPState.pricingRates || VPState.pricingRates.length === 0) {
+    VPState.pricingRates = defaultClientPricingRates;
+    renderPricingRates();
+  }
+
+  // Charger depuis l'API backend
   fetchPricingRates();
 }
 
@@ -3748,13 +5800,20 @@ async function fetchPricingRates() {
     const res = await fetch('/api/v1/pricing/my-rates');
     if (res.ok) {
       const data = await res.json();
-      if (data.success && Array.isArray(data.data)) {
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
         VPState.pricingRates = data.data;
         renderPricingRates(document.getElementById('pricingSearchInput')?.value || '');
+        return;
       }
     }
   } catch (err) {
     console.warn('Impossible de charger les tarifs depuis l\'API:', err);
+  }
+
+  // Fallback si l'API est indisponible
+  if (!VPState.pricingRates || VPState.pricingRates.length === 0) {
+    VPState.pricingRates = defaultClientPricingRates;
+    renderPricingRates(document.getElementById('pricingSearchInput')?.value || '');
   }
 }
 
@@ -3763,7 +5822,9 @@ function renderPricingRates(search = '') {
   if (!container) return;
 
   const q = (search || '').trim().toLowerCase();
-  const rates = VPState.pricingRates || [];
+  const rates = (VPState.pricingRates && VPState.pricingRates.length > 0)
+    ? VPState.pricingRates
+    : defaultClientPricingRates;
 
   const filtered = rates.filter(r => {
     if (!q) return true;
@@ -3776,17 +5837,17 @@ function renderPricingRates(search = '') {
   if (filtered.length === 0) {
     container.innerHTML = `
       <div class="rounded-2xl border border-dashed border-[#ECEEF6] bg-white p-12 text-center shadow-xs">
-        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-violet-50 text-xl text-[#5846F6]">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-xl text-[#0052FF]">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <p class="mt-3 text-sm font-semibold text-[#111827]">Aucun réseau ne correspond à cette recherche.</p>
-        <p class="mt-1 text-xs text-[#6B7280]">Essayez avec un autre terme (ex: Bénin, Sénégal, Wave, Orange, MTN, Carte...).</p>
+        <p class="mt-1 text-xs text-[#6B7280]">Essayez avec un autre terme (ex: Bénin, Côte d'Ivoire, MTN, Wave, Moov...).</p>
       </div>
     `;
     return;
   }
 
-  // Grouper par pays
+  // Grouper par pays en préservant l'ordre naturel
   const countryMap = new Map();
   filtered.forEach(item => {
     if (!countryMap.has(item.country_code)) {
@@ -3800,28 +5861,22 @@ function renderPricingRates(search = '') {
     countryMap.get(item.country_code).rows.push(item);
   });
 
-  // Trier alphabétiquement (International en fin de liste)
+  // Trier alphabétiquement (Crypto USD s'insère à 'Crypto (USD)')
   const sortedCountries = Array.from(countryMap.values()).sort((a, b) => {
-    if (a.code === 'INTL') return 1;
-    if (b.code === 'INTL') return -1;
     return a.name.localeCompare(b.name, 'fr');
   });
 
   container.innerHTML = sortedCountries.map(c => `
-    <div class="rounded-2xl border border-[#ECEEF6] bg-white p-5 sm:p-6 shadow-sm">
-      <p class="mb-4 text-sm font-bold text-[#111827] flex items-center gap-2">
-        <span class="text-xl">${c.flag}</span>
-        <span>${c.name}</span>
-        <span class="text-[11px] font-medium text-[#6B7280]">(${c.rows.length} réseau${c.rows.length > 1 ? 'x' : ''})</span>
-      </p>
+    <div class="rounded-2xl border border-[#ECEEF6] bg-white p-6 sm:p-7 shadow-xs">
+      <h3 class="mb-5 text-base font-bold text-[#111827]">${c.name}</h3>
 
       <div class="overflow-x-auto">
         <table class="w-full border-separate border-spacing-y-2 text-left text-xs">
           <thead>
             <tr class="text-[11px] font-semibold uppercase tracking-wider text-[#9CA3AF]">
-              <th class="pb-1 pl-4">Réseau</th>
-              <th class="pb-1">Encaissement</th>
-              <th class="pb-1 pr-4">Décaissement</th>
+              <th class="pb-2 pl-4 w-[40%]">RÉSEAU</th>
+              <th class="pb-2 w-[30%]">ENCAISSEMENT</th>
+              <th class="pb-2 pr-4 w-[30%]">DÉCAISSEMENT</th>
             </tr>
           </thead>
           <tbody>
@@ -3835,17 +5890,14 @@ function renderPricingRates(search = '') {
 
 function renderPricingRow(row) {
   return `
-    <tr class="rounded-xl bg-violet-50/40 text-[#111827] transition-colors hover:bg-violet-50/70">
-      <td class="rounded-l-xl py-3.5 pl-4 font-semibold text-[#111827] align-top whitespace-nowrap">
-        <div class="flex items-center gap-2.5">
-          ${getNetworkBadge(row.network_name, row.network_code)}
-          <span class="font-bold text-[#111827] text-xs sm:text-sm">${row.network_name}</span>
-        </div>
+    <tr class="rounded-xl bg-[#F8FAFC] text-[#111827] transition-colors hover:bg-slate-100/70">
+      <td class="rounded-l-xl py-3 pl-4 font-semibold text-[#111827] align-middle whitespace-nowrap">
+        <span class="font-semibold text-[#111827] text-xs sm:text-sm">${row.network_name}</span>
       </td>
-      <td class="py-3.5 pr-3 align-top">
+      <td class="py-3 pr-3 align-middle">
         ${renderPricingDirection(row.payin, row.network_name, 'payin')}
       </td>
-      <td class="rounded-r-xl py-3.5 pr-4 align-top">
+      <td class="rounded-r-xl py-3 pr-4 align-middle">
         ${renderPricingDirection(row.payout, row.network_name, 'payout')}
       </td>
     </tr>
@@ -3853,39 +5905,49 @@ function renderPricingRow(row) {
 }
 
 function renderPricingDirection(dir, networkName, type) {
-  if (!dir || dir.available === false) {
-    return `<span class="text-xs font-medium text-[#9CA3AF] italic">Indisponible actuellement</span>`;
+  if (!dir) {
+    return `<span class="text-xs font-normal text-[#9CA3AF]">Non configuré</span>`;
+  }
+
+  if (dir.configured === false) {
+    return `<span class="text-xs font-normal text-[#9CA3AF]">Non configuré</span>`;
+  }
+
+  if (dir.available === false) {
+    return `<span class="text-xs font-normal text-[#9CA3AF]">Indisponible actuellement</span>`;
   }
 
   if (!dir.tiers || dir.tiers.length === 0) {
-    return `<span class="text-xs font-medium text-[#9CA3AF] italic">Non configuré</span>`;
+    return `<span class="text-xs font-normal text-[#9CA3AF]">Non configuré</span>`;
   }
 
   const customPill = dir.is_custom ? `
-    <span class="mb-1 inline-block rounded-full bg-violet-600/10 px-2 py-0.5 text-[10px] font-semibold text-violet-600">
+    <span class="mb-1 inline-block rounded-full bg-[#0052FF]/10 px-2 py-0.5 text-[10px] font-semibold text-[#0052FF]">
       Tarif personnalisé
     </span>
   ` : '';
 
   const tiersHtml = dir.tiers.map(t => {
     const feeStr = formatPricingFee(t);
-    const modeStr = t.fee_charge_mode === 'DEDUCTED' ? 'déduits' : (t.fee_charge_mode === 'ADD_ON' ? 'ajoutés' : '');
+    const modeStr = (t.fee_charge_mode === 'DEDUCTED') ? '(déduits)' : '(ajoutés)';
 
-    let limitsStr = '';
-    if (t.floor_amount || t.cap_amount) {
+    let noteHtml = '';
+    if (t.note) {
+      noteHtml = `<div class="text-[11px] text-[#9CA3AF] font-normal mt-0.5">${t.note}</div>`;
+    } else if (t.floor_amount || t.cap_amount) {
       const parts = [];
       if (t.floor_amount) parts.push(`min ${formatCurrencyAmount(t.floor_amount, t.currency)}`);
       if (t.cap_amount) parts.push(`max ${formatCurrencyAmount(t.cap_amount, t.currency)}`);
-      limitsStr = `<div class="text-[10px] text-[#9CA3AF] mt-0.5 font-medium">${parts.join(' · ')}</div>`;
+      noteHtml = `<div class="text-[11px] text-[#9CA3AF] font-normal mt-0.5">${parts.join(' · ')}</div>`;
     }
 
     return `
-      <div class="space-y-0.5">
-        <div class="flex items-baseline gap-1.5 flex-wrap">
-          <span class="font-bold text-[#111827] text-xs sm:text-sm font-mono">${feeStr}</span>
-          ${modeStr ? `<span class="text-[11px] text-[#6B7280]">(${modeStr})</span>` : ''}
+      <div>
+        <div class="inline-flex items-baseline gap-1 flex-wrap">
+          <span class="font-bold text-[#111827] text-xs sm:text-sm">${feeStr}</span>
+          <span class="text-xs font-normal text-[#9CA3AF]">${modeStr}</span>
         </div>
-        ${limitsStr}
+        ${noteHtml}
       </div>
     `;
   }).join('');
@@ -3906,7 +5968,7 @@ function formatPricingFee(tier) {
   if (f) {
     return formatCurrencyAmount(tier.fixed, tier.currency);
   }
-  return 'Gratuit';
+  return '0%';
 }
 
 function formatCurrencyAmount(val, cur = 'XOF') {
@@ -4022,9 +6084,9 @@ function switchSettingsSubTab(tabId) {
   buttons.forEach(btn => {
     const isCurrent = btn.getAttribute('data-settings-tab') === tabId;
     if (isCurrent) {
-      btn.className = 'settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#5846F6] text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)]';
+      btn.className = 'settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#0052FF] text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)]';
     } else {
-      btn.className = 'settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]';
+      btn.className = 'settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]';
     }
   });
 
@@ -4159,7 +6221,7 @@ function renderTeamMembers(members = []) {
   members.forEach(m => {
     const isOwner = m.role === 'OWNER';
     const roleColors = {
-      OWNER: 'bg-purple-100 text-[#5846F6]',
+      OWNER: 'bg-blue-100 text-[#0052FF]',
       ADMIN: 'bg-blue-100 text-blue-700',
       FINANCE: 'bg-emerald-100 text-emerald-700',
       DEVELOPER: 'bg-amber-100 text-amber-700',
@@ -4178,7 +6240,7 @@ function renderTeamMembers(members = []) {
     tr.innerHTML = `
       <td class="py-3 px-3">
         <div class="flex items-center gap-2.5">
-          <div class="w-7 h-7 rounded-full bg-violet-100 text-[#5846F6] font-bold text-xs flex items-center justify-center">
+          <div class="w-7 h-7 rounded-full bg-blue-100 text-[#0052FF] font-bold text-xs flex items-center justify-center">
             ${(m.name || m.email || 'U').charAt(0).toUpperCase()}
           </div>
           <div>

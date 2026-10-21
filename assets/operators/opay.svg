@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect width="100" height="100" rx="22" fill="#1DC779"/>
+  <circle cx="50" cy="46" r="22" fill="#000000"/>
+  <circle cx="50" cy="46" r="14" fill="#1DC779"/>
+  <text x="50" y="82" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="12" fill="#FFFFFF" text-anchor="middle">OPay</text>
+</svg>

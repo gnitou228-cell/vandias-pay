@@ -31,9 +31,9 @@
           },
           colors: {
             vp: {
-              purple: '#5846F6',
-              purpleHover: '#4B3BE0',
-              purpleLight: '#EEF0FD',
+              purple: '#0052FF',
+              purpleHover: '#0040D0',
+              purpleLight: '#EEF4FF',
               cyan: '#06B6D4',
               bg: '#F8F9FD',
               card: '#FFFFFF',
@@ -48,7 +48,7 @@
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
 </head>
-<body class="bg-[#F8F9FD] text-[#0F172A] antialiased selection:bg-[#5846F6] selection:text-white">
+<body class="bg-[#F8F9FD] text-[#0F172A] antialiased selection:bg-[#0052FF] selection:text-white">
 
   <!-- Background Glow & Grid Elements (Unified Purple SaaS Theme) -->
   <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -66,10 +66,10 @@
       <nav class="nav-glass px-5 py-3 rounded-2xl flex items-center justify-between border border-[#ECEEF6] shadow-md backdrop-blur-xl bg-white/85">
         <!-- Logo -->
         <a href="#" class="flex items-center gap-3 group" aria-label="VandiasPay API Accueil">
-          <img src="logo.png" alt="VandiasPay Logo" class="w-10 h-10 object-contain rounded-xl shadow-md shadow-purple-500/10 group-hover:scale-105 transition-transform duration-300">
+          <img src="logo.png" alt="VandiasPay Logo" class="w-10 h-10 object-contain rounded-xl shadow-md shadow-blue-500/10 group-hover:scale-105 transition-transform duration-300">
           <div class="flex flex-col">
             <span class="text-xl font-extrabold tracking-tight text-[#0F172A] flex items-center gap-1.5">
-              VANDIAS PAY <span class="text-xs px-2 py-0.5 rounded-full bg-[#EEF0FD] text-[#5846F6] border border-[#D4D7F5] font-mono font-semibold">API</span>
+              VANDIAS PAY <span class="text-xs px-2 py-0.5 rounded-full bg-[#EEF4FF] text-[#0052FF] border border-[#BFDBFE] font-mono font-semibold">API</span>
             </span>
             <span class="text-[10px] text-slate-500 font-medium tracking-wider uppercase -mt-0.5">Fintech Gateway • 25+ Pays</span>
           </div>
@@ -77,14 +77,14 @@
 
         <!-- Desktop Menu Links -->
         <div class="hidden md:flex items-center gap-8">
-          <a href="#features" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">Fonctionnalités</a>
-          <a href="#developers" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">Développeurs</a>
-          <a href="#calculator" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">Calculateur</a>
-          <a href="#pricing" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">Tarifs</a>
-          <a href="#faq" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#5846F6] transition-colors">FAQ</a>
-          <a href="checkout.html" class="nav-link text-sm font-bold text-[#5846F6] hover:text-[#4B3BE0] transition-colors flex items-center gap-1.5">
+          <a href="#features" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#0052FF] transition-colors">Fonctionnalités</a>
+          <a href="#developers" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#0052FF] transition-colors">Développeurs</a>
+          <a href="#calculator" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#0052FF] transition-colors">Calculateur</a>
+          <a href="#pricing" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#0052FF] transition-colors">Tarifs</a>
+          <a href="#faq" class="nav-link text-sm font-semibold text-slate-600 hover:text-[#0052FF] transition-colors">FAQ</a>
+          <a href="checkout.html" class="nav-link text-sm font-bold text-[#0052FF] hover:text-[#0040D0] transition-colors flex items-center gap-1.5">
             <span>Démo Checkout</span>
-            <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#EEF0FD] text-[#5846F6] border border-[#D4D7F5]">Live</span>
+            <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#EEF4FF] text-[#0052FF] border border-[#BFDBFE]">Live</span>
           </a>
         </div>
 
@@ -93,7 +93,7 @@
           <a href="dashboard.html" class="text-sm font-semibold text-slate-700 hover:text-[#0F172A] transition-colors px-3 py-2">
             Connexion
           </a>
-          <a href="dashboard.html" class="btn-primary relative group overflow-hidden px-5 py-2.5 rounded-xl font-semibold text-sm text-white flex items-center gap-2 shadow-md shadow-purple-500/25">
+          <a href="dashboard.html" class="btn-primary relative group overflow-hidden px-5 py-2.5 rounded-xl font-semibold text-sm text-white flex items-center gap-2 shadow-md shadow-blue-500/25">
             <span class="relative z-10 flex items-center gap-2">
               Accéder au Dashboard
               <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
@@ -117,19 +117,19 @@
     <!-- Mobile Menu Drawer -->
     <div id="mobileMenu" class="md:hidden max-w-7xl mx-auto mt-2 hidden transition-all duration-300">
       <div class="bg-white/95 border border-[#ECEEF6] rounded-2xl p-6 backdrop-blur-2xl shadow-xl flex flex-col gap-4 text-slate-700">
-        <a href="#features" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Fonctionnalités</a>
-        <a href="#developers" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Développeurs & API</a>
-        <a href="#calculator" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Calculateur de Frais</a>
-        <a href="#pricing" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Tarifs Transparents</a>
-        <a href="#faq" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Foire Aux Questions</a>
-        <a href="checkout.html" class="mobile-nav-link hover:text-[#5846F6] font-medium py-2 border-b border-slate-100">Page de Checkout Hébergée ↗</a>
-        <a href="dashboard.html" class="mobile-nav-link text-[#5846F6] font-bold py-2 border-b border-slate-100 flex items-center justify-between">
+        <a href="#features" class="mobile-nav-link hover:text-[#0052FF] font-medium py-2 border-b border-slate-100">Fonctionnalités</a>
+        <a href="#developers" class="mobile-nav-link hover:text-[#0052FF] font-medium py-2 border-b border-slate-100">Développeurs & API</a>
+        <a href="#calculator" class="mobile-nav-link hover:text-[#0052FF] font-medium py-2 border-b border-slate-100">Calculateur de Frais</a>
+        <a href="#pricing" class="mobile-nav-link hover:text-[#0052FF] font-medium py-2 border-b border-slate-100">Tarifs Transparents</a>
+        <a href="#faq" class="mobile-nav-link hover:text-[#0052FF] font-medium py-2 border-b border-slate-100">Foire Aux Questions</a>
+        <a href="checkout.html" class="mobile-nav-link hover:text-[#0052FF] font-medium py-2 border-b border-slate-100">Page de Checkout Hébergée ↗</a>
+        <a href="dashboard.html" class="mobile-nav-link text-[#0052FF] font-bold py-2 border-b border-slate-100 flex items-center justify-between">
           <span>Tableau de Bord Marchand</span>
           <span>→</span>
         </a>
         <div class="pt-4 flex flex-col gap-3">
           <a href="dashboard.html" class="w-full text-center py-2.5 rounded-xl border border-slate-200 text-slate-800 font-medium hover:bg-slate-50">Connexion Dashboard</a>
-          <a href="dashboard.html" class="w-full text-center py-3 rounded-xl bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] text-white font-semibold shadow-md shadow-purple-500/25">Accéder au Dashboard</a>
+          <a href="dashboard.html" class="w-full text-center py-3 rounded-xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] text-white font-semibold shadow-md shadow-blue-500/25">Accéder au Dashboard</a>
         </div>
       </div>
     </div>
@@ -144,12 +144,12 @@
       <div class="max-w-7xl mx-auto">
         <!-- Hero Top Badge -->
         <div class="flex justify-center mb-6">
-          <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs sm:text-sm font-semibold shadow-sm animate-fade-in">
-            <span class="flex h-2 w-2 rounded-full bg-[#5846F6] animate-ping"></span>
+          <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#EEF4FF] border border-[#BFDBFE] text-[#0052FF] text-xs sm:text-sm font-semibold shadow-sm animate-fade-in">
+            <span class="flex h-2 w-2 rounded-full bg-[#0052FF] animate-ping"></span>
             <span>⚡ VANDIAS PAY :</span>
             <span class="font-normal text-slate-700">La couche de paiement tout-en-un pour 25+ pays en Afrique</span>
             <span class="hidden sm:inline-block text-slate-300">|</span>
-            <span class="hidden sm:inline-block text-[#5846F6] hover:underline cursor-pointer">v2.4 Disponible →</span>
+            <span class="hidden sm:inline-block text-[#0052FF] hover:underline cursor-pointer">v2.4 Disponible →</span>
           </div>
         </div>
 
@@ -157,7 +157,7 @@
         <div class="text-center max-w-4xl mx-auto mb-8">
           <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#0F172A] tracking-tight leading-[1.14]">
             Encaissez partout en Afrique avec <br class="hidden sm:inline"/>
-            <span class="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-[#5846F6] via-[#7C6EF8] to-[#4338CA] text-[1.08em] pr-1">une seule API</span> 
+            <span class="font-serif italic font-normal text-transparent bg-clip-text bg-gradient-to-r from-[#0052FF] via-[#3B82F6] to-[#1D4ED8] text-[1.08em] pr-1">une seule API</span> 
             et des liens instantanés.
           </h1>
           <p class="mt-6 text-lg sm:text-xl text-[#475569] font-normal max-w-2xl mx-auto leading-relaxed">
@@ -166,12 +166,12 @@
 
           <!-- Hero CTAs -->
           <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5">
-            <a href="dashboard.html" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-[#5846F6] via-[#6366F1] to-[#7C6EF8] hover:from-[#4B3BE0] hover:to-[#6D5EFA] text-white font-bold text-base shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-3 group">
+            <a href="dashboard.html" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-[#0052FF] via-[#0052FF] to-[#3B82F6] hover:from-[#0040D0] hover:to-[#6D5EFA] text-white font-bold text-base shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-3 group">
               <span>Ouvrir mon Dashboard Marchand</span>
               <svg class="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
             </a>
-            <a href="checkout.html" class="w-full sm:w-auto px-7 py-4 rounded-xl bg-white hover:bg-slate-50 text-[#1E293B] font-semibold text-base border border-[#ECEEF6] hover:border-[#5846F6]/40 shadow-sm transition-all duration-300 flex items-center justify-center gap-2.5 group">
-              <svg class="w-5 h-5 text-[#5846F6] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            <a href="checkout.html" class="w-full sm:w-auto px-7 py-4 rounded-xl bg-white hover:bg-slate-50 text-[#1E293B] font-semibold text-base border border-[#ECEEF6] hover:border-[#0052FF]/40 shadow-sm transition-all duration-300 flex items-center justify-center gap-2.5 group">
+              <svg class="w-5 h-5 text-[#0052FF] group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
               <span>Tester le Checkout Hébergé</span>
             </a>
           </div>
@@ -179,15 +179,15 @@
           <!-- Micro guarantees -->
           <div class="mt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500 font-medium">
             <span class="flex items-center gap-1.5">
-              <svg class="w-4 h-4 text-[#5846F6]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <svg class="w-4 h-4 text-[#0052FF]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
               Sans carte bancaire requise
             </span>
             <span class="flex items-center gap-1.5">
-              <svg class="w-4 h-4 text-[#5846F6]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <svg class="w-4 h-4 text-[#0052FF]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
               Wallets dans 25+ pays
             </span>
             <span class="hidden sm:flex items-center gap-1.5">
-              <svg class="w-4 h-4 text-[#5846F6]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <svg class="w-4 h-4 text-[#0052FF]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
               Conforme UEMOA & CEMAC
             </span>
           </div>
@@ -207,7 +207,7 @@
                 <!-- Checkout Header -->
                 <div class="flex items-center justify-between pb-4 border-b border-[#ECEEF6]">
                   <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] font-bold text-sm">
+                    <div class="w-9 h-9 rounded-xl bg-[#EEF4FF] border border-[#BFDBFE] flex items-center justify-center text-[#0052FF] font-bold text-sm">
                       🛍️
                     </div>
                     <div>
@@ -222,12 +222,12 @@
                 </div>
 
                 <!-- Simulation notice -->
-                <div class="my-4 px-3 py-2 rounded-xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-between">
-                  <span class="text-xs text-[#5846F6] flex items-center gap-1.5 font-semibold">
-                    <span class="w-2 h-2 rounded-full bg-[#5846F6] animate-pulse"></span>
+                <div class="my-4 px-3 py-2 rounded-xl bg-[#EEF4FF] border border-[#BFDBFE] flex items-center justify-between">
+                  <span class="text-xs text-[#0052FF] flex items-center gap-1.5 font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-[#0052FF] animate-pulse"></span>
                     Simulateur de Checkout en Direct
                   </span>
-                  <span class="text-[10px] text-[#5846F6] font-mono">Testez un clic 👇</span>
+                  <span class="text-[10px] text-[#0052FF] font-mono">Testez un clic 👇</span>
                 </div>
 
                 <!-- Operator Selector Radio/Buttons -->
@@ -235,7 +235,7 @@
                   <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block">Sélectionnez votre moyen de paiement</label>
                   
                   <!-- Wave -->
-                  <div class="payment-method-item active p-3 rounded-xl border border-[#5846F6] bg-[#EEF0FD] cursor-pointer transition-all flex items-center justify-between" data-method="wave" data-fee="Gratuit">
+                  <div class="payment-method-item active p-3 rounded-xl border border-[#0052FF] bg-[#EEF4FF] cursor-pointer transition-all flex items-center justify-between" data-method="wave" data-fee="Gratuit">
                     <div class="flex items-center gap-3">
                       <div class="w-9 h-9 rounded-lg bg-[#1BA2FF] flex items-center justify-center text-white font-bold text-xs shadow-sm">
                         <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
@@ -248,8 +248,8 @@
                         <span class="text-[11px] text-slate-500">Sénégal, Côte d'Ivoire, Mali</span>
                       </div>
                     </div>
-                    <div class="custom-radio w-5 h-5 rounded-full border-2 border-[#5846F6] flex items-center justify-center">
-                      <div class="w-2.5 h-2.5 rounded-full bg-[#5846F6] radio-dot"></div>
+                    <div class="custom-radio w-5 h-5 rounded-full border-2 border-[#0052FF] flex items-center justify-center">
+                      <div class="w-2.5 h-2.5 rounded-full bg-[#0052FF] radio-dot"></div>
                     </div>
                   </div>
 
@@ -268,7 +268,7 @@
                       </div>
                     </div>
                     <div class="custom-radio w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">
-                      <div class="w-2.5 h-2.5 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                      <div class="w-2.5 h-2.5 rounded-full bg-[#0052FF] radio-dot hidden"></div>
                     </div>
                   </div>
 
@@ -287,7 +287,7 @@
                       </div>
                     </div>
                     <div class="custom-radio w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">
-                      <div class="w-2.5 h-2.5 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                      <div class="w-2.5 h-2.5 rounded-full bg-[#0052FF] radio-dot hidden"></div>
                     </div>
                   </div>
 
@@ -305,7 +305,7 @@
                       </div>
                     </div>
                     <div class="custom-radio w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center">
-                      <div class="w-2.5 h-2.5 rounded-full bg-[#5846F6] radio-dot hidden"></div>
+                      <div class="w-2.5 h-2.5 rounded-full bg-[#0052FF] radio-dot hidden"></div>
                     </div>
                   </div>
                 </div>
@@ -313,7 +313,7 @@
                 <!-- Phone number / detail field -->
                 <div class="mt-4" id="phoneInputContainer">
                   <label class="text-[11px] text-slate-600 font-medium block mb-1.5">Numéro de téléphone mobile</label>
-                  <div class="flex items-center rounded-xl bg-[#F8F9FD] border border-[#ECEEF6] px-3 py-2 text-sm text-[#0F172A] focus-within:border-[#5846F6] transition-colors">
+                  <div class="flex items-center rounded-xl bg-[#F8F9FD] border border-[#ECEEF6] px-3 py-2 text-sm text-[#0F172A] focus-within:border-[#0052FF] transition-colors">
                     <span class="text-slate-500 font-mono text-xs pr-2 border-r border-slate-200 mr-2 flex items-center gap-1">
                       <span>🇸🇳</span> +221
                     </span>
@@ -324,7 +324,7 @@
 
               <!-- Pay CTA Button -->
               <div class="mt-5 pt-3 border-t border-[#ECEEF6]">
-                <button id="heroPayBtn" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] hover:from-[#4B3BE0] hover:to-[#6D5EFA] text-white font-bold text-sm shadow-md shadow-purple-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                <button id="heroPayBtn" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] hover:from-[#0040D0] hover:to-[#6D5EFA] text-white font-bold text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
                   <span id="heroPayBtnText">Payer 5 000 FCFA avec Wave</span>
                   <svg id="heroPayBtnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                 </button>
@@ -346,16 +346,16 @@
                   <div class="flex gap-1.5">
                     <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
                     <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
-                    <span class="w-3 h-3 rounded-full bg-purple-500/80 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-[#0052FF]/80 inline-block"></span>
                   </div>
                   <span class="ml-3 text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-[#7C6EF8]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm16 16V5H5v14h14z"/></svg>
+                    <svg class="w-3.5 h-3.5 text-[#3B82F6]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h18v18H3V3zm16 16V5H5v14h14z"/></svg>
                     checkout-session.js
                   </span>
                 </div>
                 
                 <div class="flex items-center gap-2">
-                  <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1">
+                  <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-[#0052FF]/10 text-purple-300 border border-[#0052FF]/20 flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping"></span>
                     VandiasPay SDK v2.4
                   </span>
@@ -430,7 +430,7 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
             <div class="w-7 h-7 rounded-lg bg-[#1BA2FF] flex items-center justify-center text-white font-bold text-xs shadow-sm">
               <span class="text-xs">🌊</span>
             </div>
-            <span class="font-bold text-[#0F172A] text-sm tracking-tight group-hover:text-[#5846F6] transition-colors">Wave</span>
+            <span class="font-bold text-[#0F172A] text-sm tracking-tight group-hover:text-[#0052FF] transition-colors">Wave</span>
           </div>
 
           <!-- Orange Money -->
@@ -476,19 +476,19 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
         <!-- Trust Metrics -->
         <div class="mt-12 pt-8 border-t border-[#ECEEF6] grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
-            <div class="text-3xl sm:text-4xl font-extrabold text-[#5846F6] tracking-tight">25+</div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-[#0052FF] tracking-tight">25+</div>
             <div class="text-xs sm:text-sm text-slate-500 mt-1 font-semibold">Pays & Devises gérés</div>
           </div>
           <div>
-            <div class="text-3xl sm:text-4xl font-extrabold text-[#5846F6] tracking-tight">99.98%</div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-[#0052FF] tracking-tight">99.98%</div>
             <div class="text-xs sm:text-sm text-slate-500 mt-1 font-semibold">Disponibilité garantie</div>
           </div>
           <div>
-            <div class="text-3xl sm:text-4xl font-extrabold text-[#5846F6] tracking-tight">&lt; 1 sec</div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-[#0052FF] tracking-tight">&lt; 1 sec</div>
             <div class="text-xs sm:text-sm text-slate-500 mt-1 font-semibold">Confirmation de transaction</div>
           </div>
           <div>
-            <div class="text-3xl sm:text-4xl font-extrabold text-[#5846F6] tracking-tight">0 FCFA</div>
+            <div class="text-3xl sm:text-4xl font-extrabold text-[#0052FF] tracking-tight">0 FCFA</div>
             <div class="text-xs sm:text-sm text-slate-500 mt-1 font-semibold">Frais fixes ou d'inscription</div>
           </div>
         </div>
@@ -503,11 +503,11 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div class="text-center max-w-3xl mx-auto mb-16">
-          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF4FF] border border-[#BFDBFE] text-[#0052FF] text-xs font-bold uppercase tracking-wider mb-4">
             Tout pour développer vos ventes
           </div>
           <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0F172A] tracking-tight">
-            Conçu pour la vitesse, la fiabilité et la <span class="font-serif italic font-normal text-[#5846F6]">croissance</span>.
+            Conçu pour la vitesse, la fiabilité et la <span class="font-serif italic font-normal text-[#0052FF]">croissance</span>.
           </h2>
           <p class="mt-4 text-base sm:text-lg text-slate-600">
             Une infrastructure pensée pour unifier les paiements africains : Mobile Money, multidevises (XOF, XAF, CDF, USD, NGN) et liquidités immédiates.
@@ -520,12 +520,12 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
           <!-- Card 1: Liens de Paiement Sans Coder (Large 7 cols) -->
           <div class="md:col-span-7 bento-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between group overflow-hidden relative">
             <div class="relative z-10">
-              <div class="w-12 h-12 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] mb-6 group-hover:scale-110 transition-transform">
+              <div class="w-12 h-12 rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] flex items-center justify-center text-[#0052FF] mb-6 group-hover:scale-110 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
               </div>
               <h3 class="text-2xl font-bold text-[#0F172A] mb-2">Liens de Paiement Sans Coder</h3>
               <p class="text-slate-600 text-sm leading-relaxed max-w-xl">
-                Pas besoin d'être développeur. Générez des liens de paiement personnalisés en 10 secondes et partagez-les directement sur <strong class="text-[#5846F6]">WhatsApp</strong>, Instagram, TikTok ou par SMS pour encaisser sans site web.
+                Pas besoin d'être développeur. Générez des liens de paiement personnalisés en 10 secondes et partagez-les directement sur <strong class="text-[#0052FF]">WhatsApp</strong>, Instagram, TikTok ou par SMS pour encaisser sans site web.
               </p>
             </div>
 
@@ -533,12 +533,12 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
             <div class="mt-8 pt-6 border-t border-[#ECEEF6] relative z-10">
               <div class="bg-[#F8F9FD] rounded-2xl p-4 border border-[#ECEEF6] space-y-3">
                 <div class="flex flex-col sm:flex-row gap-3">
-                  <input type="text" id="demoLinkProduct" value="Formation E-commerce 2026" class="flex-1 bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#0F172A] outline-none focus:border-[#5846F6]" placeholder="Nom du produit ou service">
-                  <input type="number" id="demoLinkAmount" value="15000" class="w-full sm:w-32 bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#0F172A] outline-none focus:border-[#5846F6] font-mono" placeholder="Montant FCFA">
+                  <input type="text" id="demoLinkProduct" value="Formation E-commerce 2026" class="flex-1 bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#0F172A] outline-none focus:border-[#0052FF]" placeholder="Nom du produit ou service">
+                  <input type="number" id="demoLinkAmount" value="15000" class="w-full sm:w-32 bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#0F172A] outline-none focus:border-[#0052FF] font-mono" placeholder="Montant FCFA">
                 </div>
                 <div class="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-[#ECEEF6]">
-                  <span class="text-xs font-mono text-[#5846F6] truncate" id="generatedLinkPreview">checkout.html?item=Formation+E-commerce&amount=15000</span>
-                  <button id="copyGeneratedLinkBtn" class="ml-2 px-3 py-1 rounded-lg bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-semibold whitespace-nowrap transition-colors">
+                  <span class="text-xs font-mono text-[#0052FF] truncate" id="generatedLinkPreview">checkout.html?item=Formation+E-commerce&amount=15000</span>
+                  <button id="copyGeneratedLinkBtn" class="ml-2 px-3 py-1 rounded-lg bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-semibold whitespace-nowrap transition-colors">
                     Copier le lien
                   </button>
                 </div>
@@ -546,7 +546,7 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
             </div>
 
             <!-- Subtle background decorative pattern -->
-            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-[#0052FF]/5 rounded-full blur-3xl pointer-events-none"></div>
           </div>
 
           <!-- Card 2: API Pour Développeurs (5 cols) -->
@@ -564,7 +564,7 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
             <div class="mt-8 p-4 rounded-2xl bg-[#0F172A] border border-slate-800 font-mono text-xs text-slate-300 space-y-2">
               <div class="flex items-center justify-between text-[11px] text-slate-400">
                 <span>POST /v1/payments/checkout</span>
-                <span class="text-[#7C6EF8] font-bold">201 Created</span>
+                <span class="text-[#3B82F6] font-bold">201 Created</span>
               </div>
               <div class="text-[11px] text-indigo-300">
                 X-VandiasPay-Signature: t=1729334,v1=9a2b8f...
@@ -578,7 +578,7 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
           <!-- Card 3: Versements Instantanés (5 cols) -->
           <div class="md:col-span-5 bento-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between group overflow-hidden relative">
             <div>
-              <div class="w-12 h-12 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] mb-6 group-hover:scale-110 transition-transform">
+              <div class="w-12 h-12 rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] flex items-center justify-center text-[#0052FF] mb-6 group-hover:scale-110 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               </div>
               <h3 class="text-2xl font-bold text-[#0F172A] mb-2">Versements Instantanés</h3>
@@ -587,10 +587,10 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
               </p>
             </div>
 
-            <div class="mt-6 flex items-center gap-3 p-3.5 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] text-xs text-[#0F172A]">
+            <div class="mt-6 flex items-center gap-3 p-3.5 rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] text-xs text-[#0F172A]">
               <span class="text-xl">⚡</span>
               <div>
-                <strong class="font-bold text-[#5846F6] block">Cashout en 3 secondes</strong>
+                <strong class="font-bold text-[#0052FF] block">Cashout en 3 secondes</strong>
                 <span class="text-slate-600">Directement crédité sur votre numéro Wave ou MoMo personnel.</span>
               </div>
             </div>
@@ -599,7 +599,7 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
           <!-- Card 4: Tableau de Bord & Analytics (Large 7 cols) -->
           <div class="md:col-span-7 bento-card rounded-3xl p-6 sm:p-8 flex flex-col justify-between group overflow-hidden relative">
             <div>
-              <div class="w-12 h-12 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] mb-6 group-hover:scale-110 transition-transform">
+              <div class="w-12 h-12 rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] flex items-center justify-center text-[#0052FF] mb-6 group-hover:scale-110 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
               </div>
               <h3 class="text-2xl font-bold text-[#0F172A] mb-2">Tableau de Bord Multi-Devises</h3>
@@ -617,7 +617,7 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
                 </div>
                 <div class="p-2.5 rounded-xl bg-white border border-[#ECEEF6] shadow-sm">
                   <span class="text-[10px] text-slate-500 uppercase font-bold block">Wallet XOF</span>
-                  <span class="text-sm font-extrabold text-[#5846F6]">4 850 000 F</span>
+                  <span class="text-sm font-extrabold text-[#0052FF]">4 850 000 F</span>
                 </div>
                 <div class="p-2.5 rounded-xl bg-white border border-[#ECEEF6] shadow-sm">
                   <span class="text-[10px] text-slate-500 uppercase font-bold block">Conversion</span>
@@ -626,13 +626,13 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
               </div>
               <!-- Mini visual bar chart -->
               <div class="flex items-end gap-1.5 h-12 pt-2 px-1">
-                <div class="flex-1 bg-purple-200 rounded-t h-5 hover:bg-[#5846F6] transition-colors"></div>
-                <div class="flex-1 bg-purple-300 rounded-t h-8 hover:bg-[#5846F6] transition-colors"></div>
-                <div class="flex-1 bg-purple-200 rounded-t h-6 hover:bg-[#5846F6] transition-colors"></div>
-                <div class="flex-1 bg-purple-400 rounded-t h-10 hover:bg-[#5846F6] transition-colors"></div>
-                <div class="flex-1 bg-[#5846F6] rounded-t h-12 hover:bg-[#4B3BE0] transition-colors"></div>
-                <div class="flex-1 bg-purple-400 rounded-t h-9 hover:bg-[#5846F6] transition-colors"></div>
-                <div class="flex-1 bg-[#5846F6] rounded-t h-11 hover:bg-[#4B3BE0] transition-colors"></div>
+                <div class="flex-1 bg-blue-200 rounded-t h-5 hover:bg-[#0052FF] transition-colors"></div>
+                <div class="flex-1 bg-purple-300 rounded-t h-8 hover:bg-[#0052FF] transition-colors"></div>
+                <div class="flex-1 bg-blue-200 rounded-t h-6 hover:bg-[#0052FF] transition-colors"></div>
+                <div class="flex-1 bg-purple-400 rounded-t h-10 hover:bg-[#0052FF] transition-colors"></div>
+                <div class="flex-1 bg-[#0052FF] rounded-t h-12 hover:bg-[#0040D0] transition-colors"></div>
+                <div class="flex-1 bg-purple-400 rounded-t h-9 hover:bg-[#0052FF] transition-colors"></div>
+                <div class="flex-1 bg-[#0052FF] rounded-t h-11 hover:bg-[#0040D0] transition-colors"></div>
               </div>
             </div>
           </div>
@@ -650,12 +650,12 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
         
         <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-12">
           <div>
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF4FF] border border-[#BFDBFE] text-[#0052FF] text-xs font-bold uppercase tracking-wider mb-4">
               Expérience Développeur Maximale
             </div>
             <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0F172A] tracking-tight">
               Intégrez en 4 lignes de code. <br class="hidden sm:inline"/>
-              <span class="font-serif italic font-normal text-[#5846F6]">Dans votre langage préféré.</span>
+              <span class="font-serif italic font-normal text-[#0052FF]">Dans votre langage préféré.</span>
             </h2>
             <p class="mt-4 text-slate-600 text-base max-w-xl">
               Des SDKs complets pour Node.js, Python, PHP et une API REST compatible cURL. Documentation Swagger, Sandbox isolés et clés de test gratuites.
@@ -663,7 +663,7 @@ console.<span class="text-teal-400">log</span>(<span class="text-purple-300">'UR
           </div>
 
           <div class="flex flex-wrap items-center gap-3">
-            <a href="dashboard.html" class="px-5 py-2.5 rounded-xl bg-[#EEF0FD] hover:bg-purple-100 border border-[#D4D7F5] text-[#5846F6] font-bold text-xs flex items-center gap-2 transition-all">
+            <a href="dashboard.html" class="px-5 py-2.5 rounded-xl bg-[#EEF4FF] hover:bg-blue-100 border border-[#BFDBFE] text-[#0052FF] font-bold text-xs flex items-center gap-2 transition-all">
               <span>Obtenir mes clés d'API</span>
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
             </a>
@@ -812,12 +812,12 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div class="text-center max-w-3xl mx-auto mb-16">
-          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF4FF] border border-[#BFDBFE] text-[#0052FF] text-xs font-bold uppercase tracking-wider mb-4">
             Rentabilité & Économies
           </div>
           <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0F172A] tracking-tight">
             Calculez vos gains avec une <br class="hidden sm:inline"/>
-            <span class="font-serif italic font-normal text-[#5846F6]">tarification sans surprise</span>.
+            <span class="font-serif italic font-normal text-[#0052FF]">tarification sans surprise</span>.
           </h2>
           <p class="mt-4 text-base sm:text-lg text-slate-600">
             Fini les frais d'installation de 500 000 FCFA et les abonnements mensuels facturés par les banques traditionnelles. Payez uniquement quand vous réussissez.
@@ -832,7 +832,7 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
               <label for="volumeSlider" class="text-sm font-bold text-[#0F172A]">
                 Votre volume de ventes mensuel estimé :
               </label>
-              <div class="text-2xl sm:text-3xl font-black text-[#5846F6] font-mono" id="volumeDisplay">
+              <div class="text-2xl sm:text-3xl font-black text-[#0052FF] font-mono" id="volumeDisplay">
                 2 500 000 FCFA
               </div>
             </div>
@@ -860,12 +860,12 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
           <div class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-8 border-t border-[#ECEEF6]">
             
             <!-- Net Payout -->
-            <div class="p-5 rounded-2xl bg-[#EEF0FD] border border-[#D4D7F5] text-center shadow-sm">
-              <span class="text-xs font-bold text-[#5846F6] uppercase tracking-wider block mb-1">Votre Encaissement Net</span>
+            <div class="p-5 rounded-2xl bg-[#EEF4FF] border border-[#BFDBFE] text-center shadow-sm">
+              <span class="text-xs font-bold text-[#0052FF] uppercase tracking-wider block mb-1">Votre Encaissement Net</span>
               <div class="text-2xl sm:text-3xl font-extrabold text-[#0F172A] font-mono" id="netAmountDisplay">
                 2 437 500 FCFA
               </div>
-              <span class="text-[11px] text-[#5846F6] mt-1 block font-medium">Directement disponible sur vos wallets</span>
+              <span class="text-[11px] text-[#0052FF] mt-1 block font-medium">Directement disponible sur vos wallets</span>
             </div>
 
             <!-- VandiasPay Fee -->
@@ -891,10 +891,10 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
           <!-- Bottom Calculator Note -->
           <div class="mt-8 pt-6 border-t border-[#ECEEF6] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600 font-medium">
             <span class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-[#5846F6]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              <svg class="w-4 h-4 text-[#0052FF]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
               Volume supérieur à 15M FCFA/mois ? Contactez-nous pour un tarif dégressif grand compte.
             </span>
-            <a href="dashboard.html" class="text-[#5846F6] hover:underline font-bold whitespace-nowrap">
+            <a href="dashboard.html" class="text-[#0052FF] hover:underline font-bold whitespace-nowrap">
               Créer mon compte maintenant →
             </a>
           </div>
@@ -911,12 +911,12 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div class="text-center max-w-3xl mx-auto mb-16">
-          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF4FF] border border-[#BFDBFE] text-[#0052FF] text-xs font-bold uppercase tracking-wider mb-4">
             Tarifs Clairs & Simples
           </div>
           <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#0F172A] tracking-tight">
             Payez uniquement quand <br class="hidden sm:inline"/>
-            <span class="font-serif italic font-normal text-[#5846F6]">vous encaissez</span>.
+            <span class="font-serif italic font-normal text-[#0052FF]">vous encaissez</span>.
           </h2>
           <p class="mt-4 text-slate-600 text-base sm:text-lg">
             Aucun frais caché, aucun abonnement obligatoire. Démarrez en quelques clics et faites grandir votre entreprise.
@@ -926,8 +926,8 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
           
           <!-- Standard Plan (Highlight / Populaire) -->
-          <div class="relative rounded-3xl p-8 sm:p-10 bg-white border-2 border-[#5846F6] shadow-2xl shadow-purple-500/10 flex flex-col justify-between">
-            <div class="absolute -top-4 right-8 px-4 py-1 rounded-full bg-[#5846F6] text-white font-bold text-xs uppercase tracking-wider shadow-md">
+          <div class="relative rounded-3xl p-8 sm:p-10 bg-white border-2 border-[#0052FF] shadow-2xl shadow-blue-500/10 flex flex-col justify-between">
+            <div class="absolute -top-4 right-8 px-4 py-1 rounded-full bg-[#0052FF] text-white font-bold text-xs uppercase tracking-wider shadow-md">
               Offre la plus populaire
             </div>
 
@@ -946,38 +946,38 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
                   <span class="text-slate-500 text-sm font-semibold">/ transaction réussie</span>
                 </div>
                 <div class="mt-3 flex flex-wrap items-center gap-4 text-xs">
-                  <span class="flex items-center gap-1 font-bold text-[#5846F6]">✓ 0 FCFA installation</span>
-                  <span class="flex items-center gap-1 font-bold text-[#5846F6]">✓ 0 FCFA / mois</span>
-                  <span class="flex items-center gap-1 font-bold text-[#5846F6]">✓ 0 FCFA échec</span>
+                  <span class="flex items-center gap-1 font-bold text-[#0052FF]">✓ 0 FCFA installation</span>
+                  <span class="flex items-center gap-1 font-bold text-[#0052FF]">✓ 0 FCFA / mois</span>
+                  <span class="flex items-center gap-1 font-bold text-[#0052FF]">✓ 0 FCFA échec</span>
                 </div>
               </div>
 
               <!-- Included perks list -->
               <div class="space-y-3.5 mb-8">
                 <div class="flex items-center gap-3 text-sm text-slate-700">
-                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <svg class="w-5 h-5 text-[#0052FF] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                   <span>Tous les moyens de paiement : <strong class="text-[#0F172A]">Wave, OM, MoMo, CB</strong></span>
                 </div>
                 <div class="flex items-center gap-3 text-sm text-slate-700">
-                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <svg class="w-5 h-5 text-[#0052FF] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                   <span>Génération illimitée de <strong class="text-[#0F172A]">liens de paiement</strong> sans coder</span>
                 </div>
                 <div class="flex items-center gap-3 text-sm text-slate-700">
-                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <svg class="w-5 h-5 text-[#0052FF] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                   <span>Accès complet à l'API REST & Webhooks temps réel</span>
                 </div>
                 <div class="flex items-center gap-3 text-sm text-slate-700">
-                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <svg class="w-5 h-5 text-[#0052FF] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                   <span>Versements instantanés vers Mobile Money ou Banque</span>
                 </div>
                 <div class="flex items-center gap-3 text-sm text-slate-700">
-                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <svg class="w-5 h-5 text-[#0052FF] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                   <span>Support prioritaire par <strong class="text-[#0F172A]">WhatsApp & Email 7j/7</strong></span>
                 </div>
               </div>
             </div>
 
-            <a href="dashboard.html" class="w-full py-4 rounded-xl bg-gradient-to-r from-[#5846F6] to-[#7C6EF8] hover:from-[#4B3BE0] hover:to-[#6D5EFA] text-white font-bold text-center shadow-lg shadow-purple-500/25 transition-all">
+            <a href="dashboard.html" class="w-full py-4 rounded-xl bg-gradient-to-r from-[#0052FF] to-[#3B82F6] hover:from-[#0040D0] hover:to-[#6D5EFA] text-white font-bold text-center shadow-lg shadow-blue-500/25 transition-all">
               Créer un compte et commencer à encaisser
             </a>
           </div>
@@ -1003,19 +1003,19 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
               <!-- Enterprise Perks -->
               <div class="space-y-3.5 mb-8">
                 <div class="flex items-center gap-3 text-sm text-slate-700">
-                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <svg class="w-5 h-5 text-[#0052FF] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                   <span>Tarifs négociés & dégressifs sur-mesure</span>
                 </div>
                 <div class="flex items-center gap-3 text-sm text-slate-700">
-                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <svg class="w-5 h-5 text-[#0052FF] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                   <span>Account Manager & ingénieur d'intégration dédié</span>
                 </div>
                 <div class="flex items-center gap-3 text-sm text-slate-700">
-                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <svg class="w-5 h-5 text-[#0052FF] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                   <span>SLA de disponibilité 99.99% contractuel</span>
                 </div>
                 <div class="flex items-center gap-3 text-sm text-slate-700">
-                  <svg class="w-5 h-5 text-[#5846F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                  <svg class="w-5 h-5 text-[#0052FF] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                   <span>Support d'astreinte 24/7 par canal privé Slack/WhatsApp</span>
                 </div>
               </div>
@@ -1038,11 +1038,11 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div class="text-center mb-16">
-          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF0FD] border border-[#D4D7F5] text-[#5846F6] text-xs font-bold uppercase tracking-wider mb-4">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF4FF] border border-[#BFDBFE] text-[#0052FF] text-xs font-bold uppercase tracking-wider mb-4">
             Tout ce que vous devez savoir
           </div>
           <h2 class="text-3xl sm:text-4xl font-extrabold text-[#0F172A] tracking-tight">
-            Foire Aux <span class="font-serif italic font-normal text-[#5846F6]">Questions</span>
+            Foire Aux <span class="font-serif italic font-normal text-[#0052FF]">Questions</span>
           </h2>
           <p class="mt-4 text-slate-600 text-base">
             Des réponses claires à vos questions les plus fréquentes sur VandiasPay.
@@ -1055,7 +1055,7 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
           <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
             <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
               <span>Comment puis-je retirer mon argent après un encaissement ?</span>
-              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              <svg class="faq-icon w-5 h-5 text-[#0052FF] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
               Vos fonds sont disponibles immédiatement après la transaction réussie. Vous pouvez configurer des versements automatiques (quotidiens, hebdomadaires) ou demander un retrait instantané en 1 clic vers votre portefeuille <strong class="text-[#0F172A]">Wave</strong>, <strong class="text-[#0F172A]">Orange Money</strong>, <strong class="text-[#0F172A]">MTN MoMo</strong> ou directement par virement bancaire sur votre compte dans toute la zone UEMOA/CEMAC.
@@ -1066,10 +1066,10 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
           <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
             <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
               <span>Ai-je besoin d'une entreprise formellement enregistrée pour commencer ?</span>
-              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              <svg class="faq-icon w-5 h-5 text-[#0052FF] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
-              <strong class="text-[#5846F6]">Non !</strong> Vous pouvez ouvrir un compte Starter en tant que travailleur indépendant, freelance, créateur de contenu ou particulier avec une simple pièce d'identité nationale ou passeport (KYC rapide). Si vous êtes une entreprise SARL, SAS ou ETS, vous pouvez fournir votre RCCM et NINEA pour débloquer des plafonds de volume illimités.
+              <strong class="text-[#0052FF]">Non !</strong> Vous pouvez ouvrir un compte Starter en tant que travailleur indépendant, freelance, créateur de contenu ou particulier avec une simple pièce d'identité nationale ou passeport (KYC rapide). Si vous êtes une entreprise SARL, SAS ou ETS, vous pouvez fournir votre RCCM et NINEA pour débloquer des plafonds de volume illimités.
             </div>
           </div>
 
@@ -1077,7 +1077,7 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
           <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
             <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
               <span>Quels pays d'Afrique sont compatibles actuellement ?</span>
-              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              <svg class="faq-icon w-5 h-5 text-[#0052FF] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
               VandiasPay est pleinement opérationnel dans plus de 25 pays : <strong class="text-[#0F172A]">Sénégal, Côte d'Ivoire, Cameroun, RDC, Bénin, Mali, Togo, Burkina Faso, Guinée, Congo, Zambie, Ouganda, Tanzanie, Rwanda, Kenya, Ghana...</strong>. Nous acceptons également les Cartes Bancaires VISA et Mastercard du monde entier pour permettre à vos clients de la diaspora de vous payer sans friction.
@@ -1088,10 +1088,10 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
           <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
             <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
               <span>Mes clients doivent-ils créer un compte VandiasPay pour payer ?</span>
-              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              <svg class="faq-icon w-5 h-5 text-[#0052FF] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
-              <strong class="text-[#5846F6]">Jamais !</strong> L'expérience pour vos acheteurs est ultra-fluide : ils cliquent sur votre lien de paiement ou passent par votre checkout, choisissent leur moyen habituel (Wave, OM, MoMo ou Carte) et confirment directement sur leur téléphone via un prompt push ou scan QR code. Zéro friction, taux de conversion record garanti.
+              <strong class="text-[#0052FF]">Jamais !</strong> L'expérience pour vos acheteurs est ultra-fluide : ils cliquent sur votre lien de paiement ou passent par votre checkout, choisissent leur moyen habituel (Wave, OM, MoMo ou Carte) et confirment directement sur leur téléphone via un prompt push ou scan QR code. Zéro friction, taux de conversion record garanti.
             </div>
           </div>
 
@@ -1099,7 +1099,7 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
           <div class="faq-item rounded-2xl bg-white border border-[#ECEEF6] overflow-hidden transition-all shadow-sm">
             <button class="faq-question w-full px-6 py-5 text-left font-bold text-[#0F172A] text-base sm:text-lg flex items-center justify-between gap-4 focus:outline-none" aria-expanded="false">
               <span>Comment les données et les fonds sont-ils sécurisés ?</span>
-              <svg class="faq-icon w-5 h-5 text-[#5846F6] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              <svg class="faq-icon w-5 h-5 text-[#0052FF] transition-transform duration-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div class="faq-answer px-6 pb-5 text-slate-600 text-sm leading-relaxed border-t border-[#ECEEF6] pt-3 hidden">
               VandiasPay respecte les normes les plus strictes : conformité PCI-DSS Level 1, chiffrement AES-256 de bout en bout et signatures HMAC pour tous les webhooks. Les fonds sont cantonnés dans des comptes de séquestre auprès d'établissements bancaires agréés par la BCEAO et la BEAC.
@@ -1117,7 +1117,7 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
     <section class="py-20 relative overflow-hidden bg-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div class="relative rounded-3xl p-8 sm:p-14 bg-gradient-to-r from-[#5846F6] via-[#6D5CF8] to-[#4B3BE0] shadow-2xl text-center overflow-hidden">
+        <div class="relative rounded-3xl p-8 sm:p-14 bg-gradient-to-r from-[#0052FF] via-[#1D4ED8] to-[#0040D0] shadow-2xl text-center overflow-hidden">
           
           <div class="relative z-10 max-w-3xl mx-auto text-white">
             <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
@@ -1129,10 +1129,10 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
             </p>
 
             <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a href="dashboard.html" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-white hover:bg-slate-50 text-[#5846F6] font-bold text-base shadow-xl transition-all transform hover:-translate-y-0.5">
+              <a href="dashboard.html" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-white hover:bg-slate-50 text-[#0052FF] font-bold text-base shadow-xl transition-all transform hover:-translate-y-0.5">
                 Créer mon compte gratuit en 2 minutes
               </a>
-              <a href="https://wa.me/221770000000" target="_blank" rel="noopener" class="w-full sm:w-auto px-6 py-4 rounded-xl bg-purple-700/50 hover:bg-purple-700/70 text-white font-semibold text-base border border-white/20 transition-all flex items-center justify-center gap-2">
+              <a href="https://wa.me/221770000000" target="_blank" rel="noopener" class="w-full sm:w-auto px-6 py-4 rounded-xl bg-purple-700/50 hover:bg-[#0040D0]/70 text-white font-semibold text-base border border-white/20 transition-all flex items-center justify-center gap-2">
                 <span>💬 Discuter sur WhatsApp</span>
               </a>
             </div>
@@ -1166,14 +1166,14 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
           <a href="#" class="flex items-center gap-3 mb-4">
             <img src="logo.png" alt="VandiasPay Logo" class="w-10 h-10 object-contain rounded-xl shadow-sm">
             <span class="text-xl font-extrabold tracking-tight text-[#0F172A]">
-              VANDIAS PAY <span class="text-xs px-2 py-0.5 rounded-full bg-[#EEF0FD] text-[#5846F6] border border-[#D4D7F5] font-mono">API</span>
+              VANDIAS PAY <span class="text-xs px-2 py-0.5 rounded-full bg-[#EEF4FF] text-[#0052FF] border border-[#BFDBFE] font-mono">API</span>
             </span>
           </a>
           <p class="text-slate-600 text-xs sm:text-sm leading-relaxed max-w-sm mb-4">
             La passerelle de paiement unifiée conçue pour débloquer le potentiel économique de l'Afrique. Connectez Wave, Orange Money, MoMo et cartes bancaires dans plus de 25 pays.
           </p>
-          <div class="flex items-center gap-2 text-xs text-[#5846F6] font-semibold">
-            <span class="w-2 h-2 rounded-full bg-[#5846F6] animate-pulse"></span>
+          <div class="flex items-center gap-2 text-xs text-[#0052FF] font-semibold">
+            <span class="w-2 h-2 rounded-full bg-[#0052FF] animate-pulse"></span>
             <span>Tous les systèmes opérationnels (99.98%)</span>
           </div>
         </div>
@@ -1182,11 +1182,11 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
         <div>
           <h4 class="text-[#0F172A] font-bold text-xs uppercase tracking-wider mb-4">Produit</h4>
           <ul class="space-y-2.5 text-slate-600 text-xs font-medium">
-            <li><a href="checkout.html" class="hover:text-[#5846F6] transition-colors">Checkout Universel</a></li>
-            <li><a href="#features" class="hover:text-[#5846F6] transition-colors">Liens de paiement</a></li>
-            <li><a href="dashboard.html" class="hover:text-[#5846F6] transition-colors">Wallets 25+ Pays</a></li>
-            <li><a href="#pricing" class="hover:text-[#5846F6] transition-colors">Tarifs</a></li>
-            <li><a href="#calculator" class="hover:text-[#5846F6] transition-colors">Calculateur</a></li>
+            <li><a href="checkout.html" class="hover:text-[#0052FF] transition-colors">Checkout Universel</a></li>
+            <li><a href="#features" class="hover:text-[#0052FF] transition-colors">Liens de paiement</a></li>
+            <li><a href="dashboard.html" class="hover:text-[#0052FF] transition-colors">Wallets 25+ Pays</a></li>
+            <li><a href="#pricing" class="hover:text-[#0052FF] transition-colors">Tarifs</a></li>
+            <li><a href="#calculator" class="hover:text-[#0052FF] transition-colors">Calculateur</a></li>
           </ul>
         </div>
 
@@ -1194,11 +1194,11 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
         <div>
           <h4 class="text-[#0F172A] font-bold text-xs uppercase tracking-wider mb-4">Développeurs</h4>
           <ul class="space-y-2.5 text-slate-600 text-xs font-medium">
-            <li><a href="dashboard.html" class="hover:text-[#5846F6] transition-colors">Documentation API</a></li>
-            <li><a href="#developers" class="hover:text-[#5846F6] transition-colors">SDK Node.js & Python</a></li>
-            <li><a href="#developers" class="hover:text-[#5846F6] transition-colors">SDK PHP & Laravel</a></li>
-            <li><a href="#developers" class="hover:text-[#5846F6] transition-colors">Webhooks HMAC</a></li>
-            <li><a href="dashboard.html" class="hover:text-[#5846F6] transition-colors">Statut des serveurs</a></li>
+            <li><a href="dashboard.html" class="hover:text-[#0052FF] transition-colors">Documentation API</a></li>
+            <li><a href="#developers" class="hover:text-[#0052FF] transition-colors">SDK Node.js & Python</a></li>
+            <li><a href="#developers" class="hover:text-[#0052FF] transition-colors">SDK PHP & Laravel</a></li>
+            <li><a href="#developers" class="hover:text-[#0052FF] transition-colors">Webhooks HMAC</a></li>
+            <li><a href="dashboard.html" class="hover:text-[#0052FF] transition-colors">Statut des serveurs</a></li>
           </ul>
         </div>
 
@@ -1206,11 +1206,11 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
         <div>
           <h4 class="text-[#0F172A] font-bold text-xs uppercase tracking-wider mb-4">Légal & Contact</h4>
           <ul class="space-y-2.5 text-slate-600 text-xs font-medium">
-            <li><a href="#" class="hover:text-[#5846F6] transition-colors">Conditions Générales (CGU)</a></li>
-            <li><a href="#" class="hover:text-[#5846F6] transition-colors">Politique de Confidentialité</a></li>
-            <li><a href="#" class="hover:text-[#5846F6] transition-colors">Conformité PCI-DSS</a></li>
-            <li><a href="https://wa.me/221770000000" target="_blank" class="hover:text-[#5846F6] transition-colors">Support WhatsApp 7j/7</a></li>
-            <li><a href="mailto:support@vandiaspay.com" class="hover:text-[#5846F6] transition-colors">contact@vandiaspay.com</a></li>
+            <li><a href="#" class="hover:text-[#0052FF] transition-colors">Conditions Générales (CGU)</a></li>
+            <li><a href="#" class="hover:text-[#0052FF] transition-colors">Politique de Confidentialité</a></li>
+            <li><a href="#" class="hover:text-[#0052FF] transition-colors">Conformité PCI-DSS</a></li>
+            <li><a href="https://wa.me/221770000000" target="_blank" class="hover:text-[#0052FF] transition-colors">Support WhatsApp 7j/7</a></li>
+            <li><a href="mailto:support@vandiaspay.com" class="hover:text-[#0052FF] transition-colors">contact@vandiaspay.com</a></li>
           </ul>
         </div>
 
@@ -1233,7 +1233,7 @@ print(f<span class="text-purple-300">"Paiement initialisé : {response['checkout
        SOCIAL PROOF LIVE TOAST (DISCRET BOTTOM-LEFT)
        ======================================================== -->
   <div id="livePaymentToast" class="fixed bottom-5 left-5 z-40 max-w-xs sm:max-w-sm rounded-2xl bg-white border border-[#ECEEF6] p-3.5 shadow-2xl transition-all duration-500 transform translate-y-20 opacity-0 flex items-center gap-3 pointer-events-none">
-    <div class="w-9 h-9 rounded-xl bg-[#EEF0FD] border border-[#D4D7F5] flex items-center justify-center text-[#5846F6] flex-shrink-0 font-bold text-xs" id="toastIcon">
+    <div class="w-9 h-9 rounded-xl bg-[#EEF4FF] border border-[#BFDBFE] flex items-center justify-center text-[#0052FF] flex-shrink-0 font-bold text-xs" id="toastIcon">
       ⚡
     </div>
     <div class="text-xs">

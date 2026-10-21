@@ -24,9 +24,9 @@
           },
           colors: {
             vp: {
-              purple: '#5846F6',
-              purpleHover: '#4B3BE0',
-              purpleLight: '#EEF0FD',
+              purple: '#0052FF',
+              purpleHover: '#0040D0',
+              purpleLight: '#EEF4FF',
               bg: '#F8F9FD',
               card: '#FFFFFF',
               border: '#ECEEF6',
@@ -46,7 +46,7 @@
   <link rel="icon" type="image/png" href="logo.png">
   <link rel="apple-touch-icon" href="logo.png">
 </head>
-<body class="bg-[#F8F9FD] text-[#111827] font-sans antialiased min-h-screen flex selection:bg-purple-600 selection:text-white">
+<body class="bg-[#F8F9FD] text-[#111827] font-sans antialiased min-h-screen flex selection:bg-[#0052FF] selection:text-white">
 
   <!-- Mobile Sidebar Backdrop -->
   <div id="sidebarBackdrop" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity"></div>
@@ -54,7 +54,7 @@
   <!-- ========================================================
        BARRE LATÉRALE (SIDEBAR GAUCHE - 15 ONGLETS CONFORMES)
        ======================================================== -->
-  <aside id="dashboardSidebar" class="fixed top-0 bottom-0 left-0 w-64 bg-white border-r border-[#ECEEF6] z-50 flex flex-col justify-between transition-transform duration-300 transform -translate-x-full lg:translate-x-0 overflow-y-auto">
+  <aside id="dashboardSidebar" class="fixed top-0 bottom-0 left-0 w-64 bg-white border-r border-[#ECEEF6] z-50 flex flex-col justify-between transition-transform duration-300 transform -translate-x-full lg:translate-x-0 overflow-y-auto hidden">
     
     <div>
       <!-- Top Workspace / Organization Dropdown -->
@@ -170,7 +170,7 @@
     <!-- Bottom User Pill -->
     <div class="p-3 border-t border-[#F0F2F9] m-2 rounded-2xl bg-[#F9FAFC] border">
       <div class="flex items-center gap-3">
-        <div id="sidebarAvatarLetter" class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white font-bold text-sm flex items-center justify-center">
+        <div id="sidebarAvatarLetter" class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#0052FF] to-[#8B5CF6] text-white font-bold text-sm flex items-center justify-center">
           G
         </div>
         <div class="flex flex-col truncate">
@@ -185,7 +185,7 @@
   <!-- ========================================================
        ESPACE DE TRAVAIL PRINCIPAL (MAIN WORKSPACE)
        ======================================================== -->
-  <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
+  <div id="dashboardMainLayout" class="flex-1 flex flex-col min-w-0 lg:pl-64 hidden">
     
     <!-- Header Supérieur Blanc Épuré -->
     <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#ECEEF6] px-4 sm:px-8 py-3.5 flex items-center justify-between">
@@ -214,7 +214,7 @@
 
         <!-- Profile Button Trigger -->
         <button id="profileDropdownBtn" class="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-[#ECEEF6]">
-          <div id="topbarAvatarLetter" class="w-8 h-8 rounded-full bg-[#6366F1] text-white font-bold text-xs flex items-center justify-center shadow-sm">
+          <div id="topbarAvatarLetter" class="w-8 h-8 rounded-full bg-[#0052FF] text-white font-bold text-xs flex items-center justify-center shadow-sm">
             G
           </div>
           <span id="topbarMerchantName" class="text-xs sm:text-sm font-bold text-[#111827]">Marchand</span>
@@ -227,7 +227,7 @@
         <div id="profileDropdownMenu" class="hidden absolute right-0 top-12 w-64 bg-white rounded-2xl border border-[#ECEEF6] shadow-xl p-3 z-50 animate-fade-in">
           <!-- Profile Info Header -->
           <div class="flex items-center gap-3 p-2 pb-3 border-b border-[#F0F2F9]">
-            <div id="menuAvatarLetter" class="w-10 h-10 rounded-2xl bg-[#6366F1] text-white font-bold text-sm flex items-center justify-center shadow-sm">
+            <div id="menuAvatarLetter" class="w-10 h-10 rounded-2xl bg-[#0052FF] text-white font-bold text-sm flex items-center justify-center shadow-sm">
               G
             </div>
             <div class="flex flex-col truncate">
@@ -259,177 +259,98 @@
           </div>
         </div>
 
-      </div>
-
     </header>
 
     <!-- Main Content Container -->
     <main class="p-4 sm:p-8 flex-1">
       
       <!-- ====================================================
-           SECTION 1 : TABLEAU DE BORD (ACCUEIL EXACT SELON SCREENSHOTS)
+           SECTION 1 : TABLEAU DE BORD (100% CONFORME SCREENSHOT SASPAY)
            ==================================================== -->
       <section id="section-overview" class="dashboard-section active space-y-6">
         
         <!-- En-tête : Titre + Sous-titre -->
         <div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight">Tableau de bord</h1>
-          <p class="text-xs sm:text-sm text-[#6B7280] mt-1 font-normal">Vue d'ensemble de VANDIAS PAY — tous pays confondus.</p>
+          <h1 class="text-2xl font-bold tracking-tight text-[#111827]">Tableau de bord</h1>
+          <p class="mt-1 text-xs sm:text-sm text-[#6B7280]">
+            Vue d'ensemble de <span class="active-app-name-display font-medium text-[#111827]">VANDIA IA</span> — tous pays confondus.
+          </p>
         </div>
 
         <!-- Boutons d'Action Rapide -->
         <div class="flex items-center gap-3">
-          <!-- Retirer (Bouton Blanc avec contour) -->
-          <button id="btnOpenPayoutModal" class="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-[#ECEEF6] hover:bg-slate-50 text-[#111827] text-xs sm:text-sm font-semibold transition-all shadow-sm">
-            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z"/></svg>
+          <!-- Retirer -->
+          <button id="btnOpenPayoutModal" onclick="switchTab('payouts')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#ECEEF6] hover:bg-slate-50 text-[#111827] text-xs sm:text-sm font-semibold transition-all shadow-xs">
+            <span class="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center text-xs">↓</span>
             <span>Retirer</span>
           </button>
 
-          <!-- Créer un lien de paiement (Bouton Violet Solide) -->
-          <button id="btnOpenCreateLinkModal" class="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs sm:text-sm font-semibold transition-all shadow-md shadow-purple-500/25">
+          <!-- Créer un lien de paiement -->
+          <button id="btnOpenCreateLinkModal" onclick="openCreateLinkModal()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs sm:text-sm font-semibold transition-all shadow-xs">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
             <span>Créer un lien de paiement</span>
           </button>
         </div>
 
-        <!-- Grid 2 Colonnes Principales : Solde Disponible (Wallets) + Transactions Récentes -->
+        <!-- Disposition 2 Colonnes Principales -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          <!-- Colonne Gauche : Solde disponible dans 25+ Pays (8 cols) -->
-          <div class="lg:col-span-8 bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm">
-            
-            <!-- Carte Header -->
-            <div class="flex items-center justify-between mb-6 pb-2 border-b border-[#F4F6FC]">
+          <!-- Colonne Gauche : Solde disponible (7 colonnes sur 12) -->
+          <div class="lg:col-span-7 bg-white border border-[#ECEEF6] rounded-2xl p-6 shadow-xs">
+            <div class="flex items-center justify-between pb-2">
               <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-[#EEF0FD] text-[#5846F6] flex items-center justify-center">
+                <div class="w-7 h-7 rounded-lg bg-blue-50 text-[#0052FF] flex items-center justify-center">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
                 </div>
-                <h2 class="text-base font-bold text-[#111827]">Solde disponible</h2>
-                <span class="text-[11px] px-2 py-0.5 rounded-full bg-purple-50 text-[#5846F6] font-semibold border border-purple-100 hidden sm:inline">25+ pays actifs</span>
+                <h2 class="text-sm font-bold text-[#111827]">Solde disponible</h2>
               </div>
-              <button class="text-xs font-bold text-[#5846F6] hover:underline" onclick="switchTab('wallet')">
+              <button onclick="switchTab('wallet')" class="text-xs font-semibold text-[#0052FF] hover:underline">
                 Voir le wallet
               </button>
             </div>
 
-            <!-- Grille des Devises / Wallets (25+ Pays d'Afrique & International) -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3.5" id="walletsGrid">
-              
-              <!-- USD (International) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">USD</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+            <!-- Grille des 6 devises du Solde disponible -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-5" id="overviewBalancesGrid">
+              <div class="rounded-2xl bg-[#F8FAFC] p-5">
+                <span class="text-xs font-bold text-[#9CA3AF] uppercase tracking-wider block">USD</span>
+                <span id="overviewBalUSD" class="text-2xl sm:text-3xl font-extrabold text-[#111827] block mt-1">0</span>
               </div>
-
-              <!-- ZMW (Zambie) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">ZMW</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              <div class="rounded-2xl bg-[#F8FAFC] p-5">
+                <span class="text-xs font-bold text-[#9CA3AF] uppercase tracking-wider block">ZMW</span>
+                <span id="overviewBalZMW" class="text-2xl sm:text-3xl font-extrabold text-[#111827] block mt-1">0</span>
               </div>
-
-              <!-- UGX (Ouganda) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">UGX</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              <div class="rounded-2xl bg-[#F8FAFC] p-5">
+                <span class="text-xs font-bold text-[#9CA3AF] uppercase tracking-wider block">UGX</span>
+                <span id="overviewBalUGX" class="text-2xl sm:text-3xl font-extrabold text-[#111827] block mt-1">0</span>
               </div>
-
-              <!-- TZS (Tanzanie) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">TZS</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              <div class="rounded-2xl bg-[#F8FAFC] p-5">
+                <span class="text-xs font-bold text-[#9CA3AF] uppercase tracking-wider block">TZS</span>
+                <span id="overviewBalTZS" class="text-2xl sm:text-3xl font-extrabold text-[#111827] block mt-1">0</span>
               </div>
-
-              <!-- XOF (8 Pays UEMOA: Sénégal, Côte d'Ivoire, Bénin, Togo, Mali...) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase">XOF</span>
-                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-[#5846F6] font-semibold">UEMOA</span>
-                </div>
-                <span id="xofWalletBalance" class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              <div class="rounded-2xl bg-[#F8FAFC] p-5">
+                <span class="text-xs font-bold text-[#9CA3AF] uppercase tracking-wider block">XOF</span>
+                <span id="overviewBalXOF" class="text-2xl sm:text-3xl font-extrabold text-[#111827] block mt-1">0</span>
               </div>
-
-              <!-- RWF (Rwanda) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">RWF</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
+              <div class="rounded-2xl bg-[#F8FAFC] p-5">
+                <span class="text-xs font-bold text-[#9CA3AF] uppercase tracking-wider block">RWF</span>
+                <span id="overviewBalRWF" class="text-2xl sm:text-3xl font-extrabold text-[#111827] block mt-1">0</span>
               </div>
-
-              <!-- NGN (Nigéria) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">NGN</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
-              </div>
-
-              <!-- MZN (Mozambique) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">MZN</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
-              </div>
-
-              <!-- CDF (RDC) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">CDF</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
-              </div>
-
-              <!-- XAF (6 Pays CEMAC: Cameroun, Gabon, Congo, Tchad...) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase">XAF</span>
-                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-[#5846F6] font-semibold">CEMAC</span>
-                </div>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
-              </div>
-
-              <!-- KES (Kenya) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">KES</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
-              </div>
-
-              <!-- GHS (Ghana) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">GHS</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
-              </div>
-
-              <!-- GNF (Guinée Conakry) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">GNF</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
-              </div>
-
-              <!-- ZAR (Afrique du Sud) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">ZAR</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
-              </div>
-
-              <!-- EUR (Europe & Diaspora) -->
-              <div class="wallet-tile p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] hover:border-purple-200 transition-all">
-                <span class="text-[11px] font-bold text-[#9CA3AF] tracking-wider uppercase block mb-1">EUR</span>
-                <span class="text-xl sm:text-2xl font-black text-[#111827] font-mono">0</span>
-              </div>
-
             </div>
-
           </div>
 
-          <!-- Colonne Droite : Transactions Récentes (4 cols) -->
-          <div class="lg:col-span-4 bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm">
-            
-            <div class="flex items-center justify-between mb-4 pb-2 border-b border-[#F4F6FC]">
-              <h2 class="text-base font-bold text-[#111827]">Transactions récentes</h2>
-              <button class="text-xs font-bold text-[#5846F6] hover:underline" onclick="switchTab('transactions')">
+          <!-- Colonne Droite : Transactions récentes (5 colonnes sur 12) -->
+          <div class="lg:col-span-5 bg-white border border-[#ECEEF6] rounded-2xl p-6 shadow-xs">
+            <div class="flex items-center justify-between pb-2">
+              <h2 class="text-sm font-bold text-[#111827]">Transactions récentes</h2>
+              <button onclick="switchTab('transactions')" class="text-xs font-semibold text-[#0052FF] hover:underline">
                 Tout voir
               </button>
             </div>
 
-            <!-- Liste des transactions dynamiques ou état vide -->
-            <div class="space-y-3" id="recentTxList">
-              <!-- Dynamically populated by dashboard.js (live transactions or elegant empty state) -->
+            <!-- Liste des transactions récentes (chargée dynamiquement ou état vide propre) -->
+            <div class="space-y-3.5 mt-5" id="overviewRecentTxList">
+              <!-- Dynamically populated by dashboard.js with real merchant transactions -->
             </div>
-
           </div>
 
         </div>
@@ -448,8 +369,8 @@
               Les portefeuilles de <span id="walletMerchantName" class="font-semibold text-[#111827]">ton entreprise</span>, un par pays où tu encaisses.
             </p>
           </div>
-          <button type="button" onclick="openWalletTransferModal()" class="inline-flex items-center gap-2 rounded-xl border border-violet-900/10 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#111827] shadow-sm transition-colors hover:bg-violet-50">
-            <svg class="h-4 w-4 text-[#5846F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+          <button type="button" onclick="openWalletTransferModal()" class="inline-flex items-center gap-2 rounded-xl border border-violet-900/10 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#111827] shadow-sm transition-colors hover:bg-blue-50">
+            <svg class="h-4 w-4 text-[#0052FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
             <span>Transférer entre wallets</span>
           </button>
         </div>
@@ -463,7 +384,7 @@
         <div class="rounded-2xl border border-violet-900/8 bg-white p-5 sm:p-6 shadow-sm space-y-5">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2.5">
-              <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-[#5846F6]">
+              <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-[#0052FF]">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
               </span>
               <p class="text-sm font-bold text-[#111827]">Historique des mouvements</p>
@@ -472,10 +393,10 @@
             <!-- Filtres recherche et pays -->
             <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <div class="relative flex-1 sm:w-64">
-                <input type="text" id="walletLedgerSearchInput" placeholder="Rechercher par description ou référence…" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 pl-9 pr-3.5 py-2 text-xs text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none">
+                <input type="text" id="walletLedgerSearchInput" placeholder="Rechercher par description ou référence…" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 pl-9 pr-3.5 py-2 text-xs text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
                 <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               </div>
-              <select id="walletLedgerCountrySelect" class="rounded-xl border border-violet-900/10 bg-violet-50/40 px-3 py-2 text-xs font-semibold text-[#111827] focus:border-[#5846F6] focus:outline-none">
+              <select id="walletLedgerCountrySelect" class="rounded-xl border border-violet-900/10 bg-blue-50/40 px-3 py-2 text-xs font-semibold text-[#111827] focus:border-[#0052FF] focus:outline-none">
                 <option value="">Tous les pays</option>
               </select>
             </div>
@@ -512,7 +433,7 @@
         <div class="rounded-2xl border border-violet-900/8 bg-white p-5 sm:p-6 shadow-sm space-y-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
-              <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-[#5846F6]">
+              <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-[#0052FF]">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
               </span>
               <p class="text-sm font-bold text-[#111827]">Transferts entre wallets</p>
@@ -539,104 +460,319 @@
       </section>
 
       <!-- ====================================================
-           SECTION 3 : TRANSACTIONS
+           SECTION 3 : TRANSACTIONS (100% CONFORME CAPTURE SASPAY)
            ==================================================== -->
       <section id="section-transactions" class="dashboard-section hidden space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 class="text-2xl font-extrabold text-[#111827]">Historique des Transactions</h1>
-            <p class="text-xs sm:text-sm text-[#6B7280]">Toutes les transactions entrantes et sortantes par devise et opérateur.</p>
+            <h1 class="text-2xl font-extrabold text-[#111827]">Transactions</h1>
+            <p class="text-xs sm:text-sm text-[#6B7280]">Historique des transactions pour <span class="active-app-name-display">VANDIA IA</span></p>
           </div>
-          <button id="btnExportCsv" class="px-3.5 py-2 rounded-xl bg-white border border-[#ECEEF6] hover:bg-slate-50 text-xs font-bold text-[#111827] flex items-center gap-2 shadow-sm">
-            <span>📥 Exporter CSV</span>
+          <button id="btnExportCsv" class="self-start sm:self-auto px-4 py-2 rounded-2xl bg-white border border-[#ECEEF6] hover:bg-slate-50 text-xs sm:text-sm font-semibold text-[#111827] flex items-center gap-2 shadow-sm transition-colors">
+            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            <span>Exporter</span>
           </button>
         </div>
 
-        <!-- Transactions Table -->
-        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-sm overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="text-[#9CA3AF] uppercase text-[11px] font-bold border-b border-[#F0F2F9]">
-              <tr>
-                <th class="py-3 px-3">ID Transaction</th>
-                <th class="py-3 px-3">Date</th>
-                <th class="py-3 px-3">Client</th>
-                <th class="py-3 px-3">Montant Brut</th>
-                <th class="py-3 px-3">Devise</th>
-                <th class="py-3 px-3">Statut</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[#F4F6FC]" id="fullTransactionsBody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
+        <!-- Transactions Container Card -->
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+          <!-- Filter Bar Line 1 -->
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <!-- Search Bar -->
+            <div class="relative flex-1 min-w-[260px]">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </div>
+              <input type="text" id="txSearchInput" placeholder="Rechercher une référence, un numéro, un client..." class="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-[#FBFBFE] sm:bg-white border border-[#ECEEF6] text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF]">
+            </div>
+
+            <!-- Status Pills Group -->
+            <div class="flex items-center gap-1.5 flex-wrap" id="txStatusFilterGroup">
+              <button type="button" class="tx-status-pill active px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#0052FF] text-white transition-colors" data-status="ALL">Tous</button>
+              <button type="button" class="tx-status-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" data-status="SUCCESS">Réussi</button>
+              <button type="button" class="tx-status-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" data-status="PENDING">En attente</button>
+              <button type="button" class="tx-status-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" data-status="FAILED">Échoué</button>
+              <button type="button" class="tx-status-pill px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" data-status="CANCELLED">Annulé</button>
+            </div>
+
+            <!-- Direction Dropdown -->
+            <div>
+              <select id="txDirectionFilter" class="w-full sm:w-auto px-3.5 py-2 text-xs rounded-xl border border-[#ECEEF6] bg-white text-slate-700 font-medium focus:outline-none focus:border-[#0052FF]">
+                <option value="ALL">Tous les sens</option>
+                <option value="IN">Encaissement</option>
+                <option value="OUT">Décaissement</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Filter Bar Line 2 -->
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+            <select id="txCountryFilter" class="px-3.5 py-2 text-xs rounded-xl border border-[#ECEEF6] bg-white text-slate-700 font-medium focus:outline-none focus:border-[#0052FF]">
+              <option value="ALL">Tous les pays</option>
+              <option value="BJ">Bénin</option>
+              <option value="BF">Burkina Faso</option>
+              <option value="CM">Cameroun</option>
+              <option value="CG">Congo</option>
+              <option value="CD">RD Congo</option>
+              <option value="CI">Côte d'Ivoire</option>
+              <option value="GA">Gabon</option>
+              <option value="GN">Guinée</option>
+              <option value="ML">Mali</option>
+              <option value="NE">Niger</option>
+              <option value="SN">Sénégal</option>
+              <option value="TG">Togo</option>
+            </select>
+
+            <select id="txNetworkFilter" class="px-3.5 py-2 text-xs rounded-xl border border-[#ECEEF6] bg-white text-slate-700 font-medium focus:outline-none focus:border-[#0052FF]">
+              <option value="ALL">Tous les réseaux</option>
+              <option value="ORANGE">Orange</option>
+              <option value="MTN">MTN MoMo</option>
+              <option value="MOOV">Moov Money</option>
+              <option value="WAVE">Wave</option>
+              <option value="CARD">Carte Bancaire</option>
+            </select>
+
+            <div class="flex items-center gap-2 text-xs text-slate-600 sm:ml-auto">
+              <span class="text-slate-500">Du</span>
+              <input type="date" id="txDateFrom" class="px-2.5 py-1.5 rounded-xl border border-[#ECEEF6] bg-white text-xs text-slate-700 focus:outline-none focus:border-[#0052FF]">
+              <span class="text-slate-500">Au</span>
+              <input type="date" id="txDateTo" class="px-2.5 py-1.5 rounded-xl border border-[#ECEEF6] bg-white text-xs text-slate-700 focus:outline-none focus:border-[#0052FF]">
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto pt-2">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[#9CA3AF] uppercase text-[11px] font-bold border-b border-[#F0F2F9]">
+                <tr>
+                  <th class="py-3 px-3">RÉFÉRENCE</th>
+                  <th class="py-3 px-3">TYPE</th>
+                  <th class="py-3 px-3">PAYS</th>
+                  <th class="py-3 px-3">RÉSEAU</th>
+                  <th class="py-3 px-3">NUMÉRO</th>
+                  <th class="py-3 px-3">DATE</th>
+                  <th class="py-3 px-3">STATUT</th>
+                  <th class="py-3 px-3 text-right">MONTANT</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#F4F6FC]" id="fullTransactionsBody">
+                <!-- Dynamically populated from VPState.transactions -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="pt-4 border-t border-[#F0F2F9] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
+            <div class="flex items-center gap-2">
+              <span>Lignes</span>
+              <select id="txPageSize" class="px-2 py-1 rounded-lg border border-[#ECEEF6] bg-white text-xs text-slate-700 focus:outline-none focus:border-[#0052FF]">
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span id="txPaginationInfo">0-0 sur 0</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnPrevTx" class="px-3 py-1.5 rounded-xl border border-[#ECEEF6] bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition-colors">
+                ← Précédent
+              </button>
+              <button id="btnNextTx" class="px-3 py-1.5 rounded-xl border border-[#ECEEF6] bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition-colors">
+                Suivant →
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- ====================================================
-           SECTION 4 : LIENS DE PAIEMENT
+           SECTION 4 : LIENS DE PAIEMENT (100% CONFORME CAPTURE SASPAY)
            ==================================================== -->
       <section id="section-links" class="dashboard-section hidden space-y-6">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 class="text-2xl font-extrabold text-[#111827]">Liens de Paiement</h1>
-            <p class="text-xs sm:text-sm text-[#6B7280]">Générez et partagez des liens de paiement instantanés.</p>
+            <h1 class="text-2xl font-extrabold text-[#111827]">Liens de paiement</h1>
+            <p class="text-xs sm:text-sm text-[#6B7280]">Partage un lien pour encaisser <span class="active-app-name-display">VANDIA IA</span> sans intégration technique.</p>
           </div>
-          <button class="px-4 py-2.5 rounded-2xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/25" onclick="openCreateLinkModal()">
+          <button onclick="openCreateLinkModal()" class="self-start sm:self-auto px-4 py-2.5 rounded-2xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-md shadow-blue-500/20 transition-all">
             + Créer un lien
           </button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="paymentLinksListContainer">
-          <!-- Dynamically populated -->
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+          <!-- Search Bar -->
+          <div class="relative max-w-md">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <input type="text" id="paymentLinksSearchInput" placeholder="Rechercher par nom, description ou lien..." class="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-white border border-[#ECEEF6] text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF]">
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto pt-2">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[#9CA3AF] uppercase text-[11px] font-bold border-b border-[#F0F2F9]">
+                <tr>
+                  <th class="py-3 px-3">NOM</th>
+                  <th class="py-3 px-3">MONTANT</th>
+                  <th class="py-3 px-3">STATUT</th>
+                  <th class="py-3 px-3">UTILISATIONS</th>
+                  <th class="py-3 px-3 text-right"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#F4F6FC]" id="paymentLinksTableBody">
+                <!-- Dynamically populated from VPState.paymentLinks -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer (Conforme capture) -->
+          <div class="pt-4 border-t border-[#F0F2F9] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
+            <div class="flex items-center gap-2">
+              <span>Lignes</span>
+              <select id="paymentLinksPageSize" class="px-2 py-1 rounded-lg border border-[#ECEEF6] bg-white text-xs text-slate-700 focus:outline-none focus:border-[#0052FF]">
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span id="paymentLinksPaginationInfo">0-0 sur 0</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnPrevPaymentLinks" class="px-3 py-1.5 rounded-xl border border-[#ECEEF6] bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition-colors">
+                ← Précédent
+              </button>
+              <button id="btnNextPaymentLinks" class="px-3 py-1.5 rounded-xl border border-[#ECEEF6] bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition-colors">
+                Suivant →
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- ====================================================
-           SECTION 5 : SESSIONS DE CHECKOUT
+           SECTION 5 : SESSIONS DE CHECKOUT (100% CONFORME CAPTURE SASPAY)
            ==================================================== -->
       <section id="section-checkout-sessions" class="dashboard-section hidden space-y-6">
-        <div>
-          <h1 class="text-2xl font-extrabold text-[#111827]">Sessions de Checkout</h1>
-          <p class="text-xs sm:text-sm text-[#6B7280]">Suivi en temps réel des sessions hébergées sur VandiasPay Checkout.</p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-extrabold text-[#111827]">Sessions de checkout</h1>
+            <p class="text-xs sm:text-sm text-[#6B7280]">Pages de paiement à usage unique, pré-remplies pour un client précis, pour <span class="active-app-name-display">VANDIA IA</span>.</p>
+          </div>
+          <button onclick="openCreateCheckoutSessionModal()" class="self-start sm:self-auto px-4 py-2.5 rounded-2xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-md shadow-blue-500/20 transition-all">
+            + Nouvelle session
+          </button>
         </div>
 
-        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm">
-          <div class="flex items-center justify-between pb-4 border-b border-[#F4F6FC] mb-4">
-            <span class="text-xs font-bold text-[#111827]">Tester la page de Checkout Hébergée officielle</span>
-            <a href="checkout.html" target="_blank" class="px-3.5 py-1.5 rounded-xl bg-purple-50 text-[#5846F6] text-xs font-bold hover:bg-purple-100 transition-colors">
-              Ouvrir checkout.html ↗
-            </a>
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+          <!-- Search Bar -->
+          <div class="relative max-w-md">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <input type="text" id="checkoutSessionsSearchInput" placeholder="Rechercher par identifiant, client, email, télép..." class="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-white border border-[#ECEEF6] text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF]">
           </div>
-          <p class="text-xs text-slate-500 leading-relaxed">
-            Vos clients sont redirigés vers la page de paiement sécurisée aux normes PCI-DSS pour régler via Wave, Orange Money, MTN MoMo, Moov ou Carte Bancaire.
-          </p>
+
+          <!-- Table -->
+          <div class="overflow-x-auto pt-2">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[#9CA3AF] uppercase text-[11px] font-bold border-b border-[#F0F2F9]">
+                <tr>
+                  <th class="py-3 px-3">CLIENT</th>
+                  <th class="py-3 px-3">IDENTIFIANT</th>
+                  <th class="py-3 px-3">MONTANT</th>
+                  <th class="py-3 px-3">STATUT</th>
+                  <th class="py-3 px-3">CRÉÉE LE</th>
+                  <th class="py-3 px-3 text-right">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#F4F6FC]" id="checkoutSessionsTableBody">
+                <!-- Dynamically populated from VPState.checkoutSessions -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="pt-4 border-t border-[#F0F2F9] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
+            <div class="flex items-center gap-2">
+              <span>Lignes</span>
+              <select id="checkoutSessionsPageSize" class="px-2 py-1 rounded-lg border border-[#ECEEF6] bg-white text-xs text-slate-700 focus:outline-none focus:border-[#0052FF]">
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span id="checkoutSessionsPaginationInfo">0-0 sur 0</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnPrevCheckoutSessions" class="px-3 py-1.5 rounded-xl border border-[#ECEEF6] bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition-colors">
+                ← Précédent
+              </button>
+              <button id="btnNextCheckoutSessions" class="px-3 py-1.5 rounded-xl border border-[#ECEEF6] bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition-colors">
+                Suivant →
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- ====================================================
-           SECTION 6 : CLIENTS (CRM)
+           SECTION 6 : CLIENTS (100% CONFORME CAPTURE SASPAY)
            ==================================================== -->
       <section id="section-customers" class="dashboard-section hidden space-y-6">
-        <div>
-          <h1 class="text-2xl font-extrabold text-[#111827]">Répertoire Clients</h1>
-          <p class="text-xs sm:text-sm text-[#6B7280]">Historique de vos acheteurs identifiés par numéro Mobile Money ou Carte.</p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-extrabold text-[#111827]">Clients</h1>
+            <p class="text-xs sm:text-sm text-[#6B7280]">Les identités de paiement de tes clients pour <span class="active-app-name-display">VANDIA IA</span>.</p>
+          </div>
+          <button onclick="openCreateCustomerModal()" class="self-start sm:self-auto px-4 py-2.5 rounded-2xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-md shadow-blue-500/20 transition-all">
+            + Nouveau client
+          </button>
         </div>
 
-        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-sm overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="text-[#9CA3AF] uppercase text-[11px] font-bold border-b border-[#F0F2F9]">
-              <tr>
-                <th class="py-3 px-3">Nom</th>
-                <th class="py-3 px-3">Téléphone</th>
-                <th class="py-3 px-3">Email</th>
-                <th class="py-3 px-3">Achats</th>
-                <th class="py-3 px-3">Total Dépensé</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[#F4F6FC]" id="customersTableBody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+          <!-- Search Bar -->
+          <div class="relative max-w-md">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <input type="text" id="customersSearchInput" placeholder="Rechercher par nom, email ou téléphone..." class="w-full pl-10 pr-4 py-2 text-xs rounded-xl bg-white border border-[#ECEEF6] text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF]">
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto pt-2">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[#9CA3AF] uppercase text-[11px] font-bold border-b border-[#F0F2F9]">
+                <tr>
+                  <th class="py-3 px-3">CLIENT</th>
+                  <th class="py-3 px-3">CONTACT</th>
+                  <th class="py-3 px-3">PAYS</th>
+                  <th class="py-3 px-3 text-right">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#F4F6FC]" id="customersTableBody">
+                <!-- Dynamically populated from VPState.customers -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="pt-4 border-t border-[#F0F2F9] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
+            <div class="flex items-center gap-2">
+              <span>Lignes</span>
+              <select id="customersPageSize" class="px-2 py-1 rounded-lg border border-[#ECEEF6] bg-white text-xs text-slate-700 focus:outline-none focus:border-[#0052FF]">
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span id="customersPaginationInfo">0-0 sur 0</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnPrevCustomers" class="px-3 py-1.5 rounded-xl border border-[#ECEEF6] bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition-colors">
+                ← Précédent
+              </button>
+              <button id="btnNextCustomers" class="px-3 py-1.5 rounded-xl border border-[#ECEEF6] bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed font-medium transition-colors">
+                Suivant →
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -660,7 +796,7 @@
           </div>
           <div class="p-5 rounded-3xl bg-white border border-[#ECEEF6] shadow-sm">
             <span class="text-xs text-slate-400 font-bold uppercase block mb-1">Opérateur N°1</span>
-            <span class="text-sm font-bold text-[#5846F6]">Wave & Orange Money (68%)</span>
+            <span class="text-sm font-bold text-[#0052FF]">Wave & Orange Money (68%)</span>
           </div>
         </div>
       </section>
@@ -683,13 +819,13 @@
           <!-- Navigation des 2 sous-onglets Retraits (Gauche) -->
           <nav id="payoutsSubTabsNav" class="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible pb-2 lg:pb-0">
             <!-- 1. Retraits (Active pill) -->
-            <button type="button" class="payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#5846F6] text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)]" data-payout-tab="settlements">
+            <button type="button" class="payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#0052FF] text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)]" data-payout-tab="settlements">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
               <span>Retraits</span>
             </button>
 
             <!-- 2. Méthodes de retrait -->
-            <button type="button" class="payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]" data-payout-tab="methods">
+            <button type="button" class="payout-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]" data-payout-tab="methods">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
               <span>Méthodes de retrait</span>
             </button>
@@ -703,18 +839,18 @@
               
               <!-- Bouton Demander un retrait -->
               <div class="flex items-center justify-between">
-                <button type="button" id="btnToggleRequestPayoutForm" class="inline-flex items-center gap-2 rounded-xl bg-[#5846F6] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)] hover:bg-[#4B3BE0] transition-colors">
+                <button type="button" id="btnToggleRequestPayoutForm" class="inline-flex items-center gap-2 rounded-xl bg-[#0052FF] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)] hover:bg-[#0040D0] transition-colors">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                   <span>Demander un retrait</span>
                 </button>
               </div>
 
               <!-- Formulaire dépliable Demander un retrait (conforme jy SasPay) -->
-              <form id="formRequestPayoutInline" class="hidden space-y-4 rounded-xl border border-violet-900/10 bg-violet-50/40 p-5 transition-all">
+              <form id="formRequestPayoutInline" class="hidden space-y-4 rounded-xl border border-violet-900/10 bg-blue-50/40 p-5 transition-all">
                 <div class="grid gap-4 sm:grid-cols-3">
                   <div>
                     <label for="payoutSelectWallet" class="mb-1.5 block text-xs font-semibold text-[#111827]">Wallet (pays)</label>
-                    <select id="payoutSelectWallet" required class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200">
+                    <select id="payoutSelectWallet" required class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200">
                       <option value="" disabled selected>Choisir un pays</option>
                       <!-- Dynamiquement rempli par wallets -->
                     </select>
@@ -722,7 +858,7 @@
 
                   <div>
                     <label for="payoutSelectSavedMethod" class="mb-1.5 block text-xs font-semibold text-[#111827]">Méthode de retrait</label>
-                    <select id="payoutSelectSavedMethod" required class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200">
+                    <select id="payoutSelectSavedMethod" required class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200">
                       <option value="" disabled selected>Choisir une méthode</option>
                       <!-- Dynamiquement rempli -->
                     </select>
@@ -730,7 +866,7 @@
 
                   <div>
                     <label for="payoutInputAmount" class="mb-1.5 block text-xs font-semibold text-[#111827]">Montant net</label>
-                    <input id="payoutInputAmount" type="number" step="0.01" min="100" required placeholder="Ex: 4000" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono font-medium">
+                    <input id="payoutInputAmount" type="number" step="0.01" min="100" required placeholder="Ex: 4000" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono font-medium">
                   </div>
                 </div>
 
@@ -738,7 +874,7 @@
                 <p id="payoutInlineError" class="text-xs font-medium text-rose-500 hidden"></p>
 
                 <div class="flex items-center gap-2 pt-1">
-                  <button type="submit" id="btnSubmitInlinePayout" class="rounded-xl bg-[#5846F6] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4B3BE0] transition-colors shadow-sm">
+                  <button type="submit" id="btnSubmitInlinePayout" class="rounded-xl bg-[#0052FF] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0040D0] transition-colors shadow-sm">
                     Confirmer la demande
                   </button>
                   <button type="button" id="btnCancelInlinePayout" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
@@ -749,7 +885,7 @@
 
               <!-- Barre de recherche -->
               <div class="relative max-w-xs mt-3">
-                <input type="text" id="payoutSearchQuery" placeholder="Rechercher par référence ou métho" class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100">
+                <input type="text" id="payoutSearchQuery" placeholder="Rechercher par référence ou métho" class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-100">
                 <svg class="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               </div>
 
@@ -798,23 +934,23 @@
             <div id="payout-panel-methods" class="payout-subtab-panel hidden space-y-4">
               
               <div class="flex items-center justify-between">
-                <button type="button" id="btnToggleAddMethodForm" class="inline-flex items-center gap-2 rounded-xl bg-[#5846F6] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)] hover:bg-[#4B3BE0] transition-colors">
+                <button type="button" id="btnToggleAddMethodForm" class="inline-flex items-center gap-2 rounded-xl bg-[#0052FF] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)] hover:bg-[#0040D0] transition-colors">
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                   <span>Ajouter une méthode</span>
                 </button>
               </div>
 
               <!-- Formulaire dépliable d'ajout d'une méthode (conforme Ny SasPay) -->
-              <form id="formAddPayoutMethod" class="hidden space-y-4 rounded-xl border border-violet-900/10 bg-violet-50/40 p-5 transition-all">
+              <form id="formAddPayoutMethod" class="hidden space-y-4 rounded-xl border border-violet-900/10 bg-blue-50/40 p-5 transition-all">
                 
                 <!-- Type de méthode selector -->
                 <div class="flex items-center gap-4 border-b border-violet-900/10 pb-3">
                   <label class="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-[#111827]">
-                    <input type="radio" name="payoutMethodType" value="MOBILE_MONEY" checked class="text-[#5846F6] focus:ring-[#5846F6]">
+                    <input type="radio" name="payoutMethodType" value="MOBILE_MONEY" checked class="text-[#0052FF] focus:ring-[#0052FF]">
                     <span>Mobile Money</span>
                   </label>
                   <label class="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-semibold text-[#111827]">
-                    <input type="radio" name="payoutMethodType" value="BANK_TRANSFER" class="text-[#5846F6] focus:ring-[#5846F6]">
+                    <input type="radio" name="payoutMethodType" value="BANK_TRANSFER" class="text-[#0052FF] focus:ring-[#0052FF]">
                     <span>Virement bancaire</span>
                   </label>
                 </div>
@@ -823,11 +959,11 @@
                 <div id="methodFieldsMobileMoney" class="grid gap-4 sm:grid-cols-3">
                   <div>
                     <label for="pmLabel" class="mb-1 block text-xs font-semibold text-[#111827]">Libellé</label>
-                    <input type="text" id="pmLabel" required placeholder="Ex: Wave Principal" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <input type="text" id="pmLabel" required placeholder="Ex: Wave Principal" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none">
                   </div>
                   <div>
                     <label for="pmNetwork" class="mb-1 block text-xs font-semibold text-[#111827]">Réseau</label>
-                    <select id="pmNetwork" required class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <select id="pmNetwork" required class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none">
                       <option value="WAVE_SN">Wave Sénégal (SN)</option>
                       <option value="WAVE_CI">Wave Côte d'Ivoire (CI)</option>
                       <option value="ORANGE_SN">Orange Money Sénégal (SN)</option>
@@ -842,7 +978,7 @@
                   </div>
                   <div>
                     <label for="pmPhone" class="mb-1 block text-xs font-semibold text-[#111827]">Numéro de téléphone</label>
-                    <input type="tel" id="pmPhone" required placeholder="+221 77 842 19 04" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none font-mono">
+                    <input type="tel" id="pmPhone" required placeholder="+221 77 842 19 04" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none font-mono">
                   </div>
                 </div>
 
@@ -850,28 +986,28 @@
                 <div id="methodFieldsBank" class="hidden grid gap-4 sm:grid-cols-2">
                   <div>
                     <label for="pmBankLabel" class="mb-1 block text-xs font-semibold text-[#111827]">Libellé</label>
-                    <input type="text" id="pmBankLabel" placeholder="Ex: Compte SGBS Entreprise" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <input type="text" id="pmBankLabel" placeholder="Ex: Compte SGBS Entreprise" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none">
                   </div>
                   <div>
                     <label for="pmBankName" class="mb-1 block text-xs font-semibold text-[#111827]">Nom de la banque</label>
-                    <input type="text" id="pmBankName" placeholder="Ex: Société Générale, BOA, Ecobank" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <input type="text" id="pmBankName" placeholder="Ex: Société Générale, BOA, Ecobank" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none">
                   </div>
                   <div>
                     <label for="pmAccountHolder" class="mb-1 block text-xs font-semibold text-[#111827]">Titulaire du compte</label>
-                    <input type="text" id="pmAccountHolder" placeholder="Ex: VANDIA IA SARL" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <input type="text" id="pmAccountHolder" placeholder="Ex: VANDIA IA SARL" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none">
                   </div>
                   <div>
                     <label for="pmIban" class="mb-1 block text-xs font-semibold text-[#111827]">IBAN / Numéro de compte</label>
-                    <input type="text" id="pmIban" placeholder="Ex: SN08 SN01 2013 4567 8901 2345 67" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none font-mono">
+                    <input type="text" id="pmIban" placeholder="Ex: SN08 SN01 2013 4567 8901 2345 67" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none font-mono">
                   </div>
                   <div class="sm:col-span-2">
                     <label for="pmSwift" class="mb-1 block text-xs font-semibold text-[#111827]">Code SWIFT / BIC</label>
-                    <input type="text" id="pmSwift" placeholder="Ex: SGBSDAK" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none font-mono">
+                    <input type="text" id="pmSwift" placeholder="Ex: SGBSDAK" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none font-mono">
                   </div>
                 </div>
 
                 <div class="flex items-center gap-2 pt-2">
-                  <button type="submit" id="btnSubmitAddMethod" class="rounded-xl bg-[#5846F6] px-4 py-2 text-xs font-semibold text-white hover:bg-[#4B3BE0] transition-colors shadow-sm">
+                  <button type="submit" id="btnSubmitAddMethod" class="rounded-xl bg-[#0052FF] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0040D0] transition-colors shadow-sm">
                     Enregistrer la méthode
                   </button>
                   <button type="button" id="btnCancelAddMethod" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
@@ -916,9 +1052,9 @@
               Clés API, webhooks et sécurité des intégrations pour <span id="devMerchantName" class="font-semibold text-[#111827]">VANDIA IA</span>.
             </p>
           </div>
-          <a href="https://docs.vandiaspay.com" target="_blank" class="inline-flex items-center gap-1.5 rounded-xl border border-violet-900/10 bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-[#111827] shadow-sm transition-colors hover:bg-violet-50">
+          <a href="https://docs.vandiaspay.com" target="_blank" class="inline-flex items-center gap-1.5 rounded-xl border border-violet-900/10 bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-[#111827] shadow-sm transition-colors hover:bg-blue-50">
             <span>Documentation</span>
-            <svg class="h-3.5 w-3.5 text-[#5846F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            <svg class="h-3.5 w-3.5 text-[#0052FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
           </a>
         </div>
 
@@ -928,13 +1064,13 @@
           <!-- Navigation des 2 sous-onglets Développeur (Gauche) -->
           <nav id="devSubTabsNav" class="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible pb-2 lg:pb-0">
             <!-- 1. Clés API (Active pill) -->
-            <button type="button" class="dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#5846F6] text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)]" data-dev-tab="keys">
+            <button type="button" class="dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#0052FF] text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)]" data-dev-tab="keys">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
               <span>Clés API</span>
             </button>
 
             <!-- 2. IP Whitelist -->
-            <button type="button" class="dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]" data-dev-tab="whitelist">
+            <button type="button" class="dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]" data-dev-tab="whitelist">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
               <span>IP Whitelist</span>
             </button>
@@ -950,12 +1086,12 @@
               <form id="formCreateApiKey" class="flex flex-wrap items-end gap-3 rounded-2xl border border-violet-900/10 bg-slate-50/50 p-4 sm:p-5">
                 <div class="flex-1 min-w-[180px]">
                   <label for="newKeyNameInput" class="mb-1.5 block text-xs font-semibold text-[#111827]">Nom (optionnel)</label>
-                  <input type="text" id="newKeyNameInput" placeholder="Serveur backend" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200">
+                  <input type="text" id="newKeyNameInput" placeholder="Serveur backend" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200">
                 </div>
 
                 <div class="w-full sm:w-64">
                   <label for="newKeyScopeSelect" class="mb-1.5 block text-xs font-semibold text-[#111827]">Portée</label>
-                  <select id="newKeyScopeSelect" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200 cursor-pointer">
+                  <select id="newKeyScopeSelect" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200 cursor-pointer">
                     <option value="FULL" selected>Encaissement et décaissement</option>
                     <option value="PAYIN_ONLY">Encaissement uniquement</option>
                     <option value="PAYOUT_ONLY">Décaissement uniquement</option>
@@ -963,14 +1099,14 @@
                   </select>
                 </div>
 
-                <button type="submit" id="btnSubmitGenerateKey" class="rounded-xl bg-[#5846F6] px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)] hover:bg-[#4B3BE0] transition-colors shrink-0">
+                <button type="submit" id="btnSubmitGenerateKey" class="rounded-xl bg-[#0052FF] px-6 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)] hover:bg-[#0040D0] transition-colors shrink-0">
                   Générer
                 </button>
               </form>
 
               <!-- Barre de recherche -->
               <div class="relative max-w-sm mt-2">
-                <input type="text" id="devKeySearchInput" placeholder="Rechercher par nom ou préfixe..." class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100">
+                <input type="text" id="devKeySearchInput" placeholder="Rechercher par nom ou préfixe..." class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-100">
                 <svg class="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               </div>
 
@@ -1007,15 +1143,15 @@
               <form id="formAddWhitelistIp" class="flex flex-wrap items-end gap-3 rounded-2xl border border-violet-900/10 bg-slate-50/50 p-4 sm:p-5">
                 <div class="flex-1 min-w-[200px]">
                   <label for="newWhitelistIpInput" class="mb-1.5 block text-xs font-semibold text-[#111827]">Adresse IP ou CIDR *</label>
-                  <input type="text" id="newWhitelistIpInput" required placeholder="Ex: 197.234.221.10 ou 54.217.12.0/24" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono">
+                  <input type="text" id="newWhitelistIpInput" required placeholder="Ex: 197.234.221.10 ou 54.217.12.0/24" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono">
                 </div>
 
                 <div class="flex-1 min-w-[180px]">
                   <label for="newWhitelistDescInput" class="mb-1.5 block text-xs font-semibold text-[#111827]">Description (optionnelle)</label>
-                  <input type="text" id="newWhitelistDescInput" placeholder="Ex: Serveur Backend Live AWS" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200">
+                  <input type="text" id="newWhitelistDescInput" placeholder="Ex: Serveur Backend Live AWS" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200">
                 </div>
 
-                <button type="submit" id="btnSubmitAddWhitelist" class="rounded-xl bg-[#5846F6] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)] hover:bg-[#4B3BE0] transition-colors shrink-0">
+                <button type="submit" id="btnSubmitAddWhitelist" class="rounded-xl bg-[#0052FF] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)] hover:bg-[#0040D0] transition-colors shrink-0">
                   + Ajouter cette IP
                 </button>
               </form>
@@ -1061,19 +1197,19 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label for="newWebhookUrl" class="mb-1.5 block text-xs font-semibold text-[#111827]">URL du webhook</label>
-              <input type="url" id="newWebhookUrl" required placeholder="https://monserveur.com/webhooks/vandiaspay" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono">
+              <input type="url" id="newWebhookUrl" required placeholder="https://monserveur.com/webhooks/vandiaspay" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono">
             </div>
             <div>
               <label for="newWebhookDesc" class="mb-1.5 block text-xs font-semibold text-[#111827]">Description (optionnel)</label>
-              <input type="text" id="newWebhookDesc" placeholder="Serveur de production" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200">
+              <input type="text" id="newWebhookDesc" placeholder="Serveur de production" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200">
             </div>
           </div>
 
           <div>
             <label for="newWebhookSecret" class="mb-1.5 block text-xs font-semibold text-[#111827]">Secret de signature (optionnel)</label>
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <input type="text" id="newWebhookSecret" placeholder="Laisse vide pour une valeur générée — affichée une seule fois après création" class="flex-1 rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono">
-              <button type="submit" id="btnSubmitAddWebhook" class="rounded-xl bg-[#5846F6] px-7 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)] hover:bg-[#4B3BE0] transition-colors shrink-0">
+              <input type="text" id="newWebhookSecret" placeholder="Laisse vide pour une valeur générée — affichée une seule fois après création" class="flex-1 rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-200 font-mono">
+              <button type="submit" id="btnSubmitAddWebhook" class="rounded-xl bg-[#0052FF] px-7 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)] hover:bg-[#0040D0] transition-colors shrink-0">
                 Ajouter
               </button>
             </div>
@@ -1087,7 +1223,7 @@
         <div class="rounded-2xl border border-violet-900/10 bg-white p-6 shadow-sm space-y-5">
           <!-- Barre de recherche -->
           <div class="relative max-w-sm">
-            <input type="text" id="webhookSearchInput" placeholder="Rechercher par URL ou description..." class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100">
+            <input type="text" id="webhookSearchInput" placeholder="Rechercher par URL ou description..." class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-100">
             <svg class="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           </div>
 
@@ -1095,7 +1231,7 @@
           <div id="webhooksListContainer">
             <!-- État vide (conforme capture 1 SasPay) -->
             <div id="webhooksEmptyState" class="py-16 text-center">
-              <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-[#5846F6]">
+              <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-[#0052FF]">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
               </div>
               <p class="text-xs sm:text-sm text-[#6B7280]">Aucun webhook pour l'instant.</p>
@@ -1138,20 +1274,20 @@
           <div class="flex flex-wrap items-center gap-3">
             <!-- Recherche par événement ou URL -->
             <div class="relative flex-1 min-w-[240px]">
-              <input type="text" id="webhookLogsSearchInput" placeholder="Rechercher par type d'événement ou URL..." class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100">
+              <input type="text" id="webhookLogsSearchInput" placeholder="Rechercher par type d'événement ou URL..." class="w-full rounded-xl border border-violet-900/10 bg-white pl-9 pr-3.5 py-2.5 text-xs sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-100">
               <svg class="absolute left-3 top-3 h-4 w-4 text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </div>
 
             <!-- Dropdown Webhooks -->
             <div class="w-full sm:w-auto min-w-[170px]">
-              <select id="webhookLogsFilterWebhook" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100 cursor-pointer">
+              <select id="webhookLogsFilterWebhook" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-100 cursor-pointer">
                 <option value="">Tous les webhooks</option>
               </select>
             </div>
 
             <!-- Dropdown Statuts -->
             <div class="w-full sm:w-auto min-w-[150px]">
-              <select id="webhookLogsFilterStatus" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100 cursor-pointer">
+              <select id="webhookLogsFilterStatus" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-100 cursor-pointer">
                 <option value="">Tous les statuts</option>
                 <option value="SUCCESS">Succès (2xx)</option>
                 <option value="FAILED">Échec (4xx / 5xx)</option>
@@ -1160,7 +1296,7 @@
 
             <!-- Dropdown Événements -->
             <div class="w-full sm:w-auto min-w-[170px]">
-              <select id="webhookLogsFilterEvent" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none focus:ring-2 focus:ring-violet-100 cursor-pointer">
+              <select id="webhookLogsFilterEvent" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none focus:ring-2 focus:ring-violet-100 cursor-pointer">
                 <option value="">Tous les événements</option>
                 <option value="payment.succeeded">payment.succeeded</option>
                 <option value="payment.failed">payment.failed</option>
@@ -1176,7 +1312,7 @@
           <div id="webhookLogsContainer">
             <!-- État vide (conforme capture 2 SasPay) -->
             <div id="webhookLogsEmptyState" class="py-16 text-center">
-              <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-[#5846F6]">
+              <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-[#0052FF]">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
               </div>
               <p class="text-xs sm:text-sm text-[#6B7280]">Aucune livraison ne correspond à ces filtres.</p>
@@ -1202,20 +1338,32 @@
       </section>
 
       <!-- ====================================================
-           SECTION 12 : LITIGES
+           SECTION 12 : LITIGES (100% CONFORME CAPTURE SASPAY)
            ==================================================== -->
       <section id="section-disputes" class="dashboard-section hidden space-y-6">
         <div>
-          <h1 class="text-2xl font-extrabold text-[#111827]">Gestion des Litiges</h1>
-          <p class="text-xs sm:text-sm text-[#6B7280]">Suivez les réclamations de contestation et remboursements.</p>
+          <h1 class="text-2xl font-extrabold text-[#111827]">Litiges</h1>
+          <p class="text-xs sm:text-sm text-[#6B7280]">Litiges et réclamations sur les transactions de <span class="active-app-name-display">VANDIA IA</span>.</p>
         </div>
 
-        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-12 text-center shadow-sm">
-          <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-500 font-bold flex items-center justify-center text-xl mx-auto mb-3">
-            ✓
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-sm min-h-[380px] flex flex-col justify-between">
+          <!-- Top Filter -->
+          <div>
+            <select id="disputesStatusFilter" class="px-3.5 py-2 text-xs rounded-xl border border-[#ECEEF6] bg-white text-slate-700 font-medium focus:outline-none focus:border-[#0052FF] w-44">
+              <option value="ALL">Tous les statuts</option>
+              <option value="OPEN">En cours</option>
+              <option value="RESOLVED">Résolu</option>
+              <option value="CLOSED">Fermé</option>
+            </select>
           </div>
-          <h3 class="text-sm font-bold text-[#111827]">Aucun litige en cours</h3>
-          <p class="text-xs text-slate-500 mt-1">Votre compte a un taux de contestation irréprochable de 0.0%.</p>
+
+          <!-- Empty State (Conforme capture) -->
+          <div class="flex-1 flex flex-col items-center justify-center py-20 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-[#EDE9FE] text-[#0052FF] flex items-center justify-center mb-4 shadow-sm">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+            <span class="text-sm font-semibold text-slate-500">Aucun litige pour l'instant.</span>
+          </div>
         </div>
       </section>
 
@@ -1233,7 +1381,7 @@
           <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           </div>
-          <input type="text" id="pricingSearchInput" placeholder="Rechercher un pays ou un réseau…" class="w-full rounded-2xl border border-[#ECEEF6] bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none transition-all shadow-sm">
+          <input type="text" id="pricingSearchInput" placeholder="Rechercher un pays ou un réseau…" class="w-full rounded-2xl border border-[#ECEEF6] bg-white pl-10 pr-4 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none transition-all shadow-sm">
         </div>
 
         <!-- Conteneur des cartes de tarification par pays -->
@@ -1260,7 +1408,7 @@
             </div>
           </a>
 
-          <a href="mailto:support@vandiaspay.com" class="p-5 rounded-3xl bg-white border border-[#ECEEF6] hover:border-purple-200 transition-all shadow-sm flex items-center gap-3">
+          <a href="mailto:support@vandiaspay.com" class="p-5 rounded-3xl bg-white border border-[#ECEEF6] hover:border-blue-200 transition-all shadow-sm flex items-center gap-3">
             <span class="text-3xl">✉️</span>
             <div>
               <h3 class="text-sm font-bold text-[#111827]">Email Support</h3>
@@ -1286,37 +1434,37 @@
           <!-- Navigation des 6 sous-onglets Paramètres -->
           <nav id="settingsSubTabsNav" class="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible pb-2 lg:pb-0">
             <!-- 1. KYC -->
-            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#5846F6] text-white shadow-[0_8px_18px_-8px_rgba(88,70,246,0.6)]" data-settings-tab="kyc">
+            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#0052FF] text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)]" data-settings-tab="kyc">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
               <span>KYC</span>
             </button>
 
             <!-- 2. Entreprise -->
-            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]" data-settings-tab="entreprise">
+            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]" data-settings-tab="entreprise">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
               <span>Entreprise</span>
             </button>
 
             <!-- 3. Frais -->
-            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]" data-settings-tab="frais">
+            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]" data-settings-tab="frais">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
               <span>Frais</span>
             </button>
 
             <!-- 4. Équipe -->
-            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]" data-settings-tab="equipe">
+            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]" data-settings-tab="equipe">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
               <span>Équipe</span>
             </button>
 
             <!-- 5. Profil -->
-            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]" data-settings-tab="profil">
+            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]" data-settings-tab="profil">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
               <span>Profil</span>
             </button>
 
             <!-- 6. Sécurité -->
-            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-violet-50 hover:text-[#111827]" data-settings-tab="securite">
+            <button type="button" class="settings-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]" data-settings-tab="securite">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
               <span>Sécurité</span>
             </button>
@@ -1328,7 +1476,7 @@
             <!-- ================= SUB-PANEL 1 : KYC ================= -->
             <div id="subtab-panel-kyc" class="settings-subtab-panel space-y-6">
               <!-- Bannière statut KYC -->
-              <div class="flex items-start sm:items-center gap-3.5 rounded-xl bg-violet-50/60 p-4 border border-violet-900/5">
+              <div class="flex items-start sm:items-center gap-3.5 rounded-xl bg-blue-50/60 p-4 border border-violet-900/5">
                 <span id="kycStatusIcon" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-lg">
                   ✓
                 </span>
@@ -1378,12 +1526,12 @@
             <div id="subtab-panel-entreprise" class="settings-subtab-panel hidden space-y-6">
               <!-- Upload de logo -->
               <div class="flex items-center gap-4 pb-4 border-b border-[#F0F2F9]">
-                <div id="settingsLogoPreview" class="h-16 w-16 rounded-2xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white font-extrabold text-xl flex items-center justify-center shadow-sm">
+                <div id="settingsLogoPreview" class="h-16 w-16 rounded-2xl bg-gradient-to-tr from-[#0052FF] to-[#8B5CF6] text-white font-extrabold text-xl flex items-center justify-center shadow-sm">
                   V
                 </div>
                 <div>
                   <input type="file" id="settingsLogoFileInput" accept="image/jpeg,image/png,image/webp" class="hidden">
-                  <button type="button" onclick="document.getElementById('settingsLogoFileInput').click()" class="inline-flex items-center gap-2 rounded-xl border border-[#ECEEF6] bg-white px-3.5 py-2 text-xs sm:text-sm font-semibold text-[#111827] hover:bg-violet-50 transition-colors shadow-xs">
+                  <button type="button" onclick="document.getElementById('settingsLogoFileInput').click()" class="inline-flex items-center gap-2 rounded-xl border border-[#ECEEF6] bg-white px-3.5 py-2 text-xs sm:text-sm font-semibold text-[#111827] hover:bg-blue-50 transition-colors shadow-xs">
                     <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     <span>Changer le logo</span>
                   </button>
@@ -1396,11 +1544,11 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label for="settingsAppName" class="mb-1.5 block text-xs font-semibold text-[#111827]">Nom de l'application</label>
-                    <input id="settingsAppName" type="text" required placeholder="Mon SaaS ou Boutique" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
+                    <input id="settingsAppName" type="text" required placeholder="Mon SaaS ou Boutique" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
                   </div>
                   <div>
                     <label for="settingsCategory" class="mb-1.5 block text-xs font-semibold text-[#111827]">Catégorie</label>
-                    <select id="settingsCategory" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
+                    <select id="settingsCategory" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
                       <option value="SaaS & Logiciels">SaaS & Logiciels</option>
                       <option value="E-commerce & Retail">E-commerce & Retail</option>
                       <option value="Services digitaux">Services digitaux & Freelance</option>
@@ -1412,20 +1560,20 @@
                   </div>
                   <div>
                     <label for="settingsSupportEmail" class="mb-1.5 block text-xs font-semibold text-[#111827]">Email support (affiché à tes clients)</label>
-                    <input id="settingsSupportEmail" type="email" placeholder="support@monsite.com" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
+                    <input id="settingsSupportEmail" type="email" placeholder="support@monsite.com" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
                   </div>
                   <div>
                     <label for="settingsSupportPhone" class="mb-1.5 block text-xs font-semibold text-[#111827]">Téléphone support</label>
-                    <input id="settingsSupportPhone" type="tel" placeholder="+221 77 000 00 00" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
+                    <input id="settingsSupportPhone" type="tel" placeholder="+221 77 000 00 00" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
                   </div>
                   <div class="sm:col-span-2">
                     <label for="settingsWebsite" class="mb-1.5 block text-xs font-semibold text-[#111827]">Site web</label>
-                    <input id="settingsWebsite" type="url" placeholder="https://monsite.com" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
+                    <input id="settingsWebsite" type="url" placeholder="https://monsite.com" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
                   </div>
                 </div>
 
                 <div class="pt-2">
-                  <button type="submit" id="btnSaveCompanySettings" class="rounded-xl bg-[#5846F6] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-[#4B3BE0] shadow-md shadow-purple-500/20">
+                  <button type="submit" id="btnSaveCompanySettings" class="rounded-xl bg-[#0052FF] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-[#0040D0] shadow-md shadow-blue-500/20">
                     Enregistrer les modifications
                   </button>
                 </div>
@@ -1446,8 +1594,8 @@
 
             <!-- ================= SUB-PANEL 3 : FRAIS ================= -->
             <div id="subtab-panel-frais" class="settings-subtab-panel hidden space-y-6">
-              <div class="flex items-center gap-3 rounded-xl bg-violet-50/60 p-4 border border-violet-900/5">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[#5846F6]">
+              <div class="flex items-center gap-3 rounded-xl bg-blue-50/60 p-4 border border-violet-900/5">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[#0052FF]">
                   <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                 </span>
                 <div>
@@ -1462,7 +1610,7 @@
                 <div class="p-4 rounded-xl border border-[#ECEEF6] bg-white">
                   <label for="selectFeePayin" class="mb-1 block text-xs sm:text-sm font-bold text-[#111827]">Mode de frais par défaut</label>
                   <p class="mb-3 text-xs text-[#6B7280]">Définit qui paie les frais de transaction lors de l'encaissement d'un client.</p>
-                  <select id="selectFeePayin" class="w-full max-w-sm rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none">
+                  <select id="selectFeePayin" class="w-full max-w-sm rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
                     <option value="ADD_ON">Ajoutés (add-on) — Le client final paie les frais en plus, tu reçois 100% du montant</option>
                     <option value="DEDUCTED">Déduits — Les frais sont déduits du montant reçu sur ton solde</option>
                   </select>
@@ -1475,7 +1623,7 @@
                 <div class="p-4 rounded-xl border border-[#ECEEF6] bg-white">
                   <label for="selectFeePayout" class="mb-1 block text-xs sm:text-sm font-bold text-[#111827]">Mode de frais par défaut</label>
                   <p class="mb-3 text-xs text-[#6B7280]">S'applique à tes virements et retraits vers ton portefeuille ou compte bancaire.</p>
-                  <select id="selectFeePayout" class="w-full max-w-sm rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none">
+                  <select id="selectFeePayout" class="w-full max-w-sm rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
                     <option value="DEDUCTED">Déduits — Les frais sont défalqués du montant transféré</option>
                     <option value="ADD_ON">Ajoutés (add-on) — Les frais sont ajoutés au débit</option>
                   </select>
@@ -1490,19 +1638,19 @@
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" id="checkFeeOverride" class="sr-only peer">
-                  <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#5846F6]"></div>
+                  <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052FF]"></div>
                 </label>
               </div>
 
-              <button type="button" id="btnSaveFeeSettings" class="rounded-xl bg-[#5846F6] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-[#4B3BE0] shadow-md shadow-purple-500/20">
+              <button type="button" id="btnSaveFeeSettings" class="rounded-xl bg-[#0052FF] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-[#0040D0] shadow-md shadow-blue-500/20">
                 Enregistrer les réglages de frais
               </button>
             </div>
 
             <!-- ================= SUB-PANEL 4 : ÉQUIPE ================= -->
             <div id="subtab-panel-equipe" class="settings-subtab-panel hidden space-y-6">
-              <div class="flex items-center gap-3 rounded-xl bg-violet-50/60 p-4 border border-violet-900/5">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[#5846F6]">
+              <div class="flex items-center gap-3 rounded-xl bg-blue-50/60 p-4 border border-violet-900/5">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[#0052FF]">
                   <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 </span>
                 <div>
@@ -1516,10 +1664,10 @@
                 <p class="text-xs font-bold text-[#111827] uppercase tracking-wider">Inviter un nouveau membre</p>
                 <div class="grid gap-3 sm:grid-cols-3">
                   <div class="sm:col-span-1">
-                    <input type="email" id="inviteMemberEmail" required placeholder="collegue@entreprise.com" class="w-full rounded-xl border border-[#ECEEF6] bg-white px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <input type="email" id="inviteMemberEmail" required placeholder="collegue@entreprise.com" class="w-full rounded-xl border border-[#ECEEF6] bg-white px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#0052FF] focus:outline-none">
                   </div>
                   <div class="sm:col-span-1">
-                    <select id="inviteMemberRole" class="w-full rounded-xl border border-[#ECEEF6] bg-white px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <select id="inviteMemberRole" class="w-full rounded-xl border border-[#ECEEF6] bg-white px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#0052FF] focus:outline-none">
                       <option value="ADMIN">Administrateur</option>
                       <option value="FINANCE">Finance & Retraits</option>
                       <option value="DEVELOPER">Développeur API</option>
@@ -1527,7 +1675,7 @@
                     </select>
                   </div>
                   <div class="sm:col-span-1">
-                    <button type="submit" class="w-full rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white px-4 py-2.5 text-xs font-bold transition-all shadow-sm">
+                    <button type="submit" class="w-full rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white px-4 py-2.5 text-xs font-bold transition-all shadow-sm">
                       Envoyer l'invitation
                     </button>
                   </div>
@@ -1554,8 +1702,8 @@
 
             <!-- ================= SUB-PANEL 5 : PROFIL ================= -->
             <div id="subtab-panel-profil" class="settings-subtab-panel hidden space-y-6">
-              <div class="flex items-center gap-3 rounded-xl bg-violet-50/60 p-4 border border-violet-900/5">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[#5846F6]">
+              <div class="flex items-center gap-3 rounded-xl bg-blue-50/60 p-4 border border-violet-900/5">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[#0052FF]">
                   <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 </span>
                 <div>
@@ -1569,7 +1717,7 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label for="profileFullName" class="mb-1.5 block text-xs font-semibold text-[#111827]">Nom complet</label>
-                    <input id="profileFullName" type="text" required placeholder="Votre Nom et Prénom" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
+                    <input id="profileFullName" type="text" required placeholder="Votre Nom et Prénom" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200">
                   </div>
                   <div>
                     <label for="profileEmailDisabled" class="mb-1.5 block text-xs font-semibold text-[#111827]">Email</label>
@@ -1578,7 +1726,7 @@
                   </div>
                   <div class="sm:col-span-2">
                     <label for="profileCountry" class="mb-1.5 block text-xs font-semibold text-[#111827]">Pays de résidence</label>
-                    <select id="profileCountry" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none">
+                    <select id="profileCountry" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
                       <option value="Sénégal">🇸🇳 Sénégal</option>
                       <option value="Côte d'Ivoire">🇨🇮 Côte d'Ivoire</option>
                       <option value="Bénin">🇧🇯 Bénin</option>
@@ -1596,7 +1744,7 @@
                   </div>
                 </div>
 
-                <button type="submit" class="rounded-xl bg-[#5846F6] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-[#4B3BE0] shadow-md shadow-purple-500/20">
+                <button type="submit" class="rounded-xl bg-[#0052FF] px-5 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-[#0040D0] shadow-md shadow-blue-500/20">
                   Enregistrer le profil
                 </button>
               </form>
@@ -1607,20 +1755,20 @@
                 <div class="grid gap-4 sm:grid-cols-3">
                   <div>
                     <label for="pwdOld" class="mb-1.5 block text-xs font-semibold text-[#111827]">Mot de passe actuel</label>
-                    <input id="pwdOld" type="password" required class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <input id="pwdOld" type="password" required class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none">
                   </div>
                   <div>
                     <label for="pwdNew" class="mb-1.5 block text-xs font-semibold text-[#111827]">Nouveau mot de passe</label>
-                    <input id="pwdNew" type="password" required minlength="8" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <input id="pwdNew" type="password" required minlength="8" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none">
                     <p class="mt-1 text-[10px] text-slate-400">8 caractères minimum.</p>
                   </div>
                   <div>
                     <label for="pwdConfirm" class="mb-1.5 block text-xs font-semibold text-[#111827]">Confirmer</label>
-                    <input id="pwdConfirm" type="password" required minlength="8" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:outline-none">
+                    <input id="pwdConfirm" type="password" required minlength="8" class="w-full rounded-xl border border-violet-900/10 bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:outline-none">
                   </div>
                 </div>
 
-                <button type="submit" id="btnSubmitChangePassword" class="rounded-xl border border-[#ECEEF6] bg-white px-4 py-2.5 text-xs font-bold text-[#111827] hover:bg-violet-50 transition-colors shadow-xs">
+                <button type="submit" id="btnSubmitChangePassword" class="rounded-xl border border-[#ECEEF6] bg-white px-4 py-2.5 text-xs font-bold text-[#111827] hover:bg-blue-50 transition-colors shadow-xs">
                   Modifier le mot de passe
                 </button>
               </form>
@@ -1628,8 +1776,8 @@
 
             <!-- ================= SUB-PANEL 6 : SÉCURITÉ ================= -->
             <div id="subtab-panel-securite" class="settings-subtab-panel hidden space-y-5">
-              <div class="flex items-start gap-3 rounded-xl bg-violet-50/60 p-4 border border-violet-900/5">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[#5846F6]">
+              <div class="flex items-start gap-3 rounded-xl bg-blue-50/60 p-4 border border-violet-900/5">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/10 text-[#0052FF]">
                   <svg class="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                 </span>
                 <div>
@@ -1642,11 +1790,11 @@
 
               <!-- Boutons d'action 2FA -->
               <div class="flex flex-wrap gap-2.5">
-                <button type="button" id="btnEnableEmail2fa" class="inline-flex items-center gap-2 rounded-xl bg-[#5846F6] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-[#4B3BE0] shadow-sm">
+                <button type="button" id="btnEnableEmail2fa" class="inline-flex items-center gap-2 rounded-xl bg-[#0052FF] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white transition-all hover:bg-[#0040D0] shadow-sm">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                   <span>Activer par e-mail</span>
                 </button>
-                <button type="button" id="btnEnableTotp2fa" class="rounded-xl border border-violet-900/10 px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#111827] transition-colors hover:bg-violet-50 bg-white shadow-xs">
+                <button type="button" id="btnEnableTotp2fa" class="rounded-xl border border-violet-900/10 px-4 py-2.5 text-xs sm:text-sm font-semibold text-[#111827] transition-colors hover:bg-blue-50 bg-white shadow-xs">
                   Utiliser une application d'authentification (TOTP)
                 </button>
               </div>
@@ -1679,9 +1827,9 @@
         <div class="w-full max-w-sm rounded-2xl border border-violet-900/5 bg-white p-6 shadow-2xl space-y-3">
           <p class="text-base font-bold text-[#111827]">Demander la suppression du compte ?</p>
           <p class="text-xs sm:text-sm text-[#6B7280]">Cette action est irréversible une fois approuvée. Explique brièvement la raison (facultatif).</p>
-          <textarea id="deleteAccountReason" rows="3" placeholder="Raison de la suppression (facultatif)" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none"></textarea>
+          <textarea id="deleteAccountReason" rows="3" placeholder="Raison de la suppression (facultatif)" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none"></textarea>
           <div class="flex justify-end gap-2 pt-2">
-            <button type="button" onclick="closeModal('modalDeleteAccount')" class="rounded-xl px-4 py-2 text-xs font-semibold text-[#6B7280] hover:bg-violet-50">Annuler</button>
+            <button type="button" onclick="closeModal('modalDeleteAccount')" class="rounded-xl px-4 py-2 text-xs font-semibold text-[#6B7280] hover:bg-blue-50">Annuler</button>
             <button type="button" onclick="confirmDeleteAccount()" class="rounded-xl bg-rose-500 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-600 shadow-sm">Envoyer la demande</button>
           </div>
         </div>
@@ -1714,21 +1862,185 @@
           </div>
           <div>
             <label class="text-xs font-bold text-[#111827] block mb-1">Devise</label>
-            <select id="newLinkCurrency" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3 py-2.5 text-xs font-bold">
-              <option value="XOF">XOF (FCFA)</option>
-              <option value="USD">USD ($)</option>
-              <option value="CDF">CDF</option>
-              <option value="XAF">XAF</option>
-              <option value="EUR">EUR (€)</option>
+            <select id="newLinkCurrency" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3 py-2.5 text-xs font-bold text-[#111827] outline-none focus:border-[#0052FF]">
+              <!-- Francs CFA UEMOA & CEMAC -->
+              <optgroup label="Francs CFA (UEMOA & CEMAC)">
+                <option value="XOF" selected>XOF — Franc CFA UEMOA (Togo, Bénin, CI, Sénégal, Burkina, Mali, Niger)</option>
+                <option value="XAF">XAF — Franc CFA CEMAC (Cameroun, Gabon, Congo, Tchad, Centrafrique)</option>
+              </optgroup>
+              
+              <!-- Panafricaines -->
+              <optgroup label="Devises Panafricaines (25+ Pays)">
+                <option value="GNF">GNF — Franc Guinéen (🇬🇳 Guinée Conakry)</option>
+                <option value="GHS">GHS — Cedi (🇬🇭 Ghana)</option>
+                <option value="NGN">NGN — Naira (🇳🇬 Nigéria)</option>
+                <option value="CDF">CDF — Franc Congolais (🇨🇩 RDC)</option>
+                <option value="KES">KES — Shilling Kényan (🇰🇪 Kenya)</option>
+                <option value="TZS">TZS — Shilling Tanzanien (🇹🇿 Tanzanie)</option>
+                <option value="UGX">UGX — Shilling Ougandais (🇺🇬 Ouganda)</option>
+                <option value="RWF">RWF — Franc Rwandais (🇷🇼 Rwanda)</option>
+                <option value="ZMW">ZMW — Kwacha (🇿🇲 Zambie)</option>
+                <option value="MWK">MWK — Kwacha (🇲🇼 Malawi)</option>
+                <option value="MZN">MZN — Metical (🇲🇿 Mozambique)</option>
+                <option value="SLE">SLE — Leone (🇸🇱 Sierra Leone)</option>
+                <option value="ZAR">ZAR — Rand (🇿🇦 Afrique du Sud)</option>
+                <option value="MAD">MAD — Dirham (🇲🇦 Maroc)</option>
+                <option value="EGP">EGP — Livre Égyptienne (🇪🇬 Égypte)</option>
+              </optgroup>
+
+              <!-- Internationales & Diaspora -->
+              <optgroup label="International & Diaspora">
+                <option value="USD">USD — Dollar Américain ($) (🇺🇸 International)</option>
+                <option value="EUR">EUR — Euro (€) (🇪🇺 Union Européenne)</option>
+                <option value="GBP">GBP — Livre Sterling (£) (🇬🇧 Royaume-Uni)</option>
+                <option value="CAD">CAD — Dollar Canadien (🇨🇦 Canada)</option>
+                <option value="CHF">CHF — Franc Suisse (🇨🇭 Suisse)</option>
+                <option value="AED">AED — Dirham des Émirats (🇦🇪 Dubaï & EAU)</option>
+              </optgroup>
             </select>
           </div>
         </div>
 
         <div class="pt-3 flex justify-end gap-2 border-t border-[#F0F2F9]">
           <button type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100" onclick="closeModal('modalCreateLink')">Annuler</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/25">Créer le lien</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold shadow-md shadow-blue-500/25">Créer le lien</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL : CRÉER UNE NOUVELLE SESSION DE CHECKOUT
+       ======================================================== -->
+  <div id="modalCreateCheckoutSession" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-[#ECEEF6] space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-[#F0F2F9]">
+        <div>
+          <h3 class="text-base font-bold text-[#111827]">Nouvelle session de checkout</h3>
+          <p class="text-[11px] text-slate-400">Page à usage unique pré-remplie pour votre client</p>
+        </div>
+        <button class="text-slate-400 hover:text-slate-700" onclick="closeModal('modalCreateCheckoutSession')">✕</button>
+      </div>
+
+      <form id="createCheckoutSessionForm" class="space-y-3.5">
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Nom complet du client *</label>
+          <input type="text" id="newSessionCustomerName" required placeholder="Ex: Moh Kouakou" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs">
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Email du client *</label>
+          <input type="email" id="newSessionCustomerEmail" required placeholder="Ex: client@vandiaspay.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Téléphone Mobile Money</label>
+          <input type="tel" id="newSessionCustomerPhone" placeholder="Ex: 2250586123261" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Montant *</label>
+            <input type="number" id="newSessionAmount" required value="1000" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+          </div>
+          <div>
+            <label class="text-xs font-bold text-[#111827] block mb-1">Devise</label>
+            <select id="newSessionCurrency" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3 py-2.5 text-xs font-bold text-[#111827]">
+              <option value="XOF" selected>XOF (FCFA)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="XAF">XAF (FCFA)</option>
+              <option value="GNF">GNF</option>
+              <option value="NGN">NGN</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Motif / Description (facultatif)</label>
+          <input type="text" id="newSessionTitle" placeholder="Ex: Paiement facture #8491" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs">
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2 border-t border-[#F0F2F9]">
+          <button type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100" onclick="closeModal('modalCreateCheckoutSession')">Annuler</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold shadow-md shadow-blue-500/25">Créer la session</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL : NOUVEAU CLIENT
+       ======================================================== -->
+  <div id="modalCreateCustomer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-[#ECEEF6] space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-[#F0F2F9]">
+        <div>
+          <h3 class="text-base font-bold text-[#111827]">Ajouter un nouveau client</h3>
+          <p class="text-[11px] text-slate-400">Identité de paiement et coordonnées</p>
+        </div>
+        <button class="text-slate-400 hover:text-slate-700" onclick="closeModal('modalCreateCustomer')">✕</button>
+      </div>
+
+      <form id="createCustomerForm" class="space-y-3.5">
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Nom complet *</label>
+          <input type="text" id="newCustomerName" required placeholder="Ex: Moh Kouakou" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs">
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Email *</label>
+          <input type="email" id="newCustomerEmail" required placeholder="Ex: client@vandiaspay.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Numéro de téléphone *</label>
+          <input type="tel" id="newCustomerPhone" required placeholder="Ex: 2250586123261" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-[#111827] block mb-1">Pays *</label>
+          <select id="newCustomerCountry" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3 py-2.5 text-xs font-medium text-[#111827]">
+            <option value="CI">CI — Côte d'Ivoire</option>
+            <option value="BJ">BJ — Bénin</option>
+            <option value="TG">TG — Togo</option>
+            <option value="BF">BF — Burkina Faso</option>
+            <option value="SN">SN — Sénégal</option>
+            <option value="ML">ML — Mali</option>
+            <option value="NE">NE — Niger</option>
+            <option value="GN">GN — Guinée</option>
+            <option value="CM">CM — Cameroun</option>
+            <option value="GA">GA — Gabon</option>
+            <option value="CG">CG — Congo</option>
+            <option value="CD">CD — RD Congo</option>
+          </select>
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2 border-t border-[#F0F2F9]">
+          <button type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100" onclick="closeModal('modalCreateCustomer')">Annuler</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold shadow-md shadow-blue-500/25">Enregistrer le client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL : DÉTAILS DU CLIENT
+       ======================================================== -->
+  <div id="modalCustomerDetails" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-[#ECEEF6] space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-[#F0F2F9]">
+        <h3 class="text-base font-bold text-[#111827]">Fiche Client</h3>
+        <button class="text-slate-400 hover:text-slate-700" onclick="closeModal('modalCustomerDetails')">✕</button>
+      </div>
+
+      <div id="customerDetailsContent" class="space-y-4">
+        <!-- Dynamically injected -->
+      </div>
+
+      <div class="pt-3 flex justify-end border-t border-[#F0F2F9]">
+        <button type="button" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200" onclick="closeModal('modalCustomerDetails')">Fermer</button>
+      </div>
     </div>
   </div>
 
@@ -1758,7 +2070,7 @@
           <input type="number" value="10000" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono font-bold">
         </div>
 
-        <button class="w-full py-2.5 rounded-2xl bg-[#5846F6] text-white text-xs font-bold shadow-md shadow-purple-500/25" onclick="showToast('Retrait initié !', 'Virement en cours de traitement.'); closeModal('modalPayoutQuick');">
+        <button class="w-full py-2.5 rounded-2xl bg-[#0052FF] text-white text-xs font-bold shadow-md shadow-blue-500/25" onclick="showToast('Retrait initié !', 'Virement en cours de traitement.'); closeModal('modalPayoutQuick');">
           Transférer instantanément
         </button>
       </div>
@@ -1814,7 +2126,7 @@
     <div class="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-100 max-h-[95vh] overflow-y-auto">
       
       <!-- Bouton de fermeture -->
-      <button type="button" onclick="closeModal('modalAuth')" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 transition-colors p-2 rounded-full hover:bg-slate-100" aria-label="Fermer">
+      <button type="button" onclick="closeAuthModalIfAllowed()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 transition-colors p-2 rounded-full hover:bg-slate-100" aria-label="Fermer">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
 
@@ -1848,18 +2160,18 @@
       <form id="authRegisterForm" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Nom complet</label>
-          <input type="text" id="regFullName" required placeholder="ESSOWEDEOU GNITOU" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
+          <input type="text" id="regFullName" required placeholder="ESSOWEDEOU GNITOU" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Adresse e-mail</label>
-          <input type="email" id="regEmail" required placeholder="essowedeou37@gmail.com" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
+          <input type="email" id="regEmail" required placeholder="essowedeou37@gmail.com" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Pays</label>
           <div class="relative">
-            <select id="regCountry" required class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none appearance-none pr-10 cursor-pointer transition-all">
+            <select id="regCountry" required class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none appearance-none pr-10 cursor-pointer transition-all">
               <option value="Afghanistan">Afghanistan</option>
               <option value="Afrique du Sud">Afrique du Sud</option>
               <option value="Albanie">Albanie</option>
@@ -2068,13 +2380,13 @@
 
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Numéro de téléphone / WhatsApp <span class="text-xs text-slate-400 font-normal">(Optionnel)</span></label>
-          <input type="tel" id="regPhone" placeholder="+226 70 00 00 00" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
+          <input type="tel" id="regPhone" placeholder="+226 70 00 00 00" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Mot de passe</label>
           <div class="relative">
-            <input type="password" id="regPassword" required minlength="8" placeholder="••••••••" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl pl-4 pr-11 py-3 text-sm text-slate-900 outline-none transition-all">
+            <input type="password" id="regPassword" required minlength="8" placeholder="••••••••" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl pl-4 pr-11 py-3 text-sm text-slate-900 outline-none transition-all">
             <button type="button" class="btn-toggle-pwd absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg" data-target="regPassword" aria-label="Afficher ou masquer le mot de passe" tabindex="-1">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </button>
@@ -2082,7 +2394,7 @@
           <p class="text-xs text-slate-400 mt-1.5 font-normal">8 caractères minimum — une phrase simple suffit.</p>
         </div>
 
-        <button type="submit" id="btnSubmitRegister" class="w-full mt-2 py-3.5 px-4 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-sm shadow-md shadow-purple-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
+        <button type="submit" id="btnSubmitRegister" class="w-full mt-2 py-3.5 px-4 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white font-bold text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
           <span>Créer mon compte</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </button>
@@ -2090,25 +2402,25 @@
 
       <!-- Formulaire Validation OTP Email (Affiché après soumission de l'inscription) -->
       <form id="authVerifyEmailForm" class="space-y-4 hidden">
-        <div class="text-center p-3.5 rounded-2xl bg-purple-50/80 border border-purple-100">
-          <div class="w-8 h-8 rounded-full bg-[#5846F6]/10 text-[#5846F6] flex items-center justify-center mx-auto mb-1.5 font-bold text-sm">📩</div>
-          <span class="text-xs font-bold text-[#5846F6]">Code de vérification envoyé</span>
+        <div class="text-center p-3.5 rounded-2xl bg-blue-50/80 border border-purple-100">
+          <div class="w-8 h-8 rounded-full bg-[#0052FF]/10 text-[#0052FF] flex items-center justify-center mx-auto mb-1.5 font-bold text-sm">📩</div>
+          <span class="text-xs font-bold text-[#0052FF]">Code de vérification envoyé</span>
           <p class="text-[11px] text-slate-600 mt-1">Nous avons transmis un code à 6 chiffres à <strong class="text-slate-900" id="verifyEmailDisplay">votre adresse</strong>.</p>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1.5 text-center uppercase tracking-wider">Entrez le code à 6 chiffres</label>
-          <input type="text" id="verifyEmailCode" required maxlength="6" placeholder="• • • • • •" class="w-full text-center tracking-[0.4em] text-2xl font-mono font-extrabold bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl py-3 text-slate-900 outline-none transition-all">
-          <p class="text-xs text-slate-400 mt-2 text-center">💡 Mode Test Sandbox : code automatique <strong class="text-[#5846F6] font-mono font-bold" id="testOtpCodeDisplay">123456</strong></p>
+          <input type="text" id="verifyEmailCode" required maxlength="6" placeholder="• • • • • •" class="w-full text-center tracking-[0.4em] text-2xl font-mono font-extrabold bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl py-3 text-slate-900 outline-none transition-all">
+          <p class="text-xs text-slate-400 mt-2 text-center">💡 Mode Test Sandbox : code automatique <strong class="text-[#0052FF] font-mono font-bold" id="testOtpCodeDisplay">123456</strong></p>
         </div>
 
-        <button type="submit" id="btnSubmitVerifyEmail" class="w-full py-3.5 px-4 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-sm shadow-md shadow-purple-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
+        <button type="submit" id="btnSubmitVerifyEmail" class="w-full py-3.5 px-4 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white font-bold text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
           <span>Valider mon adresse e-mail</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </button>
 
         <div class="flex items-center justify-between pt-2 text-xs">
-          <button type="button" id="btnResendVerificationCode" class="text-[#5846F6] hover:underline font-semibold">Renvoyer le code</button>
+          <button type="button" id="btnResendVerificationCode" class="text-[#0052FF] hover:underline font-semibold">Renvoyer le code</button>
           <button type="button" id="btnBackToRegister" class="text-slate-500 hover:text-slate-800">Modifier l'email</button>
         </div>
       </form>
@@ -2117,29 +2429,29 @@
       <form id="authLoginForm" class="space-y-4 hidden">
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Adresse e-mail</label>
-          <input type="email" id="loginEmail" required placeholder="nom@exemple.com" value="demo@vandiaspay.com" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
+          <input type="email" id="loginEmail" required placeholder="nom@exemple.com" value="demo@vandiaspay.com" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
         </div>
 
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-sm font-medium text-slate-800">Mot de passe</label>
-            <button type="button" onclick="showToast('Information', 'Pour réinitialiser votre mot de passe, contactez support@vandiaspay.com')" class="text-xs font-medium text-[#5846F6] hover:underline">Mot de passe oublié ?</button>
+            <button type="button" onclick="showToast('Information', 'Pour réinitialiser votre mot de passe, contactez support@vandiaspay.com')" class="text-xs font-medium text-[#0052FF] hover:underline">Mot de passe oublié ?</button>
           </div>
           <div class="relative">
-            <input type="password" id="loginPassword" required placeholder="••••••••" value="vandias2026" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl pl-4 pr-11 py-3 text-sm text-slate-900 outline-none transition-all">
+            <input type="password" id="loginPassword" required placeholder="••••••••" value="vandias2026" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl pl-4 pr-11 py-3 text-sm text-slate-900 outline-none transition-all">
             <button type="button" class="btn-toggle-pwd absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg" data-target="loginPassword" aria-label="Afficher ou masquer le mot de passe" tabindex="-1">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </button>
           </div>
         </div>
 
-        <button type="submit" id="btnSubmitLogin" class="w-full py-3.5 px-4 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-sm shadow-md shadow-purple-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
+        <button type="submit" id="btnSubmitLogin" class="w-full py-3.5 px-4 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white font-bold text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
           <span>Se connecter</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </button>
 
         <div class="pt-3 border-t border-slate-100 text-center">
-          <button type="button" id="btnQuickDemoLogin" class="text-xs font-semibold text-[#5846F6] hover:underline inline-flex items-center gap-1.5">
+          <button type="button" id="btnQuickDemoLogin" class="text-xs font-semibold text-[#0052FF] hover:underline inline-flex items-center gap-1.5">
             <span>⚡</span>
             <span>Connexion instantanée avec le compte démo</span>
           </button>
@@ -2162,7 +2474,7 @@
         </div>
         <div class="flex items-center gap-2">
           <span class="text-xs text-slate-500 hidden sm:inline">Étape de configuration</span>
-          <span class="px-2.5 py-1 rounded-full bg-purple-50 text-[#5846F6] text-[11px] font-bold border border-purple-100" id="onboardingStepBadge">1 / 3</span>
+          <span class="px-2.5 py-1 rounded-full bg-blue-50 text-[#0052FF] text-[11px] font-bold border border-purple-100" id="onboardingStepBadge">1 / 3</span>
         </div>
       </div>
     </header>
@@ -2184,8 +2496,8 @@
         <!-- Liste des applications & bouton d'ajout -->
         <div id="onboardingAppsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
           <!-- Bouton Créer une nouvelle application (Bordure en pointillés conforme à la capture 1) -->
-          <button type="button" id="btnTriggerCreateApp" class="border-2 border-dashed border-slate-200 hover:border-[#5846F6] bg-slate-50/50 hover:bg-purple-50/20 rounded-2xl p-6 flex items-center justify-center gap-3 text-slate-700 hover:text-[#5846F6] font-semibold text-sm transition-all group min-h-[100px] cursor-pointer">
-            <span class="w-6 h-6 rounded-full bg-white border border-slate-200 group-hover:border-[#5846F6] flex items-center justify-center text-slate-400 group-hover:text-[#5846F6] font-bold text-base transition-colors">+</span>
+          <button type="button" id="btnTriggerCreateApp" class="border-2 border-dashed border-slate-200 hover:border-[#0052FF] bg-slate-50/50 hover:bg-blue-50/20 rounded-2xl p-6 flex items-center justify-center gap-3 text-slate-700 hover:text-[#0052FF] font-semibold text-sm transition-all group min-h-[100px] cursor-pointer">
+            <span class="w-6 h-6 rounded-full bg-white border border-slate-200 group-hover:border-[#0052FF] flex items-center justify-center text-slate-400 group-hover:text-[#0052FF] font-bold text-base transition-colors">+</span>
             <span>Créer une nouvelle application</span>
           </button>
         </div>
@@ -2202,9 +2514,9 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           <!-- Carte Particulier -->
-          <div id="cardChoiceParticulier" class="border-2 border-slate-200 hover:border-[#5846F6] rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all cursor-pointer group hover:shadow-lg bg-white">
+          <div id="cardChoiceParticulier" class="border-2 border-slate-200 hover:border-[#0052FF] rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all cursor-pointer group hover:shadow-lg bg-white">
             <div class="space-y-4">
-              <div class="w-12 h-12 rounded-2xl bg-purple-50 text-[#5846F6] flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
+              <div class="w-12 h-12 rounded-2xl bg-blue-50 text-[#0052FF] flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
               </div>
               <h3 class="text-xl font-bold text-[#111827]">Particulier</h3>
@@ -2212,13 +2524,13 @@
                 J'encaisse en mon nom propre, sans structure enregistrée (freelance, indépendant...).
               </p>
               <div>
-                <span class="inline-block px-3 py-1 rounded-full bg-purple-50 text-[#5846F6] text-xs font-semibold">
+                <span class="inline-block px-3 py-1 rounded-full bg-blue-50 text-[#0052FF] text-xs font-semibold">
                   Limite 1 000 000 FCFA / mois
                 </span>
               </div>
             </div>
             <div class="pt-6">
-              <button type="button" class="text-sm font-bold text-[#5846F6] flex items-center gap-1.5 group-hover:translate-x-1 transition-transform">
+              <button type="button" class="text-sm font-bold text-[#0052FF] flex items-center gap-1.5 group-hover:translate-x-1 transition-transform">
                 <span>Continuer</span>
                 <span>→</span>
               </button>
@@ -2226,9 +2538,9 @@
           </div>
 
           <!-- Carte Business -->
-          <div id="cardChoiceBusiness" class="border-2 border-slate-200 hover:border-[#5846F6] rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all cursor-pointer group hover:shadow-lg bg-white">
+          <div id="cardChoiceBusiness" class="border-2 border-slate-200 hover:border-[#0052FF] rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all cursor-pointer group hover:shadow-lg bg-white">
             <div class="space-y-4">
-              <div class="w-12 h-12 rounded-2xl bg-purple-50 text-[#5846F6] flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
+              <div class="w-12 h-12 rounded-2xl bg-blue-50 text-[#0052FF] flex items-center justify-center text-xl group-hover:scale-105 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
               </div>
               <h3 class="text-xl font-bold text-[#111827]">Business</h3>
@@ -2236,13 +2548,13 @@
                 J'encaisse au nom d'une entreprise ou d'une structure enregistrée (SaaS, boutique, société...).
               </p>
               <div>
-                <span class="inline-block px-3 py-1 rounded-full bg-purple-50 text-[#5846F6] text-xs font-semibold">
+                <span class="inline-block px-3 py-1 rounded-full bg-blue-50 text-[#0052FF] text-xs font-semibold">
                   Limite 50 000 000 FCFA / mois
                 </span>
               </div>
             </div>
             <div class="pt-6">
-              <button type="button" class="text-sm font-bold text-[#5846F6] flex items-center gap-1.5 group-hover:translate-x-1 transition-transform">
+              <button type="button" class="text-sm font-bold text-[#0052FF] flex items-center gap-1.5 group-hover:translate-x-1 transition-transform">
                 <span>Continuer</span>
                 <span>→</span>
               </button>
@@ -2254,7 +2566,7 @@
       <!-- ÉTAPE 3A : VÉRIFIE TON IDENTITÉ — PARTICULIER (CAPTURE 4) -->
       <div id="onboardingStepKycParticulier" class="bg-white rounded-3xl p-6 sm:p-10 shadow-xl border border-slate-100 space-y-6 animate-fade-in max-w-2xl mx-auto hidden">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-purple-50 text-[#5846F6] flex items-center justify-center font-bold text-lg">
+          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0052FF] flex items-center justify-center font-bold text-lg">
             ✓
           </div>
           <div>
@@ -2267,22 +2579,22 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Prénom</label>
-              <input type="text" id="kycPartFirstName" required placeholder="Enock" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
+              <input type="text" id="kycPartFirstName" required placeholder="Enock" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Nom</label>
-              <input type="text" id="kycPartLastName" required placeholder="Koné" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
+              <input type="text" id="kycPartLastName" required placeholder="Koné" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Date de naissance</label>
-              <input type="date" id="kycPartBirthDate" required class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
+              <input type="date" id="kycPartBirthDate" required class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Type de pièce d'identité</label>
-              <select id="kycPartIdType" required class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
+              <select id="kycPartIdType" required class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
                 <option value="Carte nationale d'identité" selected>Carte nationale d'identité</option>
                 <option value="Passeport">Passeport</option>
                 <option value="Permis de conduire">Permis de conduire</option>
@@ -2296,7 +2608,7 @@
             <!-- Recto -->
             <div>
               <label class="block text-[11px] font-semibold text-slate-700 mb-1">Recto de la pièce</label>
-              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#5846F6] rounded-2xl bg-slate-50/50 hover:bg-purple-50/20 cursor-pointer transition-all text-center min-h-[110px]">
+              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#0052FF] rounded-2xl bg-slate-50/50 hover:bg-blue-50/20 cursor-pointer transition-all text-center min-h-[110px]">
                 <input type="file" accept="image/*,.pdf" class="hidden file-input" data-preview="previewRecto">
                 <svg class="w-5 h-5 text-slate-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 <span class="text-[10px] text-slate-500 font-medium leading-tight" id="previewRecto">Glisse un fichier ou clique pour importer</span>
@@ -2306,7 +2618,7 @@
             <!-- Verso -->
             <div>
               <label class="block text-[11px] font-semibold text-slate-700 mb-1">Verso de la pièce</label>
-              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#5846F6] rounded-2xl bg-slate-50/50 hover:bg-purple-50/20 cursor-pointer transition-all text-center min-h-[110px]">
+              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#0052FF] rounded-2xl bg-slate-50/50 hover:bg-blue-50/20 cursor-pointer transition-all text-center min-h-[110px]">
                 <input type="file" accept="image/*,.pdf" class="hidden file-input" data-preview="previewVerso">
                 <svg class="w-5 h-5 text-slate-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 <span class="text-[10px] text-slate-500 font-medium leading-tight" id="previewVerso">Glisse un fichier ou clique pour importer</span>
@@ -2316,7 +2628,7 @@
             <!-- Selfie -->
             <div>
               <label class="block text-[11px] font-semibold text-slate-700 mb-1">Selfie</label>
-              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#5846F6] rounded-2xl bg-slate-50/50 hover:bg-purple-50/20 cursor-pointer transition-all text-center min-h-[110px]">
+              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#0052FF] rounded-2xl bg-slate-50/50 hover:bg-blue-50/20 cursor-pointer transition-all text-center min-h-[110px]">
                 <input type="file" accept="image/*" class="hidden file-input" data-preview="previewSelfie">
                 <svg class="w-5 h-5 text-slate-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 <span class="text-[10px] text-slate-500 font-medium leading-tight" id="previewSelfie">Glisse un fichier ou clique pour importer</span>
@@ -2326,9 +2638,9 @@
 
           <!-- Checkbox CGU -->
           <div class="flex items-start gap-2.5 pt-2">
-            <input type="checkbox" id="checkKycPartTerms" required class="mt-0.5 rounded text-[#5846F6] focus:ring-[#5846F6]">
+            <input type="checkbox" id="checkKycPartTerms" required class="mt-0.5 rounded text-[#0052FF] focus:ring-[#0052FF]">
             <label for="checkKycPartTerms" class="text-xs text-slate-600">
-              J'accepte les <a href="#" class="text-[#5846F6] underline">conditions d'utilisation</a> et la <a href="#" class="text-[#5846F6] underline">politique de confidentialité</a> de VandiasPay.
+              J'accepte les <a href="#" class="text-[#0052FF] underline">conditions d'utilisation</a> et la <a href="#" class="text-[#0052FF] underline">politique de confidentialité</a> de VandiasPay.
             </label>
           </div>
 
@@ -2337,7 +2649,7 @@
             <button type="button" id="btnBackFromKycPart" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
               Retour
             </button>
-            <button type="submit" id="btnSubmitKycPart" class="px-6 py-2.5 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/25 flex items-center gap-1.5 transition-all cursor-pointer">
+            <button type="submit" id="btnSubmitKycPart" class="px-6 py-2.5 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold shadow-md shadow-blue-500/25 flex items-center gap-1.5 transition-all cursor-pointer">
               <span>Soumettre pour vérification</span>
               <span>→</span>
             </button>
@@ -2348,7 +2660,7 @@
       <!-- ÉTAPE 3B : VÉRIFICATION ENTREPRISE — BUSINESS -->
       <div id="onboardingStepKycBusiness" class="bg-white rounded-3xl p-6 sm:p-10 shadow-xl border border-slate-100 space-y-6 animate-fade-in max-w-2xl mx-auto hidden">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-purple-50 text-[#5846F6] flex items-center justify-center font-bold text-lg">
+          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0052FF] flex items-center justify-center font-bold text-lg">
             🏢
           </div>
           <div>
@@ -2361,22 +2673,22 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Raison sociale / Nom légal *</label>
-              <input type="text" id="kycBizCompanyName" required placeholder="Ex. Cardix Group SAS" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
+              <input type="text" id="kycBizCompanyName" required placeholder="Ex. Cardix Group SAS" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Numéro RCCM / IFU / NINEA *</label>
-              <input type="text" id="kycBizRccm" required placeholder="Ex. BF-OUA-2026-B-1234" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
+              <input type="text" id="kycBizRccm" required placeholder="Ex. BF-OUA-2026-B-1234" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Pays d'enregistrement *</label>
-              <input type="text" id="kycBizCountry" required placeholder="Ex. Burkina Faso" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
+              <input type="text" id="kycBizCountry" required placeholder="Ex. Burkina Faso" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 mb-1">Adresse du siège social *</label>
-              <input type="text" id="kycBizAddress" required placeholder="Ex. Ouagadougou, Secteur 15" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
+              <input type="text" id="kycBizAddress" required placeholder="Ex. Ouagadougou, Secteur 15" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none">
             </div>
           </div>
 
@@ -2384,7 +2696,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             <div>
               <label class="block text-[11px] font-semibold text-slate-700 mb-1">Registre RCCM / Statuts</label>
-              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#5846F6] rounded-2xl bg-slate-50/50 hover:bg-purple-50/20 cursor-pointer transition-all text-center min-h-[110px]">
+              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#0052FF] rounded-2xl bg-slate-50/50 hover:bg-blue-50/20 cursor-pointer transition-all text-center min-h-[110px]">
                 <input type="file" accept="image/*,.pdf" class="hidden file-input" data-preview="previewBizRccm">
                 <svg class="w-5 h-5 text-slate-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 <span class="text-[10px] text-slate-500 font-medium leading-tight" id="previewBizRccm">Glisse un fichier ou clique pour importer</span>
@@ -2393,7 +2705,7 @@
 
             <div>
               <label class="block text-[11px] font-semibold text-slate-700 mb-1">Pièce d'identité du Gérant</label>
-              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#5846F6] rounded-2xl bg-slate-50/50 hover:bg-purple-50/20 cursor-pointer transition-all text-center min-h-[110px]">
+              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#0052FF] rounded-2xl bg-slate-50/50 hover:bg-blue-50/20 cursor-pointer transition-all text-center min-h-[110px]">
                 <input type="file" accept="image/*,.pdf" class="hidden file-input" data-preview="previewBizId">
                 <svg class="w-5 h-5 text-slate-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 <span class="text-[10px] text-slate-500 font-medium leading-tight" id="previewBizId">Glisse un fichier ou clique pour importer</span>
@@ -2402,7 +2714,7 @@
 
             <div>
               <label class="block text-[11px] font-semibold text-slate-700 mb-1">RIB ou Attestation Mobile Pro</label>
-              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#5846F6] rounded-2xl bg-slate-50/50 hover:bg-purple-50/20 cursor-pointer transition-all text-center min-h-[110px]">
+              <label class="dropzone flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-200 hover:border-[#0052FF] rounded-2xl bg-slate-50/50 hover:bg-blue-50/20 cursor-pointer transition-all text-center min-h-[110px]">
                 <input type="file" accept="image/*,.pdf" class="hidden file-input" data-preview="previewBizRib">
                 <svg class="w-5 h-5 text-slate-400 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 <span class="text-[10px] text-slate-500 font-medium leading-tight" id="previewBizRib">Glisse un fichier ou clique pour importer</span>
@@ -2412,9 +2724,9 @@
 
           <!-- Checkbox CGU -->
           <div class="flex items-start gap-2.5 pt-2">
-            <input type="checkbox" id="checkKycBizTerms" required class="mt-0.5 rounded text-[#5846F6] focus:ring-[#5846F6]">
+            <input type="checkbox" id="checkKycBizTerms" required class="mt-0.5 rounded text-[#0052FF] focus:ring-[#0052FF]">
             <label for="checkKycBizTerms" class="text-xs text-slate-600">
-              J'atteste sur l'honneur l'exactitude des informations et j'accepte les <a href="#" class="text-[#5846F6] underline">conditions d'utilisation</a> de VandiasPay.
+              J'atteste sur l'honneur l'exactitude des informations et j'accepte les <a href="#" class="text-[#0052FF] underline">conditions d'utilisation</a> de VandiasPay.
             </label>
           </div>
 
@@ -2423,7 +2735,7 @@
             <button type="button" id="btnBackFromKycBiz" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
               Retour
             </button>
-            <button type="submit" id="btnSubmitKycBiz" class="px-6 py-2.5 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white text-xs font-bold shadow-md shadow-purple-500/25 flex items-center gap-1.5 transition-all cursor-pointer">
+            <button type="submit" id="btnSubmitKycBiz" class="px-6 py-2.5 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold shadow-md shadow-blue-500/25 flex items-center gap-1.5 transition-all cursor-pointer">
               <span>Soumettre pour vérification</span>
               <span>→</span>
             </button>
@@ -2443,7 +2755,7 @@
           </p>
         </div>
         <div class="pt-2">
-          <button type="button" id="btnEnterFullDashboard" class="w-full py-4 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-sm shadow-xl shadow-purple-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
+          <button type="button" id="btnEnterFullDashboard" class="w-full py-4 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white font-bold text-sm shadow-xl shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
             <span>Accéder à mon tableau de bord VandiasPay</span>
             <span>→</span>
           </button>
@@ -2464,8 +2776,8 @@
       <h2 class="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight mb-4">Créez votre première application</h2>
 
       <!-- Info Callout avec cercle (i) conforme à la capture 2 -->
-      <div class="p-4 rounded-2xl bg-[#EEF0FD]/80 border border-[#D4D7F5] flex items-start gap-3 text-xs sm:text-sm text-slate-700 mb-6">
-        <div class="w-5 h-5 rounded-full border-2 border-[#5846F6] text-[#5846F6] flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">i</div>
+      <div class="p-4 rounded-2xl bg-[#EEF4FF]/80 border border-[#BFDBFE] flex items-start gap-3 text-xs sm:text-sm text-slate-700 mb-6">
+        <div class="w-5 h-5 rounded-full border-2 border-[#0052FF] text-[#0052FF] flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">i</div>
         <p class="leading-relaxed">
           Une App représente une entreprise, un produit ou une application unique et distincte, chacune avec ses propres données et son équipe.
         </p>
@@ -2474,18 +2786,18 @@
       <form id="formCreateNewApp" class="space-y-5">
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Nom de l'application <span class="text-rose-500">*</span></label>
-          <input type="text" id="inputAppName" required placeholder="Ex. Cardix" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
+          <input type="text" id="inputAppName" required placeholder="Ex. Cardix" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">URL du site web (optionnel)</label>
-          <input type="text" id="inputAppWebsite" placeholder="Ex. https://cardix.com" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
+          <input type="text" id="inputAppWebsite" placeholder="Ex. https://cardix.com" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Catégorie <span class="text-rose-500">*</span></label>
           <div class="relative">
-            <select id="selectAppCategory" required class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#5846F6] focus:ring-2 focus:ring-[#5846F6]/10 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none appearance-none pr-10 cursor-pointer transition-all">
+            <select id="selectAppCategory" required class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none appearance-none pr-10 cursor-pointer transition-all">
               <option value="" disabled selected>Choisir une catégorie</option>
               <option value="E-commerce">E-commerce</option>
               <option value="Productivité">Productivité</option>
@@ -2503,7 +2815,7 @@
           </div>
         </div>
 
-        <button type="submit" id="btnSubmitCreateApp" class="w-full py-3.5 px-4 rounded-xl bg-[#5846F6] hover:bg-[#4B3BE0] text-white font-bold text-sm shadow-md shadow-purple-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
+        <button type="submit" id="btnSubmitCreateApp" class="w-full py-3.5 px-4 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white font-bold text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer">
           <span>Créer une application</span>
         </button>
       </form>
@@ -2517,7 +2829,7 @@
 
   <div id="modalWalletTransfer" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity">
     <div class="relative w-full max-w-md rounded-3xl border border-violet-900/5 bg-white p-7 shadow-2xl space-y-4">
-      <button type="button" onclick="closeModal('modalWalletTransfer')" class="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-[#9CA3AF] transition-colors hover:bg-violet-50 hover:text-[#111827]">
+      <button type="button" onclick="closeModal('modalWalletTransfer')" class="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-[#9CA3AF] transition-colors hover:bg-blue-50 hover:text-[#111827]">
         ✕
       </button>
 
@@ -2531,14 +2843,14 @@
       <form id="formWalletTransfer" class="space-y-4 pt-2">
         <div>
           <label for="transferFromCountry" class="mb-1.5 block text-xs font-bold text-[#111827]">Depuis</label>
-          <select id="transferFromCountry" required class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none">
+          <select id="transferFromCountry" required class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
             <option value="" disabled selected>Choisir un pays source</option>
           </select>
         </div>
 
         <div>
           <label for="transferToCountry" class="mb-1.5 block text-xs font-bold text-[#111827]">Vers</label>
-          <select id="transferToCountry" required class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#5846F6] focus:bg-white focus:outline-none">
+          <select id="transferToCountry" required class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
             <option value="" disabled selected>Choisir un pays de destination</option>
           </select>
         </div>
@@ -2547,11 +2859,11 @@
           <label for="transferAmountInput" class="mb-1.5 block text-xs font-bold text-[#111827]">
             Montant <span id="transferSourceCurrencyLabel" class="text-slate-400 font-normal"></span>
           </label>
-          <input type="number" id="transferAmountInput" min="1" step="any" required placeholder="0.00" class="w-full rounded-xl border border-violet-900/10 bg-violet-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] font-mono font-bold focus:border-[#5846F6] focus:bg-white focus:outline-none">
+          <input type="number" id="transferAmountInput" min="1" step="any" required placeholder="0.00" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] font-mono font-bold focus:border-[#0052FF] focus:bg-white focus:outline-none">
           <p id="transferConversionEstimate" class="mt-1.5 text-xs text-[#6B7280] font-medium hidden"></p>
         </div>
 
-        <button type="submit" id="btnSubmitWalletTransfer" class="w-full rounded-xl bg-[#5846F6] py-3 text-xs sm:text-sm font-semibold text-white shadow-md shadow-purple-500/25 transition-all hover:bg-[#4B3BE0]">
+        <button type="submit" id="btnSubmitWalletTransfer" class="w-full rounded-xl bg-[#0052FF] py-3 text-xs sm:text-sm font-semibold text-white shadow-md shadow-blue-500/25 transition-all hover:bg-[#0040D0]">
           Transférer
         </button>
       </form>
@@ -2563,7 +2875,7 @@
        ======================================================== -->
   <div id="modalWalletTransferDetail" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity">
     <div class="relative w-full max-w-md rounded-3xl border border-violet-900/5 bg-white p-7 shadow-2xl space-y-4">
-      <button type="button" onclick="closeModal('modalWalletTransferDetail')" class="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-[#9CA3AF] transition-colors hover:bg-violet-50 hover:text-[#111827]">
+      <button type="button" onclick="closeModal('modalWalletTransferDetail')" class="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-[#9CA3AF] transition-colors hover:bg-blue-50 hover:text-[#111827]">
         ✕
       </button>
 
@@ -2586,7 +2898,7 @@
   <div id="modalRevealApiKey" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
     <div class="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-violet-900/10 space-y-4">
       <div class="flex items-center gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-[#5846F6]">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-[#0052FF]">
           <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
         </div>
         <div>
@@ -2608,7 +2920,7 @@
         <label class="mb-1 block text-xs font-semibold text-[#111827]">Clé Secrète (sk_live_...)</label>
         <div class="flex items-center gap-2">
           <input type="text" id="revealedSecretKeyInput" readonly class="flex-1 rounded-xl border border-violet-900/10 bg-slate-50 px-3.5 py-2.5 font-mono text-xs text-[#111827] select-all outline-none">
-          <button type="button" id="btnCopyRevealedSecret" class="rounded-xl bg-[#5846F6] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#4B3BE0] transition-colors shrink-0">
+          <button type="button" id="btnCopyRevealedSecret" class="rounded-xl bg-[#0052FF] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#0040D0] transition-colors shrink-0">
             Copier
           </button>
         </div>
@@ -2695,7 +3007,7 @@
   <div id="modalRevealWebhookSecret" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
     <div class="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-violet-900/10 space-y-4">
       <div class="flex items-center gap-3">
-        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-[#5846F6]">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-[#0052FF]">
           <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
         </div>
         <div>
@@ -2717,7 +3029,7 @@
         <label class="mb-1 block text-xs font-semibold text-[#111827]">Secret HMAC (whsec_...)</label>
         <div class="flex items-center gap-2">
           <input type="text" id="revealedWebhookSecretInput" readonly class="flex-1 rounded-xl border border-violet-900/10 bg-slate-50 px-3.5 py-2.5 font-mono text-xs text-[#111827] select-all outline-none">
-          <button type="button" id="btnCopyRevealedWebhookSecret" class="rounded-xl bg-[#5846F6] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#4B3BE0] transition-colors shrink-0">
+          <button type="button" id="btnCopyRevealedWebhookSecret" class="rounded-xl bg-[#0052FF] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#0040D0] transition-colors shrink-0">
             Copier
           </button>
         </div>
@@ -2790,7 +3102,7 @@
       <div>
         <div class="flex items-center justify-between mb-1">
           <label class="block text-xs font-bold text-[#111827]">Payload JSON envoyé</label>
-          <button type="button" id="btnCopyLogPayload" class="text-[11px] text-[#5846F6] hover:underline font-semibold">Copier le JSON</button>
+          <button type="button" id="btnCopyLogPayload" class="text-[11px] text-[#0052FF] hover:underline font-semibold">Copier le JSON</button>
         </div>
         <pre id="logDetailPayload" class="rounded-xl border border-slate-200 bg-slate-900 text-emerald-400 p-3.5 font-mono text-xs overflow-x-auto max-h-56 select-all leading-relaxed"></pre>
       </div>
@@ -2806,7 +3118,7 @@
         <button type="button" onclick="closeModal('modalWebhookLogDetail')" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
           Fermer
         </button>
-        <button type="button" id="btnReplayWebhookEvent" class="rounded-xl bg-[#5846F6] px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#4B3BE0] transition-colors inline-flex items-center gap-1.5">
+        <button type="button" id="btnReplayWebhookEvent" class="rounded-xl bg-[#0052FF] px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#0040D0] transition-colors inline-flex items-center gap-1.5">
           <span>🔄 Renvoyer cet événement (Replay)</span>
         </button>
       </div>

@@ -1,12 +1,18 @@
 /* ========================================================
    VANDIAS PAY — DASHBOARD STYLESHEET
-   Clean Light Fintech SaaS Aesthetic (As in Screenshots)
+   VIP Royal Sapphire & Imperial Navy Fintech Aesthetic
+   Signature Royal Sapphire #0052FF • Imperial Navy #0A2540 • Soft Ice #EEF4FF
    ======================================================== */
 
 :root {
-  --vp-purple: #5846F6;
-  --vp-purple-hover: #4B3BE0;
-  --vp-purple-light: #EEF0FD;
+  --vp-primary: #0052FF;
+  --vp-primary-hover: #0040D0;
+  --vp-primary-light: #EEF4FF;
+  --vp-navy: #0A2540;
+  --vp-teal: #00A3B4;
+  --vp-purple: #0052FF; /* Rétrocompatibilité */
+  --vp-purple-hover: #0040D0;
+  --vp-purple-light: #EEF4FF;
   --vp-bg: #F8F9FD;
   --vp-card: #FFFFFF;
   --vp-border: #ECEEF6;
@@ -23,7 +29,7 @@ body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 
-/* Sidebar Active Nav Item (Exact Replica) */
+/* Sidebar Active Nav Item (VIP Royal Sapphire) */
 .nav-item {
   color: #4B5563;
   transition: all 0.18s ease-in-out;
@@ -32,13 +38,13 @@ body {
 
 .nav-item:hover {
   color: #111827;
-  background-color: #F3F4F8;
+  background-color: #F1F5F9;
 }
 
 .nav-item.active {
-  background-color: var(--vp-purple) !important;
+  background-color: var(--vp-primary) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 4px 14px rgba(88, 70, 246, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 82, 255, 0.32);
 }
 
 .nav-item.active svg {
@@ -53,10 +59,10 @@ body {
 }
 
 .wallet-tile:hover {
-  border-color: #D4D7F5;
+  border-color: #93C5FD;
   background-color: #FFFFFF;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 6px 16px rgba(0, 82, 255, 0.05);
 }
 
 /* Recent Transactions Row */
@@ -69,7 +75,7 @@ body {
   border-color: #ECEEF6;
 }
 
-/* Profile Dropdown Menu (Screenshot 3) */
+/* Profile Dropdown Menu */
 #profileDropdownMenu {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
 }
@@ -95,21 +101,34 @@ body {
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom Scrollbar for Sidebar & Content */
+/* ========================================================
+   ENHANCED VISIBLE & BOLD SCROLLBAR (VIP SAPPHIRE THEME)
+   ======================================================== */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: #3B82F6 #EEF2F6;
+}
+
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #EEF2F6;
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #E2E8F0;
-  border-radius: 999px;
+  background: #3B82F6;
+  border-radius: 8px;
+  border: 2.5px solid #EEF2F6;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #CBD5E1;
+  background: #0052FF;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #1D4ED8;
 }

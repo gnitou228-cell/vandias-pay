@@ -1,7 +1,7 @@
 /* ========================================================
    VANDIAS PAY — DESIGN SYSTEM & STYLESHEET
-   Clean Light Fintech SaaS Palette Matching Dashboard Screenshots
-   Signature Purple #5846F6 • Soft Lavender #EEF0FD • Off-white #F8F9FD
+   VIP Royal Sapphire & Imperial Navy Fintech Aesthetic
+   Signature Royal Sapphire #0052FF • Imperial Navy #0A2540 • Soft Ice #EEF4FF
    ======================================================== */
 
 :root {
@@ -10,14 +10,21 @@
   --vp-card-hover: #FFFFFF;
   --vp-border: #ECEEF6;
   --vp-border-subtle: #E2E8F0;
-  --vp-border-highlight: rgba(88, 70, 246, 0.4);
+  --vp-border-highlight: rgba(0, 82, 255, 0.4);
   
-  --vp-purple: #5846F6;
-  --vp-purple-hover: #4B3BE0;
-  --vp-purple-light: #EEF0FD;
-  --vp-purple-glow: rgba(88, 70, 246, 0.25);
-  --vp-cyan: #06B6D4;
-  --vp-teal: #14B8A6;
+  --vp-primary: #0052FF;
+  --vp-primary-hover: #0040D0;
+  --vp-primary-light: #EEF4FF;
+  --vp-primary-glow: rgba(0, 82, 255, 0.25);
+  
+  --vp-purple: #0052FF; /* Rétrocompatibilité */
+  --vp-purple-hover: #0040D0;
+  --vp-purple-light: #EEF4FF;
+  --vp-purple-glow: rgba(0, 82, 255, 0.25);
+
+  --vp-navy: #0A2540;
+  --vp-cyan: #00A3B4;
+  --vp-teal: #00C49F;
   
   --vp-text: #0F172A;
   --vp-muted: #64748B;
@@ -56,7 +63,7 @@ body {
 }
 
 /* ========================================================
-   BACKGROUND GLOW & GRID OVERLAY (CLEAN LIGHT SAAS THEME)
+   BACKGROUND GLOW & GRID OVERLAY (VIP SAPPHIRE THEME)
    ======================================================== */
 .glow-orb {
   position: absolute;
@@ -72,7 +79,7 @@ body {
   left: -15rem;
   width: 48rem;
   height: 48rem;
-  background: radial-gradient(circle, rgba(88, 70, 246, 0.12) 0%, rgba(99, 102, 241, 0.04) 60%, transparent 80%);
+  background: radial-gradient(circle, rgba(0, 82, 255, 0.12) 0%, rgba(10, 37, 64, 0.05) 60%, transparent 80%);
 }
 
 .glow-top-right {
@@ -80,7 +87,7 @@ body {
   right: -15rem;
   width: 50rem;
   height: 50rem;
-  background: radial-gradient(circle, rgba(124, 110, 248, 0.1) 0%, rgba(6, 182, 212, 0.04) 60%, transparent 80%);
+  background: radial-gradient(circle, rgba(0, 163, 180, 0.1) 0%, rgba(2, 132, 199, 0.04) 60%, transparent 80%);
 }
 
 .glow-center {
@@ -89,15 +96,15 @@ body {
   transform: translate(-50%, -50%);
   width: 65rem;
   height: 65rem;
-  background: radial-gradient(circle, rgba(88, 70, 246, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 82, 255, 0.05) 0%, transparent 70%);
 }
 
 .grid-overlay {
   position: absolute;
   inset: 0;
   background-image: 
-    linear-gradient(to right, rgba(88, 70, 246, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(88, 70, 246, 0.035) 1px, transparent 1px);
+    linear-gradient(to right, rgba(0, 82, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 82, 255, 0.035) 1px, transparent 1px);
   background-size: 64px 64px;
   mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 80%);
   -webkit-mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 80%);
@@ -111,14 +118,14 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid #ECEEF6;
-  box-shadow: 0 4px 20px -2px rgba(88, 70, 246, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 20px -2px rgba(0, 82, 255, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: all 0.3s ease;
 }
 
 header.scrolled .nav-glass {
   background: rgba(255, 255, 255, 0.96);
   border-color: #E2E8F0;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 0 20px -5px rgba(88, 70, 246, 0.12);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 0 20px -5px rgba(0, 82, 255, 0.12);
 }
 
 .nav-link {
@@ -133,7 +140,7 @@ header.scrolled .nav-glass {
   left: 0;
   width: 0;
   height: 2px;
-  background: var(--vp-purple);
+  background: var(--vp-primary);
   transition: width 0.25s ease;
   border-radius: 2px;
 }
@@ -144,7 +151,7 @@ header.scrolled .nav-glass {
 
 /* Buttons */
 .btn-primary {
-  background: linear-gradient(135deg, #5846F6 0%, #6D5CF8 100%);
+  background: linear-gradient(135deg, #0052FF 0%, #1D4ED8 100%);
   position: relative;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   color: #FFFFFF !important;
@@ -152,13 +159,13 @@ header.scrolled .nav-glass {
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 25px -4px rgba(88, 70, 246, 0.38);
+  box-shadow: 0 12px 25px -4px rgba(0, 82, 255, 0.4);
 }
 
 .btn-glow {
   position: absolute;
   inset: -1px;
-  background: linear-gradient(90deg, #7C6EF8, #38BDF8, #7C6EF8);
+  background: linear-gradient(90deg, #3B82F6, #00A3B4, #3B82F6);
   border-radius: inherit;
   z-index: 0;
   opacity: 0;
@@ -182,7 +189,7 @@ header.scrolled .nav-glass {
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #0F172A 20%, #5846F6 100%);
+  background: linear-gradient(135deg, #0A2540 20%, #0052FF 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -198,25 +205,25 @@ header.scrolled .nav-glass {
 }
 
 .payment-method-item:hover {
-  border-color: #D4D7F5;
+  border-color: #93C5FD;
   background: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(88, 70, 246, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 82, 255, 0.05);
 }
 
 .payment-method-item.active {
-  border-color: #5846F6 !important;
+  border-color: #0052FF !important;
   border-width: 2px !important;
-  background: #EEF0FD !important;
-  box-shadow: 0 4px 16px rgba(88, 70, 246, 0.15);
+  background: #EEF4FF !important;
+  box-shadow: 0 4px 16px rgba(0, 82, 255, 0.15);
 }
 
 .payment-method-item.active .custom-radio {
-  border-color: #5846F6 !important;
+  border-color: #0052FF !important;
 }
 
 .payment-method-item.active .radio-dot {
   display: block !important;
-  background-color: #5846F6 !important;
+  background-color: #0052FF !important;
 }
 
 /* Syntax highlighted code block */
@@ -238,9 +245,9 @@ pre.syntax-highlighted {
 
 .operator-badge:hover {
   transform: translateY(-2px);
-  border-color: #D4D7F5;
+  border-color: #93C5FD;
   background: #F8F9FD;
-  box-shadow: 0 8px 20px -4px rgba(88, 70, 246, 0.1);
+  box-shadow: 0 8px 20px -4px rgba(0, 82, 255, 0.12);
 }
 
 /* ========================================================
@@ -260,7 +267,7 @@ pre.syntax-highlighted {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(88, 70, 246, 0.25), transparent 60%, rgba(88, 70, 246, 0.12));
+  background: linear-gradient(135deg, rgba(0, 82, 255, 0.25), transparent 60%, rgba(0, 82, 255, 0.12));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -276,8 +283,8 @@ pre.syntax-highlighted {
 
 .bento-card:hover {
   transform: translateY(-4px);
-  border-color: #D4D7F5;
-  box-shadow: 0 20px 40px -15px rgba(88, 70, 246, 0.12), 0 0 25px -5px rgba(88, 70, 246, 0.06);
+  border-color: #93C5FD;
+  box-shadow: 0 20px 40px -15px rgba(0, 82, 255, 0.12), 0 0 25px -5px rgba(0, 82, 255, 0.06);
 }
 
 /* ========================================================
@@ -294,14 +301,14 @@ pre.syntax-highlighted {
 }
 
 .code-tab-btn.active {
-  background: #5846F6 !important;
-  border-color: #5846F6 !important;
+  background: #0052FF !important;
+  border-color: #0052FF !important;
   color: #FFFFFF !important;
-  box-shadow: 0 2px 10px rgba(88, 70, 246, 0.4);
+  box-shadow: 0 2px 10px rgba(0, 82, 255, 0.4);
 }
 
 /* ========================================================
-   RANGE SLIDER CUSTOM STYLING (PURPLE THEME)
+   RANGE SLIDER CUSTOM STYLING (VIP SAPPHIRE THEME)
    ======================================================== */
 input[type="range"] {
   -webkit-appearance: none;
@@ -320,26 +327,26 @@ input[type="range"]::-webkit-slider-thumb {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #5846F6;
+  background: #0052FF;
   cursor: pointer;
   border: 4px solid #FFFFFF;
-  box-shadow: 0 4px 14px rgba(88, 70, 246, 0.5);
+  box-shadow: 0 4px 14px rgba(0, 82, 255, 0.5);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 6px 20px rgba(88, 70, 246, 0.7);
+  box-shadow: 0 6px 20px rgba(0, 82, 255, 0.7);
 }
 
 input[type="range"]::-moz-range-thumb {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #5846F6;
+  background: #0052FF;
   cursor: pointer;
   border: 4px solid #FFFFFF;
-  box-shadow: 0 4px 14px rgba(88, 70, 246, 0.5);
+  box-shadow: 0 4px 14px rgba(0, 82, 255, 0.5);
   transition: transform 0.15s ease;
 }
 
@@ -358,18 +365,18 @@ input[type="range"]::-moz-range-thumb:hover {
 }
 
 .faq-item:hover {
-  border-color: #D4D7F5;
+  border-color: #93C5FD;
 }
 
 .faq-item.active {
-  border-color: #5846F6;
+  border-color: #0052FF;
   background: #FFFFFF;
-  box-shadow: 0 10px 25px -5px rgba(88, 70, 246, 0.08);
+  box-shadow: 0 10px 25px -5px rgba(0, 82, 255, 0.08);
 }
 
 .faq-item.active .faq-icon {
   transform: rotate(180deg);
-  color: #5846F6;
+  color: #0052FF;
 }
 
 /* ========================================================
@@ -390,23 +397,36 @@ input[type="range"]::-moz-range-thumb:hover {
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom Scrollbar */
+/* ========================================================
+   ENHANCED VISIBLE & BOLD SCROLLBAR (VIP SAPPHIRE THEME)
+   ======================================================== */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: #3B82F6 #EEF2F6;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F8F9FD;
+  background: #EEF2F6;
+  border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D4D7F5;
-  border-radius: 4px;
+  background: #3B82F6;
+  border-radius: 8px;
+  border: 2.5px solid #EEF2F6;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #5846F6;
+  background: #0052FF;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #1D4ED8;
 }
 
 /* ========================================================

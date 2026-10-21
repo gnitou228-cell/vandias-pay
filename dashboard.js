@@ -2020,6 +2020,21 @@ async function loadAndRenderWalletTransfers() {
   }
 }
 
+function getWalletInfo(countryCode) {
+  if (VPState.walletsList && VPState.walletsList.length > 0) {
+    const found = VPState.walletsList.find(w => w.country === countryCode);
+    if (found) return found;
+  }
+  const fromBase = (VPState.wallets || []).find(w => w.country === countryCode);
+  const isXof = fromBase && (fromBase.code === 'XOF');
+  return {
+    country: countryCode,
+    currency: fromBase ? fromBase.code : 'XOF',
+    available_amount: isXof && VPState.merchant ? parseFloat(VPState.merchant.balance_fcfa || 0) : (fromBase ? parseFloat(fromBase.balance || 0) : 0),
+    is_frozen: false
+  };
+}
+
 function openWalletTransferModal() {
   const fromSelect = document.getElementById('transferFromCountry');
   const toSelect = document.getElementById('transferToCountry');
@@ -2030,22 +2045,28 @@ function openWalletTransferModal() {
   fromSelect.innerHTML = '<option value="" disabled selected>Choisir un pays source</option>';
   toSelect.innerHTML = '<option value="" disabled selected>Choisir un pays de destination</option>';
 
-  const wallets = VPState.walletsList || [];
-  const sourceWallets = wallets.filter(w => parseFloat(w.available_amount || 0) > 0 && !w.is_frozen);
-  if (sourceWallets.length === 0) {
-    showToast('Information', 'Aucun portefeuille avec des fonds disponibles pour initier un transfert.');
-    return;
-  }
+  const canonicalOrder = [
+    'TG', 'XC', 'ZM', 'US_INTL', 'US', 'UG', 'TZ', 'SN', 'RW',
+    'NG', 'NE', 'MZ', 'MW', 'ML', 'KE', 'IN', 'GN', 'GH', 'GA',
+    'CM', 'CI', 'CG', 'CD', 'BJ', 'BF'
+  ];
 
-  sourceWallets.forEach(w => {
+  // Remplir TOUS les 25 pays avec leur solde réel pour chaque compte
+  canonicalOrder.forEach(countryCode => {
+    const w = getWalletInfo(countryCode);
     const opt = document.createElement('option');
     opt.value = w.country;
-    opt.textContent = `${getCountryFlag(w.country)} ${getCountryName(w.country)} (${formatWalletMoney(w.available_amount, w.currency)})`;
+    const avail = parseFloat(w.available_amount || 0);
+    opt.textContent = `${getCountryFlag(w.country)} ${getCountryName(w.country)} — Solde : ${formatWalletMoney(avail, w.currency)}`;
+    opt.setAttribute('data-currency', w.currency);
+    opt.setAttribute('data-balance', avail);
     fromSelect.appendChild(opt);
   });
 
+  // Sélectionner le premier pays par défaut
   fromSelect.selectedIndex = 1;
   const initialSourceCountry = fromSelect.value;
+  updateTransferSourceDisplay();
   populateTransferDestinationOptions(initialSourceCountry);
 
   if (amountInput) amountInput.value = '';
@@ -2053,30 +2074,66 @@ function openWalletTransferModal() {
   openModal('modalWalletTransfer');
 }
 
+function updateTransferSourceDisplay() {
+  const fromSelect = document.getElementById('transferFromCountry');
+  const badge = document.getElementById('transferSourceBalanceDisplay');
+  const currLabel = document.getElementById('transferSourceCurrencyLabel');
+  if (!fromSelect || !fromSelect.value) return;
+
+  const w = getWalletInfo(fromSelect.value);
+  const avail = parseFloat(w.available_amount || 0);
+  if (badge) {
+    badge.textContent = `${formatWalletMoney(avail, w.currency)}`;
+  }
+  if (currLabel) {
+    currLabel.textContent = `(${w.currency})`;
+  }
+}
+
+function updateTransferDestDisplay() {
+  const toSelect = document.getElementById('transferToCountry');
+  const badge = document.getElementById('transferDestBalanceDisplay');
+  if (!toSelect || !toSelect.value) return;
+
+  const w = getWalletInfo(toSelect.value);
+  const avail = parseFloat(w.available_amount || 0);
+  if (badge) {
+    badge.textContent = `${formatWalletMoney(avail, w.currency)}`;
+  }
+}
+
 function populateTransferDestinationOptions(sourceCountry) {
   const toSelect = document.getElementById('transferToCountry');
   if (!toSelect) return;
 
   toSelect.innerHTML = '<option value="" disabled selected>Choisir un pays de destination</option>';
-  const wallets = VPState.walletsList || [];
+  const canonicalOrder = [
+    'TG', 'XC', 'ZM', 'US_INTL', 'US', 'UG', 'TZ', 'SN', 'RW',
+    'NG', 'NE', 'MZ', 'MW', 'ML', 'KE', 'IN', 'GN', 'GH', 'GA',
+    'CM', 'CI', 'CG', 'CD', 'BJ', 'BF'
+  ];
 
-  wallets.filter(w => w.country !== sourceCountry && !w.is_frozen).forEach(w => {
+  canonicalOrder.filter(c => c !== sourceCountry).forEach(countryCode => {
+    const w = getWalletInfo(countryCode);
     const opt = document.createElement('option');
     opt.value = w.country;
-    opt.textContent = `${getCountryFlag(w.country)} ${getCountryName(w.country)} (${w.currency})`;
+    const avail = parseFloat(w.available_amount || 0);
+    opt.textContent = `${getCountryFlag(w.country)} ${getCountryName(w.country)} (${w.currency}) — Solde actuel : ${formatWalletMoney(avail, w.currency)}`;
+    opt.setAttribute('data-currency', w.currency);
+    opt.setAttribute('data-balance', avail);
     toSelect.appendChild(opt);
   });
 
   if (toSelect.options.length > 1) {
     toSelect.selectedIndex = 1;
   }
+  updateTransferDestDisplay();
 }
 
 function updateTransferEstimate() {
   const fromSelect = document.getElementById('transferFromCountry');
   const toSelect = document.getElementById('transferToCountry');
   const amountInput = document.getElementById('transferAmountInput');
-  const currLabel = document.getElementById('transferSourceCurrencyLabel');
   const estimateEl = document.getElementById('transferConversionEstimate');
 
   if (!fromSelect || !toSelect || !amountInput || !estimateEl) return;
@@ -2085,12 +2142,11 @@ function updateTransferEstimate() {
   const toCountry = toSelect.value;
   const amount = parseFloat(amountInput.value || 0);
 
-  const sourceW = (VPState.walletsList || []).find(w => w.country === fromCountry);
-  const destW = (VPState.walletsList || []).find(w => w.country === toCountry);
+  const sourceW = getWalletInfo(fromCountry);
+  const destW = getWalletInfo(toCountry);
 
-  if (currLabel) {
-    currLabel.textContent = sourceW ? `(${sourceW.currency})` : '';
-  }
+  updateTransferSourceDisplay();
+  updateTransferDestDisplay();
 
   if (!sourceW || !destW || amount <= 0) {
     estimateEl.classList.add('hidden');
@@ -2099,12 +2155,20 @@ function updateTransferEstimate() {
 
   const rate = getInterwalletRate(sourceW.currency, destW.currency);
   const converted = amount * rate;
+  const avail = parseFloat(sourceW.available_amount || 0);
 
   estimateEl.classList.remove('hidden');
-  estimateEl.innerHTML = `
-    ≈ <span class="font-bold text-[#111827]">${formatWalletMoney(converted, destW.currency)}</span> reçu
-    <span class="text-slate-400 text-[11px] block mt-0.5">Taux de conversion : 1 ${sourceW.currency} = ${rate.toFixed(4)} ${destW.currency}</span>
-  `;
+  if (amount > avail) {
+    estimateEl.innerHTML = `
+      <div class="text-rose-600 font-bold">⚠️ Solde insuffisant : Disponible ${formatWalletMoney(avail, sourceW.currency)}</div>
+      <div class="text-slate-500 text-[11px] mt-0.5">≈ ${formatWalletMoney(converted, destW.currency)} recevraient (Taux : 1 ${sourceW.currency} = ${rate.toFixed(4)} ${destW.currency})</div>
+    `;
+  } else {
+    estimateEl.innerHTML = `
+      ≈ <span class="font-bold text-[#111827]">${formatWalletMoney(converted, destW.currency)}</span> crédité sur le compte destinataire
+      <span class="text-slate-500 text-[11px] block mt-0.5">Taux de conversion : 1 ${sourceW.currency} = ${rate.toFixed(4)} ${destW.currency}</span>
+    `;
+  }
 }
 
 function openWalletTransferDetailModal(transferId) {
@@ -2515,12 +2579,11 @@ function initPayoutsSection() {
         if (walletSelect) {
           const list = (VPState.walletsList && VPState.walletsList.length > 0)
             ? VPState.walletsList
-            : [
-                { country: 'SN', currency: 'XOF', available_amount: 150000 },
-                { country: 'TG', currency: 'XOF', available_amount: 80 },
-                { country: 'CI', currency: 'XOF', available_amount: 0 },
-                { country: 'BJ', currency: 'XOF', available_amount: 0 }
-              ];
+            : (VPState.wallets || []).map(w => ({
+                country: w.country,
+                currency: w.code,
+                available_amount: (w.code === 'XOF' && VPState.merchant) ? parseFloat(VPState.merchant.balance_fcfa || 0) : 0
+              }));
           walletSelect.innerHTML = `
             <option value="" disabled selected>Choisir un pays</option>
             ${list.map(w => {
@@ -4607,6 +4670,36 @@ function initActionModals() {
           renderOverviewDashboardKPIs();
           closeModal('modalCreateLink');
           createForm.reset();
+
+          // Afficher immédiatement la modale de succès avec le lien prêt et le bouton copier
+          const fullUrl = data.payment_link.url || `${window.location.origin}/checkout.html?link=${data.payment_link.slug}`;
+          const prodNameEl = document.getElementById('successLinkProductName');
+          const badgeEl = document.getElementById('successLinkAmountBadge');
+          const urlInput = document.getElementById('successLinkUrlInput');
+          const copyBtn = document.getElementById('btnCopySuccessLink');
+          const copyBtnText = document.getElementById('copySuccessLinkBtnText');
+          const openBtn = document.getElementById('btnOpenSuccessLink');
+
+          if (prodNameEl) prodNameEl.textContent = `Produit : ${data.payment_link.title}`;
+          if (badgeEl) badgeEl.textContent = `${parseFloat(data.payment_link.amount_fcfa).toLocaleString('fr-FR')} ${data.payment_link.currency || 'XOF'}`;
+          if (urlInput) urlInput.value = fullUrl;
+
+          if (copyBtn) {
+            copyBtn.onclick = () => {
+              navigator.clipboard.writeText(fullUrl);
+              if (copyBtnText) copyBtnText.textContent = 'Copié !';
+              showToast("Lien copié !", "Prêt à être envoyé à votre client.");
+              setTimeout(() => { if (copyBtnText) copyBtnText.textContent = 'Copier'; }, 2500);
+            };
+          }
+
+          if (openBtn) {
+            openBtn.onclick = () => {
+              window.open(fullUrl, '_blank');
+            };
+          }
+
+          openModal('modalLinkCreatedSuccess');
           showToast("Lien créé avec succès !", `${data.payment_link.title} (${data.payment_link.currency || 'XOF'})`);
         } else {
           showToast("Erreur", data.error || "Impossible de créer le lien.");

@@ -1910,6 +1910,53 @@
   </div>
 
   <!-- ========================================================
+       MODAL : LIEN DE PAIEMENT CRÉÉ AVEC SUCCÈS (REVEAL PRO)
+       ======================================================== -->
+  <div id="modalLinkCreatedSuccess" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5 animate-fade-in text-center">
+      
+      <!-- Success Icon -->
+      <div class="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl mx-auto shadow-sm ring-8 ring-emerald-50/50">
+        ✓
+      </div>
+
+      <div>
+        <h3 class="text-lg font-extrabold text-[#111827]">Votre lien de paiement est prêt !</h3>
+        <p class="text-xs text-[#6B7280] mt-1" id="successLinkProductName">Partagez ce lien à vos clients pour recevoir des paiements instantanés.</p>
+      </div>
+
+      <!-- Price & Currency Badge -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 text-[#0052FF] font-bold text-xs mx-auto">
+        <span id="successLinkAmountBadge">0 XOF</span>
+      </div>
+
+      <!-- Link URL Box with Copy Button -->
+      <div class="space-y-2 text-left">
+        <label class="block text-[11px] font-bold text-[#111827] uppercase tracking-wider">Lien direct de paiement sécurisé</label>
+        <div class="flex items-center gap-2 bg-[#F8FAFC] border border-[#ECEEF6] rounded-2xl p-1.5 focus-within:border-[#0052FF] focus-within:ring-2 focus-within:ring-[#0052FF]/10 transition-all">
+          <input type="text" id="successLinkUrlInput" readonly class="w-full bg-transparent px-3 py-2 text-xs font-mono text-[#111827] outline-none select-all" onclick="this.select()">
+          <button type="button" id="btnCopySuccessLink" class="shrink-0 px-3.5 py-2 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+            <span id="copySuccessLinkBtnText">Copier</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="pt-2 grid grid-cols-2 gap-2.5">
+        <button type="button" id="btnOpenSuccessLink" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          <span>Tester le lien</span>
+        </button>
+        <button type="button" onclick="closeModal('modalLinkCreatedSuccess'); switchTab('links');" class="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors">
+          Voir mes liens
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================
        MODAL : CRÉER UNE NOUVELLE SESSION DE CHECKOUT
        ======================================================== -->
   <div id="modalCreateCheckoutSession" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity">
@@ -2842,25 +2889,33 @@
 
       <form id="formWalletTransfer" class="space-y-4 pt-2">
         <div>
-          <label for="transferFromCountry" class="mb-1.5 block text-xs font-bold text-[#111827]">Depuis</label>
-          <select id="transferFromCountry" required class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
+          <label for="transferFromCountry" class="mb-1.5 block text-xs font-bold text-[#111827]">Depuis (Portefeuille source)</label>
+          <select id="transferFromCountry" required class="w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
             <option value="" disabled selected>Choisir un pays source</option>
           </select>
+          <div id="transferSourceBalanceBadge" class="mt-2 flex items-center justify-between p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 text-xs">
+            <span class="text-slate-600 font-medium">Solde disponible sur ce compte :</span>
+            <span id="transferSourceBalanceDisplay" class="font-extrabold text-[#0052FF]">0 XOF</span>
+          </div>
         </div>
 
         <div>
-          <label for="transferToCountry" class="mb-1.5 block text-xs font-bold text-[#111827]">Vers</label>
-          <select id="transferToCountry" required class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
+          <label for="transferToCountry" class="mb-1.5 block text-xs font-bold text-[#111827]">Vers (Portefeuille destinataire)</label>
+          <select id="transferToCountry" required class="w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] focus:border-[#0052FF] focus:bg-white focus:outline-none">
             <option value="" disabled selected>Choisir un pays de destination</option>
           </select>
+          <div id="transferDestBalanceBadge" class="mt-2 flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+            <span class="text-slate-600 font-medium">Solde actuel du compte destinataire :</span>
+            <span id="transferDestBalanceDisplay" class="font-bold text-slate-800">0 XOF</span>
+          </div>
         </div>
 
         <div>
           <label for="transferAmountInput" class="mb-1.5 block text-xs font-bold text-[#111827]">
-            Montant <span id="transferSourceCurrencyLabel" class="text-slate-400 font-normal"></span>
+            Montant à transférer <span id="transferSourceCurrencyLabel" class="text-slate-400 font-normal"></span>
           </label>
-          <input type="number" id="transferAmountInput" min="1" step="any" required placeholder="0.00" class="w-full rounded-xl border border-violet-900/10 bg-blue-50/40 px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] font-mono font-bold focus:border-[#0052FF] focus:bg-white focus:outline-none">
-          <p id="transferConversionEstimate" class="mt-1.5 text-xs text-[#6B7280] font-medium hidden"></p>
+          <input type="number" id="transferAmountInput" min="1" step="any" required placeholder="0.00" class="w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 py-2.5 text-xs sm:text-sm text-[#111827] font-mono font-bold focus:border-[#0052FF] focus:bg-white focus:outline-none">
+          <p id="transferConversionEstimate" class="mt-2 text-xs text-[#0052FF] font-semibold bg-blue-50 p-2.5 rounded-xl border border-blue-100 hidden"></p>
         </div>
 
         <button type="submit" id="btnSubmitWalletTransfer" class="w-full rounded-xl bg-[#0052FF] py-3 text-xs sm:text-sm font-semibold text-white shadow-md shadow-blue-500/25 transition-all hover:bg-[#0040D0]">

@@ -87,7 +87,7 @@
         <div>
           <label class="block text-xs font-bold text-[#111827] mb-1.5">Email administrateur</label>
           <div class="relative">
-            <input type="email" id="adminLoginEmail" required value="admin@vandiaspay.com" placeholder="admin@vandiaspay.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] focus:outline-none focus:border-[#0052FF] focus:bg-white transition-all">
+            <input type="email" id="adminLoginEmail" required value="gnitessowedeou@gmail.com" placeholder="gnitessowedeou@gmail.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] focus:outline-none focus:border-[#0052FF] focus:bg-white transition-all">
           </div>
         </div>
 
@@ -100,7 +100,7 @@
 
         <!-- Bouton pré-remplissage rapide pour confort administrateur -->
         <button type="button" onclick="fillAdminDefaultCredentials()" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors">
-          <span>⚡ Remplir identifiants par défaut (admin@vandiaspay.com)</span>
+          <span>⚡ Remplir identifiants par défaut (gnitessowedeou@gmail.com)</span>
         </button>
 
         <button type="submit" id="btnAdminLoginSubmit" class="w-full py-3.5 px-4 rounded-2xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2">
@@ -157,11 +157,11 @@
         <!-- Admin user chip -->
         <div class="flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-200">
           <div class="w-8 h-8 rounded-full bg-[#0052FF] text-white flex items-center justify-center text-xs font-extrabold shadow-sm">
-            DG
+            EG
           </div>
           <div class="hidden sm:flex flex-col text-left">
-            <span id="topAdminName" class="text-xs font-bold text-[#111827]">Directeur Général</span>
-            <span id="topAdminEmail" class="text-[10px] text-slate-400">admin@vandiaspay.com</span>
+            <span id="topAdminName" class="text-xs font-bold text-[#111827]">ESSOWEDEOU GNITOU</span>
+            <span id="topAdminEmail" class="text-[10px] text-slate-400">gnitessowedeou@gmail.com</span>
           </div>
           <button onclick="adminLogout()" class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Déconnexion Administrateur">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -438,17 +438,17 @@
 
             <!-- Table of Merchants -->
             <div class="overflow-x-auto pt-2">
-              <table class="w-full text-left text-xs">
-                <thead class="text-slate-400 uppercase text-[11px] font-bold border-b border-slate-100">
+              <table class="w-full text-left text-xs min-w-[1100px]">
+                <thead class="text-slate-400 uppercase text-[11px] font-bold border-b border-slate-100 bg-[#FAFBFD]">
                   <tr>
-                    <th class="py-3 px-3">Marchand / Entreprise</th>
-                    <th class="py-3 px-3">Contact</th>
-                    <th class="py-3 px-3">Type & Plafond</th>
-                    <th class="py-3 px-3">Solde Disponible</th>
-                    <th class="py-3 px-3">Statut</th>
-                    <th class="py-3 px-3">KYC</th>
-                    <th class="py-3 px-3">Commission</th>
-                    <th class="py-3 px-3 text-right">Actions de Contrôle</th>
+                    <th class="py-3.5 px-4 min-w-[220px]">Marchand / Entreprise</th>
+                    <th class="py-3.5 px-4 min-w-[180px]">Contact</th>
+                    <th class="py-3.5 px-4 min-w-[220px]">Plafond Mensuel & Cycle</th>
+                    <th class="py-3.5 px-4 min-w-[140px]">Solde Disponible</th>
+                    <th class="py-3.5 px-3 min-w-[90px]">Statut</th>
+                    <th class="py-3.5 px-3 min-w-[110px]">KYC</th>
+                    <th class="py-3.5 px-3 min-w-[110px]">Commission</th>
+                    <th class="py-3.5 px-4 text-right min-w-[340px] whitespace-nowrap">Actions de Contrôle</th>
                   </tr>
                 </thead>
                 <tbody id="merchantsTableBody" class="divide-y divide-slate-100">

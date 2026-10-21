@@ -178,8 +178,8 @@ function enterAdminDashboard() {
   if (AdminState.user) {
     const nameEl = document.getElementById('topAdminName');
     const emailEl = document.getElementById('topAdminEmail');
-    if (nameEl) nameEl.textContent = AdminState.user.full_name || 'Directeur Général';
-    if (emailEl) emailEl.textContent = AdminState.user.email || 'admin@vandiaspay.com';
+    if (nameEl) nameEl.textContent = AdminState.user.full_name || 'ESSOWEDEOU GNITOU';
+    if (emailEl) emailEl.textContent = AdminState.user.email || 'gnitessowedeou@gmail.com';
   }
 
   // Actualise immédiatement les compteurs de la barre latérale
@@ -263,9 +263,9 @@ function updateSidebarBadges(data) {
 window.fillAdminDefaultCredentials = function () {
   const emailInput = document.getElementById('adminLoginEmail');
   const passInput = document.getElementById('adminLoginPassword');
-  if (emailInput) emailInput.value = 'admin@vandiaspay.com';
+  if (emailInput) emailInput.value = 'gnitessowedeou@gmail.com';
   if (passInput) passInput.value = 'admin2026!';
-  showAdminToast('Identifiants pré-remplis', 'Email: admin@vandiaspay.com / MdP: admin2026!', 'info');
+  showAdminToast('Identifiants pré-remplis', 'Email: gnitessowedeou@gmail.com / MdP: admin2026!', 'info');
 };
 
 /**
@@ -638,8 +638,8 @@ function renderMerchantsTable(merchants) {
   tbody.innerHTML = merchants.map(m => {
     const isSuspended = m.status === 'SUSPENDED';
     const statusBadge = isSuspended
-      ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-600 border border-rose-200" title="${m.suspend_reason || 'Compte bloqué'}">⛔ Suspendu</span>`
-      : `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-600 border border-emerald-200">✓ Actif</span>`;
+      ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-600 border border-rose-200" title="${m.suspend_reason || 'Compte bloqué'}">⛔ Suspendu</span>`
+      : `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-600 border border-emerald-200">✓ Actif</span>`;
 
     const rawKyc = (m.kyc_status || 'PENDING').toUpperCase();
     const isPending = (rawKyc === 'PENDING' || rawKyc === 'SUBMITTED');
@@ -651,56 +651,79 @@ function renderMerchantsTable(merchants) {
 
     const isBiz = (m.kyc_type === 'BUSINESS');
     const limitFcfa = Number(m.monthly_limit || (isBiz ? 50000000 : 1000000));
-    const typeBadge = isBiz
-      ? `<div class="inline-flex flex-col items-start gap-0.5">
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-[#0052FF] border border-blue-200">💼 Business</span>
-          <span class="text-[10px] font-mono font-bold text-slate-700">Plafond: ${formatFCFA(limitFcfa)}</span>
-        </div>`
-      : `<div class="inline-flex flex-col items-start gap-0.5">
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200">👤 Particulier</span>
-          <span class="text-[10px] font-mono font-bold text-slate-500">Plafond: ${formatFCFA(limitFcfa)}</span>
-        </div>`;
+    const typePill = isBiz
+      ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-blue-50 text-[#0052FF] border border-blue-200">💼 Business</span>`
+      : `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200">👤 Particulier</span>`;
+
+    // Cycle mensuel et compte à rebours
+    const cycle = m.monthly_cycle || {
+      days_remaining: 30,
+      formatted_reset: '21 nov.',
+      cycle_volume: 0,
+      percent_used: 0,
+      label: '30 j restants • Reset le 21 nov.'
+    };
 
     const customFeeText = m.custom_fee_percent != null
       ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">${m.custom_fee_percent}% (Sur-mesure)</span>`
       : `<span class="text-[11px] text-slate-400 font-mono">2.5% (Défaut)</span>`;
 
     return `
-      <tr class="hover:bg-slate-50 transition-colors ${isPending ? 'bg-amber-50/20' : ''}">
+      <tr class="hover:bg-slate-50/80 transition-colors ${isPending ? 'bg-amber-50/20' : ''}">
         <!-- Entreprise / Nom -->
-        <td class="py-3.5 px-3">
-          <div class="flex items-center gap-2.5">
-            <div class="w-8 h-8 rounded-xl bg-[#0A2540] text-white flex items-center justify-center text-xs font-bold shrink-0">
+        <td class="py-3.5 px-4">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-[#0A2540] text-white flex items-center justify-center text-xs font-extrabold shrink-0 shadow-xs">
               ${(m.business_name || m.full_name || 'M').charAt(0).toUpperCase()}
             </div>
             <div>
-              <div class="font-extrabold text-slate-900">${m.business_name || m.full_name || 'Sans Nom'}</div>
-              <div class="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+              <div class="font-extrabold text-slate-900 text-xs">${m.business_name || m.full_name || 'Sans Nom'}</div>
+              <div class="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 mt-0.5">
                 <span>ID: ${m.id ? m.id.slice(0, 8) : '-'}</span>
                 <span>•</span>
-                <span>${m.country_code || 'Afrique'}</span>
+                <span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-bold">${m.country_code || 'BF'}</span>
               </div>
             </div>
           </div>
         </td>
 
         <!-- Contact -->
-        <td class="py-3.5 px-3">
-          <div class="text-xs font-semibold text-slate-800">${m.email || '-'}</div>
-          <div class="text-[11px] text-slate-400 font-mono">${m.phone || 'Non renseigné'}</div>
+        <td class="py-3.5 px-4">
+          <div class="text-xs font-bold text-slate-800">${m.email || '-'}</div>
+          <div class="text-[11px] text-slate-400 font-mono mt-0.5">${m.phone || 'Non renseigné'}</div>
         </td>
 
-        <!-- Type & Plafond (NOUVEAU) -->
-        <td class="py-3.5 px-3">
-          ${typeBadge}
+        <!-- Plafond Mensuel & Compte à Rebours Dynamique -->
+        <td class="py-3.5 px-4">
+          <div class="space-y-1.5 min-w-[210px] max-w-[240px]">
+            <div class="flex items-center justify-between gap-1">
+              ${typePill}
+              <span class="text-[11px] font-extrabold font-mono text-slate-800">${formatFCFA(limitFcfa)}/m</span>
+            </div>
+            <!-- Badge Compte à Rebours -->
+            <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-blue-50 border border-blue-100 text-[10px] font-bold text-[#0052FF]">
+              <svg class="w-3 h-3 text-[#0052FF] shrink-0 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>${cycle.label || (cycle.days_remaining + ' j restants')}</span>
+            </div>
+            <!-- Jauge de consommation -->
+            <div class="space-y-0.5">
+              <div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+                <span>Consommé: ${formatFCFA(cycle.cycle_volume || 0)}</span>
+                <span>${cycle.percent_used || 0}%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500 ${cycle.percent_used > 80 ? 'bg-rose-500' : 'bg-[#0052FF]'}" style="width: ${Math.max(1, cycle.percent_used || 0)}%"></div>
+              </div>
+            </div>
+          </div>
         </td>
 
         <!-- Solde Disponible -->
-        <td class="py-3.5 px-3">
+        <td class="py-3.5 px-4">
           <div class="font-extrabold font-mono text-sm ${Number(m.balance_fcfa || 0) < 0 ? 'text-rose-600' : 'text-slate-900'}">
             ${formatFCFA(m.balance_fcfa)}
           </div>
-          <div class="text-[10px] text-slate-400">Total encaissé : ${formatFCFA(m.total_received_fcfa || 0)}</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Total encaissé : <span class="font-bold text-slate-600 font-mono">${formatFCFA(m.total_received_fcfa || 0)}</span></div>
         </td>
 
         <!-- Statut de Compte -->
@@ -718,32 +741,37 @@ function renderMerchantsTable(merchants) {
           ${customFeeText}
         </td>
 
-        <!-- Actions de Contrôle Administrateur -->
-        <td class="py-3.5 px-3 text-right">
-          <div class="flex items-center justify-end gap-1.5 flex-wrap">
+        <!-- Actions de Contrôle Administrateur (Barre Horizontale Non-Empilée) -->
+        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+          <div class="inline-flex items-center justify-end gap-1.5 flex-nowrap">
             <!-- 1. Ajuster Solde -->
-            <button onclick="openEditBalanceModal('${m.id}')" class="p-1.5 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:text-[#0052FF] transition-all" title="Ajuster le solde (Crédit / Débit)">
-              <span class="text-xs font-bold">💰 Solde</span>
+            <button onclick="openEditBalanceModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700 hover:text-[#0052FF] text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1" title="Ajuster le solde (Crédit / Débit)">
+              <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>Solde</span>
             </button>
 
-            <!-- 2. Statut KYC (Mise en avant si en attente) -->
-            <button onclick="openKycModal('${m.id}')" class="p-1.5 rounded-lg border transition-all ${isPending ? 'border-amber-400 bg-amber-500 hover:bg-amber-600 text-white font-extrabold shadow-xs animate-pulse' : 'border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 hover:text-amber-700'}" title="Examiner / Valider le dossier KYC">
-              <span class="text-xs font-bold">${isPending ? '🛡️ Examiner KYC ⏳' : '🛡️ KYC'}</span>
+            <!-- 2. Statut KYC -->
+            <button onclick="openKycModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1 ${isPending ? 'border-amber-400 bg-amber-500 hover:bg-amber-600 text-white shadow-xs animate-pulse' : 'border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 hover:text-amber-800'}" title="Examiner / Valider le dossier KYC">
+              <svg class="w-3.5 h-3.5 ${isPending ? 'text-white' : 'text-amber-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              <span>${isPending ? 'Examiner KYC ⏳' : 'KYC'}</span>
             </button>
 
             <!-- 3. Commission Custom -->
-            <button onclick="openCustomFeeModal('${m.id}')" class="p-1.5 rounded-lg border border-slate-200 hover:border-purple-400 hover:bg-purple-50 text-slate-700 hover:text-purple-700 transition-all" title="Définir un taux de commission sur-mesure">
-              <span class="text-xs font-bold">🏷️ Frais</span>
+            <button onclick="openCustomFeeModal('${m.id}')" class="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-purple-400 hover:bg-purple-50 text-slate-700 hover:text-purple-700 text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1" title="Définir un taux de commission sur-mesure">
+              <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+              <span>Frais</span>
             </button>
 
             <!-- 4. Suspendre / Réactiver -->
-            <button onclick="openSuspendModal('${m.id}', '${m.status || 'ACTIVE'}')" class="p-1.5 rounded-lg border ${isSuspended ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-rose-200 hover:border-rose-400 hover:bg-rose-50 text-rose-700'} transition-all" title="${isSuspended ? 'Réactiver le compte' : 'Suspendre le compte'}">
-              <span class="text-xs font-bold">${isSuspended ? '✓ Activer' : '⛔ Suspendre'}</span>
+            <button onclick="openSuspendModal('${m.id}', '${m.status || 'ACTIVE'}')" class="px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1 ${isSuspended ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'border-rose-200 hover:border-rose-400 hover:bg-rose-50 text-rose-700'}" title="${isSuspended ? 'Réactiver le compte' : 'Suspendre le compte'}">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${isSuspended ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : 'M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636'}"/></svg>
+              <span>${isSuspended ? 'Activer' : 'Suspendre'}</span>
             </button>
 
             <!-- 5. Impersonate (Connexion directe au compte marchand) -->
-            <button onclick="impersonateMerchant('${m.id}')" class="p-1.5 rounded-lg bg-[#0A2540] hover:bg-slate-800 text-white transition-all shadow-xs" title="Se connecter en tant que ce marchand">
-              <span class="text-xs font-bold">⚡ Accès</span>
+            <button onclick="impersonateMerchant('${m.id}')" class="px-2.5 py-1.5 rounded-xl bg-[#0A2540] hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-2xs inline-flex items-center gap-1" title="Se connecter en tant que ce marchand">
+              <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              <span>Accès</span>
             </button>
           </div>
         </td>

@@ -264,8 +264,8 @@ window.fillAdminDefaultCredentials = function () {
   const emailInput = document.getElementById('adminLoginEmail');
   const passInput = document.getElementById('adminLoginPassword');
   if (emailInput) emailInput.value = 'gnitessowedeou@gmail.com';
-  if (passInput) passInput.value = 'admin2026!';
-  showAdminToast('Identifiants pré-remplis', 'Email: gnitessowedeou@gmail.com / MdP: admin2026!', 'info');
+  if (passInput) passInput.value = '9342Well@';
+  showAdminToast('Identifiants pré-remplis', 'Email: gnitessowedeou@gmail.com / MdP: 9342Well@', 'info');
 };
 
 /**

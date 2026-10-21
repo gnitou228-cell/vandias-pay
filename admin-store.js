@@ -149,6 +149,16 @@ function setMerchantOverride(id, patch = {}) {
   if (patch.kyc_status !== undefined) {
     cur.kyc_status = ['PENDING', 'SUBMITTED', 'VERIFIED', 'REJECTED'].includes(patch.kyc_status) ? patch.kyc_status : 'PENDING';
   }
+  if (patch.kyc_type !== undefined) {
+    cur.kyc_type = ['BUSINESS', 'PARTICULIER'].includes(patch.kyc_type) ? patch.kyc_type : 'PARTICULIER';
+  }
+  if (patch.monthly_limit !== undefined) {
+    const numLim = parseFloat(patch.monthly_limit);
+    if (!isNaN(numLim)) cur.monthly_limit = numLim;
+  }
+  if (patch.kyc_data !== undefined) {
+    cur.kyc_data = patch.kyc_data;
+  }
   if (patch.custom_fee_percent !== undefined) {
     if (patch.custom_fee_percent === null || patch.custom_fee_percent === '') {
       delete cur.custom_fee_percent;
@@ -170,13 +180,24 @@ function setMerchantOverride(id, patch = {}) {
 function applyMerchantOverride(merchant) {
   if (!merchant) return merchant;
   const o = store.merchant_overrides[merchant.id];
-  if (!o) return { ...merchant, status: merchant.status || 'ACTIVE' };
+  if (!o) return {
+    ...merchant,
+    status: merchant.status || 'ACTIVE',
+    kyc_status: merchant.kyc_status || 'PENDING',
+    kyc_type: merchant.kyc_type || 'PARTICULIER',
+    monthly_limit: merchant.monthly_limit || (merchant.kyc_type === 'BUSINESS' ? 50000000 : 1000000)
+  };
+  const effectiveKycType = o.kyc_type || merchant.kyc_type || 'PARTICULIER';
+  const defaultLimit = effectiveKycType === 'BUSINESS' ? 50000000 : 1000000;
   return {
     ...merchant,
     balance_fcfa: o.balance_fcfa !== undefined ? o.balance_fcfa : merchant.balance_fcfa,
     status: o.status || merchant.status || 'ACTIVE',
     suspension_reason: o.suspension_reason || null,
-    kyc_status: o.kyc_status || merchant.kyc_status,
+    kyc_status: o.kyc_status || merchant.kyc_status || 'PENDING',
+    kyc_type: effectiveKycType,
+    monthly_limit: o.monthly_limit !== undefined ? o.monthly_limit : (merchant.monthly_limit || defaultLimit),
+    kyc_data: o.kyc_data !== undefined ? o.kyc_data : (merchant.kyc_data || null),
     custom_fee_percent: o.custom_fee_percent !== undefined ? o.custom_fee_percent : null,
     admin_note: o.admin_note || null
   };

@@ -190,7 +190,10 @@
               <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
               <span>Marchands & Clients</span>
             </div>
-            <span id="badgeMerchantsCount" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">0</span>
+            <div class="flex items-center gap-1">
+              <span id="badgeMerchantsPendingKyc" class="hidden px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">0 ⏳</span>
+              <span id="badgeMerchantsCount" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">0</span>
+            </div>
           </button>
 
           <!-- 3. Transactions Globales -->
@@ -203,9 +206,12 @@
           </button>
 
           <!-- 4. Liens de Paiement -->
-          <button class="nav-admin-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#111827] hover:bg-slate-100 transition-all" data-tab="links">
-            <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-            <span>Liens de paiement</span>
+          <button class="nav-admin-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#111827] hover:bg-slate-100 transition-all" data-tab="links">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+              <span>Liens de paiement</span>
+            </div>
+            <span id="badgeLinksCount" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">0</span>
           </button>
 
           <!-- 5. Retraits & Décaissements -->
@@ -386,9 +392,30 @@
             </div>
           </div>
 
-          <!-- Filters bar -->
-          <div class="bg-white border border-[#ECEEF6] rounded-3xl p-4 sm:p-5 shadow-xs space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- Filters bar & Quick tabs -->
+          <div class="bg-white border border-[#ECEEF6] rounded-3xl p-4 sm:p-5 shadow-xs space-y-4">
+            
+            <!-- Quick Category Filter Pills -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+              <button type="button" onclick="setMerchantFilterPreset('ALL')" id="filterPillAll" class="merchant-filter-pill px-3 py-1.5 rounded-xl font-bold bg-[#0052FF] text-white shadow-xs transition-all">
+                Tous les comptes
+              </button>
+              <button type="button" onclick="setMerchantFilterPreset('PENDING_KYC')" id="filterPillPendingKyc" class="merchant-filter-pill px-3 py-1.5 rounded-xl font-semibold bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-800 transition-all flex items-center gap-1.5">
+                <span>En attente KYC ⏳</span>
+                <span id="pillPendingKycCount" class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-amber-500 text-white">0</span>
+              </button>
+              <button type="button" onclick="setMerchantFilterPreset('BUSINESS')" id="filterPillBusiness" class="merchant-filter-pill px-3 py-1.5 rounded-xl font-semibold bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-800 transition-all">
+                💼 Business (Plafond 50M)
+              </button>
+              <button type="button" onclick="setMerchantFilterPreset('PARTICULIER')" id="filterPillParticulier" class="merchant-filter-pill px-3 py-1.5 rounded-xl font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all">
+                👤 Particulier (Plafond 1M)
+              </button>
+              <button type="button" onclick="setMerchantFilterPreset('SUSPENDED')" id="filterPillSuspended" class="merchant-filter-pill px-3 py-1.5 rounded-xl font-semibold bg-slate-100 hover:bg-rose-100 text-slate-700 hover:text-rose-700 transition-all">
+                ⛔ Suspendus
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 border-t border-slate-100">
               <div>
                 <input type="text" id="filterMerchantQuery" placeholder="Rechercher par nom, email, téléphone..." class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-xl px-3.5 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]" oninput="filterMerchantsList()">
               </div>
@@ -416,6 +443,7 @@
                   <tr>
                     <th class="py-3 px-3">Marchand / Entreprise</th>
                     <th class="py-3 px-3">Contact</th>
+                    <th class="py-3 px-3">Type & Plafond</th>
                     <th class="py-3 px-3">Solde Disponible</th>
                     <th class="py-3 px-3">Statut</th>
                     <th class="py-3 px-3">KYC</th>
@@ -829,36 +857,77 @@
 
   <!-- Modal 3 : Examen & Décision KYC -->
   <div id="modalKycReview" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
-    <div class="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5">
+    <div class="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
-          <h3 class="text-base font-extrabold text-[#111827]">Vérification d'Identité (KYC)</h3>
+          <h3 class="text-base font-extrabold text-[#111827] flex items-center gap-2">
+            <span>🛡️ Examen du Dossier KYC</span>
+            <span id="kycModalHeaderBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">En attente</span>
+          </h3>
           <p id="modalKycMerchantName" class="text-xs text-slate-400">Marchand</p>
         </div>
         <button onclick="closeAdminModal('modalKycReview')" class="text-slate-400 hover:text-slate-700">✕</button>
       </div>
 
-      <div class="space-y-4">
+      <div class="space-y-4 text-xs">
         <input type="hidden" id="kycMerchantId">
 
-        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs space-y-1">
-          <div><span class="text-slate-400">Nom complet :</span> <span id="kycFullName" class="font-bold text-slate-800">-</span></div>
-          <div><span class="text-slate-400">Entreprise :</span> <span id="kycBusinessName" class="font-bold text-slate-800">-</span></div>
-          <div><span class="text-slate-400">Pays :</span> <span id="kycCountry" class="font-bold text-slate-800">-</span></div>
-          <div><span class="text-slate-400">Statut actuel :</span> <span id="kycCurrentStatus" class="font-bold text-amber-600">-</span></div>
+        <!-- Type de compte & Plafond -->
+        <div class="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-200/80 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-extrabold text-[#0052FF] uppercase tracking-wider text-[10px]">Type de Compte & Plafond Mensuel</span>
+            <span id="kycAccountTypeBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-600 text-white">Particulier (1M)</span>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Catégorie de compte</label>
+              <select id="kycTypeSelect" class="w-full bg-white border border-blue-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0052FF]" onchange="updateKycModalDefaultLimit()">
+                <option value="PARTICULIER">👤 Particulier (Plafond 1 000 000 FCFA)</option>
+                <option value="BUSINESS">💼 Business (Plafond 50 000 000 FCFA)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Plafond mensuel (FCFA)</label>
+              <input type="number" id="kycMonthlyLimitInput" class="w-full bg-white border border-blue-200 rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:border-[#0052FF]" placeholder="1000000">
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations d'identité / Entreprise soumises -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+          <div class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Données Vérifiables du Dossier</div>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <div><span class="text-slate-400">Nom complet :</span> <div id="kycFullName" class="font-bold text-slate-900">-</div></div>
+            <div><span class="text-slate-400">Entreprise :</span> <div id="kycBusinessName" class="font-bold text-slate-900">-</div></div>
+            <div><span class="text-slate-400">Type de Pièce / Doc :</span> <div id="kycDocType" class="font-bold text-slate-900 font-mono">-</div></div>
+            <div><span class="text-slate-400">Numéro / RCCM :</span> <div id="kycDocNumber" class="font-bold text-slate-900 font-mono">-</div></div>
+            <div><span class="text-slate-400">Date de Naissance / Création :</span> <div id="kycBirthOrRegDate" class="font-bold text-slate-900 font-mono">-</div></div>
+            <div><span class="text-slate-400">Pays & Adresse :</span> <div id="kycCountry" class="font-bold text-slate-900">-</div></div>
+          </div>
+
+          <div id="kycExtraDataContainer" class="pt-2 border-t border-slate-200/60 hidden">
+            <span class="text-slate-400">Détails bruts transmis :</span>
+            <pre id="kycRawDataPre" class="p-2 rounded-xl bg-white border border-slate-200 text-[10px] font-mono text-slate-700 max-h-24 overflow-y-auto mt-1"></pre>
+          </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-[#111827] mb-1.5">Note de conformité (optionnelle)</label>
-          <input type="text" id="kycNoteInput" placeholder="Ex: Pièce d'identité CNI validée avec succès" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]">
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Note administrative ou motif de rejet</label>
+          <input type="text" id="kycNoteInput" placeholder="Ex: CNI officielle vérifiée et certifiée conforme." class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]">
         </div>
 
-        <div class="grid grid-cols-2 gap-3 pt-2">
-          <button type="button" onclick="submitKycDecision('REJECTED')" class="py-2.5 px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors">
-            ✕ Rejeter le dossier
+        <!-- 3 Action Buttons -->
+        <div class="grid grid-cols-3 gap-2 pt-2">
+          <button type="button" onclick="submitKycDecision('REJECTED')" class="py-2.5 px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors text-center" title="Rejeter le dossier avec motif">
+            ✕ Rejeter
           </button>
-          <button type="button" onclick="submitKycDecision('VERIFIED')" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm">
-            ✓ Valider le compte
+          <button type="button" onclick="submitKycDecision('PENDING')" class="py-2.5 px-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold transition-colors text-center" title="Mettre ou maintenir en attente">
+            ⏳ En attente
+          </button>
+          <button type="button" onclick="submitKycDecision('VERIFIED')" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm text-center" title="Approuver définitivement le compte">
+            ✓ Approuver (Actif)
           </button>
         </div>
       </div>

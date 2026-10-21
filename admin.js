@@ -182,16 +182,79 @@ function enterAdminDashboard() {
     if (emailEl) emailEl.textContent = AdminState.user.email || 'admin@vandiaspay.com';
   }
 
+  // Actualise immédiatement les compteurs de la barre latérale
+  refreshSidebarMetrics();
+
   // Load default tab
   switchAdminTab(AdminState.activeTab || 'overview');
 
   // Background auto-refresh overview stats every 30 seconds
   if (AdminState.refreshTimer) clearInterval(AdminState.refreshTimer);
   AdminState.refreshTimer = setInterval(() => {
+    refreshSidebarMetrics();
     if (AdminState.activeTab === 'overview') {
       loadAdminOverview(false);
     }
   }, 30000);
+}
+
+/**
+ * Actualise les métriques globales et les badges de la sidebar
+ */
+async function refreshSidebarMetrics() {
+  try {
+    const res = await adminFetch('/api/v1/admin/overview');
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.data) {
+        updateSidebarBadges(json.data);
+      }
+    }
+  } catch (e) {
+    console.warn('[Admin] Erreur refreshSidebarMetrics:', e.message);
+  }
+}
+
+/**
+ * Met à jour dynamiquement tous les badges de la barre latérale
+ */
+function updateSidebarBadges(data) {
+  if (!data) return;
+  const totalMerchants = typeof data.merchants_count === 'object' ? data.merchants_count.total : (data.merchants_total || data.merchants_count || 0);
+  const pendingKyc = typeof data.merchants_count === 'object' ? data.merchants_count.pending_kyc : (data.pending_kyc_count || 0);
+  const totalTx = typeof data.transactions_count === 'object' ? data.transactions_count.total : (data.transactions_total || data.transactions_count || 0);
+  const totalLinks = data.payment_links_count !== undefined ? data.payment_links_count : (AdminState.links?.length || 0);
+  const pendingPayouts = typeof data.payouts_summary === 'object' ? data.payouts_summary.pending_count : (data.pending_payouts_count || 0);
+
+  const bMerchants = document.getElementById('badgeMerchantsCount');
+  const bTx = document.getElementById('badgeTransactionsCount');
+  const bLinks = document.getElementById('badgeLinksCount');
+  const bPayouts = document.getElementById('badgePayoutsPending');
+  const bPendingKyc = document.getElementById('badgeMerchantsPendingKyc');
+  const pillPendingKyc = document.getElementById('pillPendingKycCount');
+
+  if (bMerchants) bMerchants.textContent = totalMerchants;
+  if (bTx) bTx.textContent = totalTx;
+  if (bLinks) bLinks.textContent = totalLinks;
+  if (bPayouts) {
+    bPayouts.textContent = pendingPayouts;
+    if (pendingPayouts > 0) {
+      bPayouts.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white animate-pulse';
+    } else {
+      bPayouts.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700';
+    }
+  }
+
+  if (bPendingKyc) {
+    if (pendingKyc > 0) {
+      bPendingKyc.textContent = `${pendingKyc} ⏳`;
+      bPendingKyc.classList.remove('hidden');
+    } else {
+      bPendingKyc.classList.add('hidden');
+    }
+  }
+
+  if (pillPendingKyc) pillPendingKyc.textContent = pendingKyc;
 }
 
 /**
@@ -281,6 +344,7 @@ window.switchAdminTab = function (tabKey) {
 };
 
 window.refreshCurrentAdminTab = function () {
+  refreshSidebarMetrics();
   switchAdminTab(AdminState.activeTab || 'overview');
   showAdminToast('Données actualisées', 'Synchronisation en temps réel avec le serveur.', 'info');
 };
@@ -293,9 +357,19 @@ async function loadAdminOverview(showToastFeedback = false) {
   try {
     const res = await adminFetch('/api/v1/admin/overview');
     if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    const data = await res.json();
+    const json = await res.json();
+    const data = json.data || {};
 
-    // 1. KPIs
+    // 1. Extraction propre des métriques
+    const totalVolume = data.total_volume_fcfa || 0;
+    const todayVolume = data.today_volume_fcfa || 0;
+    const totalFees = data.total_fees_collected_fcfa || 0;
+    const totalMerchants = typeof data.merchants_count === 'object' ? data.merchants_count.total : (data.merchants_total || data.merchants_count || 0);
+    const activeMerchants = typeof data.merchants_count === 'object' ? data.merchants_count.active : (data.active_merchants_count || 0);
+    const suspendedMerchants = typeof data.merchants_count === 'object' ? data.merchants_count.suspended : (data.suspended_merchants_count || 0);
+    const pendingPayouts = typeof data.payouts_summary === 'object' ? data.payouts_summary.pending_count : (data.pending_payouts_count || 0);
+    const pendingPayoutsAmount = typeof data.payouts_summary === 'object' ? data.payouts_summary.pending_amount : (data.pending_payouts_amount_fcfa || 0);
+
     const elTotalVolume = document.getElementById('kpiTotalVolume');
     const elTodayVolume = document.getElementById('kpiTodayVolume');
     const elTotalFees = document.getElementById('kpiTotalFees');
@@ -305,22 +379,17 @@ async function loadAdminOverview(showToastFeedback = false) {
     const elPendingPayoutsAmount = document.getElementById('kpiPendingPayoutsAmount');
     const elPendingPayoutsCount = document.getElementById('kpiPendingPayoutsCount');
 
-    if (elTotalVolume) elTotalVolume.textContent = formatFCFA(data.total_volume_fcfa);
-    if (elTodayVolume) elTodayVolume.textContent = formatFCFA(data.today_volume_fcfa || 0);
-    if (elTotalFees) elTotalFees.textContent = formatFCFA(data.total_fees_collected_fcfa);
-    if (elTotalMerchants) elTotalMerchants.textContent = data.merchants_count || 0;
-    if (elActiveMerchants) elActiveMerchants.textContent = `${data.active_merchants_count || 0} actifs`;
-    if (elSuspendedMerchants) elSuspendedMerchants.textContent = `${data.suspended_merchants_count || 0} suspendus`;
-    if (elPendingPayoutsAmount) elPendingPayoutsAmount.textContent = formatFCFA(data.pending_payouts_amount_fcfa);
-    if (elPendingPayoutsCount) elPendingPayoutsCount.textContent = data.pending_payouts_count || 0;
+    if (elTotalVolume) elTotalVolume.textContent = formatFCFA(totalVolume);
+    if (elTodayVolume) elTodayVolume.textContent = formatFCFA(todayVolume);
+    if (elTotalFees) elTotalFees.textContent = formatFCFA(totalFees);
+    if (elTotalMerchants) elTotalMerchants.textContent = totalMerchants;
+    if (elActiveMerchants) elActiveMerchants.textContent = `${activeMerchants} actifs`;
+    if (elSuspendedMerchants) elSuspendedMerchants.textContent = `${suspendedMerchants} suspendus`;
+    if (elPendingPayoutsAmount) elPendingPayoutsAmount.textContent = formatFCFA(pendingPayoutsAmount);
+    if (elPendingPayoutsCount) elPendingPayoutsCount.textContent = pendingPayouts;
 
     // Badges Sidebar
-    const bMerchants = document.getElementById('badgeMerchantsCount');
-    const bTx = document.getElementById('badgeTransactionsCount');
-    const bPayouts = document.getElementById('badgePayoutsPending');
-    if (bMerchants) bMerchants.textContent = data.merchants_count || 0;
-    if (bTx) bTx.textContent = data.transactions_count || 0;
-    if (bPayouts) bPayouts.textContent = data.pending_payouts_count || 0;
+    updateSidebarBadges(data);
 
     // Maintenance Badge in Header
     const maintBadge = document.getElementById('adminMaintenanceStatusBadge');
@@ -336,7 +405,7 @@ async function loadAdminOverview(showToastFeedback = false) {
     renderOverviewRecentTransactions(data.recent_transactions || []);
 
     // 3. Methods Breakdown List
-    renderOverviewMethods(data.payment_methods_stats || {});
+    renderOverviewMethods(data.method_distribution || data.payment_methods_stats || {});
 
     if (showToastFeedback) {
       showAdminToast('Succès', 'Tableau de bord actualisé.', 'success');
@@ -442,12 +511,72 @@ async function loadAdminMerchants() {
     const badge = document.getElementById('merchantsListCountBadge');
     if (badge) badge.textContent = `${AdminState.merchants.length} Marchand(s)`;
 
+    // Met à jour les compteurs de la sidebar & des pills
+    const pendingKycCount = AdminState.merchants.filter(m => (m.kyc_status || 'PENDING') === 'PENDING' || (m.kyc_status || '') === 'SUBMITTED').length;
+    const bPendingKyc = document.getElementById('badgeMerchantsPendingKyc');
+    const pillPendingKyc = document.getElementById('pillPendingKycCount');
+    const bMerchants = document.getElementById('badgeMerchantsCount');
+
+    if (bMerchants) bMerchants.textContent = AdminState.merchants.length;
+    if (bPendingKyc) {
+      if (pendingKycCount > 0) {
+        bPendingKyc.textContent = `${pendingKycCount} ⏳`;
+        bPendingKyc.classList.remove('hidden');
+      } else {
+        bPendingKyc.classList.add('hidden');
+      }
+    }
+    if (pillPendingKyc) pillPendingKyc.textContent = pendingKycCount;
+
     filterMerchantsList();
   } catch (err) {
     console.error('[loadAdminMerchants]', err);
     showAdminToast('Erreur', 'Impossible de charger la liste des marchands.', 'danger');
   }
 }
+
+let currentMerchantPreset = 'ALL';
+
+window.setMerchantFilterPreset = function (preset) {
+  currentMerchantPreset = preset;
+  const pills = document.querySelectorAll('.merchant-filter-pill');
+  pills.forEach(p => {
+    p.classList.remove('bg-[#0052FF]', 'text-white', 'font-bold');
+    p.classList.add('bg-slate-100', 'text-slate-700', 'font-semibold');
+  });
+
+  const activeMap = {
+    'ALL': 'filterPillAll',
+    'PENDING_KYC': 'filterPillPendingKyc',
+    'BUSINESS': 'filterPillBusiness',
+    'PARTICULIER': 'filterPillParticulier',
+    'SUSPENDED': 'filterPillSuspended'
+  };
+  const targetPill = document.getElementById(activeMap[preset] || 'filterPillAll');
+  if (targetPill) {
+    targetPill.classList.remove('bg-slate-100', 'text-slate-700', 'font-semibold');
+    targetPill.classList.add('bg-[#0052FF]', 'text-white', 'font-bold');
+  }
+
+  const statusSelect = document.getElementById('filterMerchantStatus');
+  const kycSelect = document.getElementById('filterMerchantKyc');
+
+  if (preset === 'ALL') {
+    if (statusSelect) statusSelect.value = '';
+    if (kycSelect) kycSelect.value = '';
+  } else if (preset === 'PENDING_KYC') {
+    if (statusSelect) statusSelect.value = '';
+    if (kycSelect) kycSelect.value = 'PENDING';
+  } else if (preset === 'SUSPENDED') {
+    if (statusSelect) statusSelect.value = 'SUSPENDED';
+    if (kycSelect) kycSelect.value = '';
+  } else {
+    if (statusSelect) statusSelect.value = '';
+    if (kycSelect) kycSelect.value = '';
+  }
+
+  filterMerchantsList();
+};
 
 window.filterMerchantsList = function () {
   const query = (document.getElementById('filterMerchantQuery')?.value || '').toLowerCase().trim();
@@ -463,9 +592,25 @@ window.filterMerchantsList = function () {
       (m.id && m.id.toLowerCase().includes(query));
 
     const statusMatch = !statusFilter || (m.status || 'ACTIVE') === statusFilter;
-    const kycMatch = !kycFilter || (m.kyc_status || 'PENDING') === kycFilter;
+    
+    let kycMatch = true;
+    if (kycFilter) {
+      const mKyc = (m.kyc_status || 'PENDING').toUpperCase();
+      if (kycFilter === 'PENDING') {
+        kycMatch = (mKyc === 'PENDING' || mKyc === 'SUBMITTED');
+      } else {
+        kycMatch = (mKyc === kycFilter);
+      }
+    }
 
-    return nameMatch && statusMatch && kycMatch;
+    let presetMatch = true;
+    if (currentMerchantPreset === 'BUSINESS') {
+      presetMatch = (m.kyc_type === 'BUSINESS');
+    } else if (currentMerchantPreset === 'PARTICULIER') {
+      presetMatch = (m.kyc_type !== 'BUSINESS');
+    }
+
+    return nameMatch && statusMatch && kycMatch && presetMatch;
   });
 
   renderMerchantsTable(filtered);
@@ -478,8 +623,12 @@ function renderMerchantsTable(merchants) {
   if (!merchants.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" class="py-10 text-center text-slate-400">
-          Aucun compte marchand trouvé avec les critères actuels.
+        <td colspan="8" class="py-10 text-center text-slate-400">
+          <div class="space-y-1">
+            <div class="text-2xl">🔍</div>
+            <div class="font-bold text-slate-700">Aucun compte marchand trouvé avec les critères actuels.</div>
+            <div class="text-xs text-slate-400">Modifiez vos filtres ou sélectionnez « Tous les comptes » ci-dessus.</div>
+          </div>
         </td>
       </tr>
     `;
@@ -492,19 +641,32 @@ function renderMerchantsTable(merchants) {
       ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-600 border border-rose-200" title="${m.suspend_reason || 'Compte bloqué'}">⛔ Suspendu</span>`
       : `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-600 border border-emerald-200">✓ Actif</span>`;
 
-    const kycStatus = m.kyc_status || 'PENDING';
-    const kycBadge = kycStatus === 'VERIFIED'
-      ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">Vérifié ✓</span>`
-      : kycStatus === 'REJECTED'
-      ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">Rejeté ✕</span>`
-      : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200">En attente ⏳</span>`;
+    const rawKyc = (m.kyc_status || 'PENDING').toUpperCase();
+    const isPending = (rawKyc === 'PENDING' || rawKyc === 'SUBMITTED');
+    const kycBadge = rawKyc === 'VERIFIED'
+      ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Vérifié ✓</span>`
+      : rawKyc === 'REJECTED'
+      ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200" title="${m.admin_note || 'Dossier rejeté'}">Rejeté ✕</span>`
+      : `<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse flex items-center gap-1"><span>⏳</span><span>En attente</span></span>`;
+
+    const isBiz = (m.kyc_type === 'BUSINESS');
+    const limitFcfa = Number(m.monthly_limit || (isBiz ? 50000000 : 1000000));
+    const typeBadge = isBiz
+      ? `<div class="inline-flex flex-col items-start gap-0.5">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-[#0052FF] border border-blue-200">💼 Business</span>
+          <span class="text-[10px] font-mono font-bold text-slate-700">Plafond: ${formatFCFA(limitFcfa)}</span>
+        </div>`
+      : `<div class="inline-flex flex-col items-start gap-0.5">
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200">👤 Particulier</span>
+          <span class="text-[10px] font-mono font-bold text-slate-500">Plafond: ${formatFCFA(limitFcfa)}</span>
+        </div>`;
 
     const customFeeText = m.custom_fee_percent != null
       ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">${m.custom_fee_percent}% (Sur-mesure)</span>`
       : `<span class="text-[11px] text-slate-400 font-mono">2.5% (Défaut)</span>`;
 
     return `
-      <tr class="hover:bg-slate-50 transition-colors">
+      <tr class="hover:bg-slate-50 transition-colors ${isPending ? 'bg-amber-50/20' : ''}">
         <!-- Entreprise / Nom -->
         <td class="py-3.5 px-3">
           <div class="flex items-center gap-2.5">
@@ -526,6 +688,11 @@ function renderMerchantsTable(merchants) {
         <td class="py-3.5 px-3">
           <div class="text-xs font-semibold text-slate-800">${m.email || '-'}</div>
           <div class="text-[11px] text-slate-400 font-mono">${m.phone || 'Non renseigné'}</div>
+        </td>
+
+        <!-- Type & Plafond (NOUVEAU) -->
+        <td class="py-3.5 px-3">
+          ${typeBadge}
         </td>
 
         <!-- Solde Disponible -->
@@ -559,9 +726,9 @@ function renderMerchantsTable(merchants) {
               <span class="text-xs font-bold">💰 Solde</span>
             </button>
 
-            <!-- 2. Statut KYC -->
-            <button onclick="openKycModal('${m.id}')" class="p-1.5 rounded-lg border border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 hover:text-amber-700 transition-all" title="Examiner / Valider le KYC">
-              <span class="text-xs font-bold">🛡️ KYC</span>
+            <!-- 2. Statut KYC (Mise en avant si en attente) -->
+            <button onclick="openKycModal('${m.id}')" class="p-1.5 rounded-lg border transition-all ${isPending ? 'border-amber-400 bg-amber-500 hover:bg-amber-600 text-white font-extrabold shadow-xs animate-pulse' : 'border-slate-200 hover:border-amber-400 hover:bg-amber-50 text-slate-700 hover:text-amber-700'}" title="Examiner / Valider le dossier KYC">
+              <span class="text-xs font-bold">${isPending ? '🛡️ Examiner KYC ⏳' : '🛡️ KYC'}</span>
             </button>
 
             <!-- 3. Commission Custom -->
@@ -719,44 +886,114 @@ async function handleSuspendSubmit(e) {
 // --------------------------------------------------------
 // MODAL 3 : DÉCISION KYC
 // --------------------------------------------------------
+// MODAL 3 : DÉCISION KYC (INSPECTION DÉTAILLÉE, TYPE ET PLAFOND)
+// --------------------------------------------------------
 window.openKycModal = function (merchantId) {
   const merchant = AdminState.merchants.find(m => m.id === merchantId);
   if (!merchant) return;
 
   const idInput = document.getElementById('kycMerchantId');
   const nameLabel = document.getElementById('modalKycMerchantName');
+  const headerBadge = document.getElementById('kycModalHeaderBadge');
+  const typeBadge = document.getElementById('kycAccountTypeBadge');
+  const typeSelect = document.getElementById('kycTypeSelect');
+  const limitInput = document.getElementById('kycMonthlyLimitInput');
   const fullName = document.getElementById('kycFullName');
   const bName = document.getElementById('kycBusinessName');
+  const docType = document.getElementById('kycDocType');
+  const docNumber = document.getElementById('kycDocNumber');
+  const birthOrReg = document.getElementById('kycBirthOrRegDate');
   const country = document.getElementById('kycCountry');
-  const currentSt = document.getElementById('kycCurrentStatus');
   const noteInput = document.getElementById('kycNoteInput');
+  const extraContainer = document.getElementById('kycExtraDataContainer');
+  const rawPre = document.getElementById('kycRawDataPre');
+
+  const rawKyc = (merchant.kyc_status || 'PENDING').toUpperCase();
+  const isBiz = (merchant.kyc_type === 'BUSINESS');
+  const limit = merchant.monthly_limit || (isBiz ? 50000000 : 1000000);
+  const kData = merchant.kyc_data || {};
 
   if (idInput) idInput.value = merchant.id;
   if (nameLabel) nameLabel.textContent = `${merchant.business_name || merchant.full_name} (${merchant.email})`;
-  if (fullName) fullName.textContent = merchant.full_name || 'Non renseigné';
-  if (bName) bName.textContent = merchant.business_name || 'Non renseigné';
-  if (country) country.textContent = merchant.country_code || 'Afrique';
-  if (currentSt) currentSt.textContent = merchant.kyc_status || 'PENDING';
-  if (noteInput) noteInput.value = merchant.kyc_notes || '';
+  if (headerBadge) {
+    headerBadge.textContent = rawKyc === 'VERIFIED' ? 'Vérifié ✓' : (rawKyc === 'REJECTED' ? 'Rejeté ✕' : 'En attente ⏳');
+    headerBadge.className = rawKyc === 'VERIFIED'
+      ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300'
+      : (rawKyc === 'REJECTED'
+        ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-300'
+        : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300');
+  }
+
+  if (typeSelect) typeSelect.value = isBiz ? 'BUSINESS' : 'PARTICULIER';
+  if (limitInput) limitInput.value = limit;
+  if (typeBadge) {
+    typeBadge.textContent = isBiz ? 'Business (Plafond 50M)' : 'Particulier (Plafond 1M)';
+    typeBadge.className = isBiz
+      ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white'
+      : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-600 text-white';
+  }
+
+  const managerFull = (kData.firstName && kData.lastName) ? `${kData.firstName} ${kData.lastName}` : (merchant.full_name || 'Non renseigné');
+  if (fullName) fullName.textContent = managerFull;
+  if (bName) bName.textContent = kData.companyName || merchant.business_name || 'Particulier / Freelance';
+  if (docType) docType.textContent = kData.idType || (isBiz ? 'Registre de Commerce (RCCM)' : 'Carte Nationale d\'Identité (CNI)');
+  if (docNumber) docNumber.textContent = kData.idNumber || kData.rccm || (isBiz ? 'RCCM Déclaré' : 'CNI Déclarée');
+  if (birthOrReg) birthOrReg.textContent = kData.birthDate || kData.creation_date || '-';
+  if (country) country.textContent = `${kData.country || merchant.country_code || 'Afrique'}${kData.address ? ' • ' + kData.address : ''}`;
+  if (noteInput) noteInput.value = merchant.admin_note || '';
+
+  if (rawPre && Object.keys(kData).length > 0) {
+    rawPre.textContent = JSON.stringify(kData, null, 2);
+    if (extraContainer) extraContainer.classList.remove('hidden');
+  } else if (extraContainer) {
+    extraContainer.classList.add('hidden');
+  }
 
   openAdminModal('modalKycReview');
+};
+
+window.updateKycModalDefaultLimit = function () {
+  const typeSelect = document.getElementById('kycTypeSelect');
+  const limitInput = document.getElementById('kycMonthlyLimitInput');
+  const badge = document.getElementById('kycAccountTypeBadge');
+  if (typeSelect && limitInput) {
+    const isBiz = typeSelect.value === 'BUSINESS';
+    limitInput.value = isBiz ? 50000000 : 1000000;
+    if (badge) {
+      badge.textContent = isBiz ? 'Business (Plafond 50M)' : 'Particulier (Plafond 1M)';
+      badge.className = isBiz
+        ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white'
+        : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-600 text-white';
+    }
+  }
 };
 
 window.submitKycDecision = async function (status) {
   const merchantId = document.getElementById('kycMerchantId')?.value;
   const notes = document.getElementById('kycNoteInput')?.value?.trim();
+  const kycType = document.getElementById('kycTypeSelect')?.value || 'PARTICULIER';
+  const monthlyLimit = document.getElementById('kycMonthlyLimitInput')?.value || (kycType === 'BUSINESS' ? 50000000 : 1000000);
 
   try {
     const res = await adminFetch(`/api/v1/admin/merchants/${merchantId}/kyc`, {
       method: 'POST',
-      body: JSON.stringify({ status, notes })
+      body: JSON.stringify({
+        kyc_status: status,
+        status: status,
+        note: notes,
+        notes: notes,
+        kyc_type: kycType,
+        monthly_limit: monthlyLimit
+      })
     });
     const data = await res.json();
 
     if (data.success) {
-      showAdminToast('KYC Mis à Jour', `Le dossier KYC est passé au statut : ${status}.`, 'success');
+      const label = status === 'VERIFIED' ? 'Approuvé & Validé ✓' : (status === 'REJECTED' ? 'Rejeté ✕' : 'Mis en attente ⏳');
+      showAdminToast('Décision KYC Enregistrée', `Le compte est désormais : ${label}`, 'success');
       closeAdminModal('modalKycReview');
-      loadAdminMerchants();
+      await loadAdminMerchants();
+      refreshSidebarMetrics();
     } else {
       showAdminToast('Erreur', data.error || 'Erreur KYC', 'danger');
     }

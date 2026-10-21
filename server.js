@@ -1635,11 +1635,14 @@ app.post('/api/v1/merchant/kyc', requireMerchantAuth, async (req, res) => {
   try {
     const { kyc_type, kyc_data } = req.body;
     const type = kyc_type === 'BUSINESS' ? 'BUSINESS' : 'PARTICULIER';
+    const limit = type === 'BUSINESS' ? 50000000 : 1000000;
 
     const updates = {
       kyc_type: type,
       kyc_data: kyc_data || {},
-      kyc_status: 'VERIFIED',
+      kyc_status: 'PENDING',
+      monthly_limit: limit,
+      kyc_submitted_at: new Date().toISOString(),
       onboarding_completed: true
     };
 
@@ -1647,19 +1650,40 @@ app.post('/api/v1/merchant/kyc', requireMerchantAuth, async (req, res) => {
       updates.business_name = kyc_data.company_name;
     }
 
+    // Sauvegarde dans adminStore override pour persistance immédiate et garantie
+    adminStore.setMerchantOverride(req.merchant.id, {
+      kyc_status: 'PENDING',
+      kyc_type: type,
+      monthly_limit: limit,
+      kyc_data: kyc_data || {}
+    });
+
     await dbUpdateMerchant(req.merchant.id, updates);
     const updated = await dbFindMerchantById(req.merchant.id);
     const apps = await dbGetApplications(req.merchant.id);
 
+    adminStore.addAudit({
+      admin: req.merchant.email,
+      action: 'KYC_SUBMITTED',
+      target_type: 'MERCHANT',
+      target_id: req.merchant.id,
+      details: {
+        kyc_type: type,
+        monthly_limit: limit,
+        kyc_data
+      }
+    });
+
     res.json({
       success: true,
-      message: "Vérification validée avec succès ! Votre compte et votre application sont désormais opérationnels.",
+      message: "Dossier KYC transmis avec succès ! Votre compte est en attente d'approbation par l'administrateur.",
       merchant: {
         ...updated,
         applications: apps,
         onboarding_completed: true,
-        kyc_status: 'VERIFIED',
-        kyc_type: type
+        kyc_status: 'PENDING',
+        kyc_type: type,
+        monthly_limit: limit
       }
     });
   } catch (error) {
@@ -5837,6 +5861,11 @@ app.get('/api/v1/admin/overview', requireAdminAuth, async (req, res) => {
           verified_kyc: verifiedKyc.length,
           pending_kyc: pendingKyc.length
         },
+        merchants_total: merchants.length,
+        active_merchants_count: activeMerchants.length,
+        suspended_merchants_count: suspendedMerchants.length,
+        pending_kyc_count: pendingKyc.length,
+        transactions_total: transactions.length,
         transactions_count: {
           total: transactions.length,
           success: successTx.length,
@@ -5844,6 +5873,8 @@ app.get('/api/v1/admin/overview', requireAdminAuth, async (req, res) => {
           failed: transactions.filter(t => t.status === 'FAILED').length,
           success_rate: transactions.length ? Math.round((successTx.length / transactions.length) * 100) : 100
         },
+        pending_payouts_count: pendingPayouts.length,
+        pending_payouts_amount_fcfa: pendingPayoutsAmount,
         payouts_summary: {
           pending_count: pendingPayouts.length,
           pending_amount: pendingPayoutsAmount,
@@ -5900,9 +5931,15 @@ app.get('/api/v1/admin/merchants', requireAdminAuth, async (req, res) => {
 
     const enriched = list.map(m => {
       const stats = txByMerchant.get(m.id) || { count: 0, volume: 0 };
+      const effectiveType = m.kyc_type || 'PARTICULIER';
+      const effectiveLimit = m.monthly_limit || (effectiveType === 'BUSINESS' ? 50000000 : 1000000);
       return {
         ...m,
         password_hash: undefined,
+        kyc_status: m.kyc_status || 'PENDING',
+        kyc_type: effectiveType,
+        monthly_limit: effectiveLimit,
+        kyc_data: m.kyc_data || null,
         transactions_count: stats.count,
         total_volume: stats.volume,
         custom_fee_percent: adminStore.getMerchantOverride(m.id).custom_fee_percent ?? null,
@@ -6122,27 +6159,43 @@ app.post('/api/v1/admin/merchants/:id/status', requireAdminAuth, async (req, res
 app.post('/api/v1/admin/merchants/:id/kyc', requireAdminAuth, async (req, res) => {
   try {
     const merchantId = req.params.id;
-    const { kyc_status, note } = req.body;
+    const rawStatus = (req.body.kyc_status || req.body.status || '').toUpperCase().trim();
+    const note = req.body.note || req.body.notes || '';
+    const kyc_type = req.body.kyc_type;
+    const customLimit = req.body.monthly_limit ? parseFloat(req.body.monthly_limit) : undefined;
 
-    if (!['VERIFIED', 'REJECTED', 'PENDING'].includes(kyc_status)) {
+    if (!['VERIFIED', 'REJECTED', 'PENDING', 'SUBMITTED'].includes(rawStatus)) {
       return res.status(400).json({ success: false, error: 'Statut KYC invalide. Doit être VERIFIED, REJECTED ou PENDING.' });
     }
+    const kyc_status = rawStatus === 'SUBMITTED' ? 'PENDING' : rawStatus;
 
     const merchant = await dbFindMerchantById(merchantId);
     if (!merchant) {
       return res.status(404).json({ success: false, error: 'Marchand introuvable.' });
     }
 
-    adminStore.setMerchantOverride(merchantId, {
+    const effectiveType = kyc_type || merchant.kyc_type || 'PARTICULIER';
+    const effectiveLimit = customLimit !== undefined ? customLimit : (merchant.monthly_limit || (effectiveType === 'BUSINESS' ? 50000000 : 1000000));
+
+    const patch = {
       kyc_status,
+      kyc_type: effectiveType,
+      monthly_limit: effectiveLimit,
       admin_note: note || undefined
-    });
+    };
+
+    adminStore.setMerchantOverride(merchantId, patch);
 
     merchant.kyc_status = kyc_status;
+    merchant.kyc_type = effectiveType;
+    merchant.monthly_limit = effectiveLimit;
 
     if (supabase) {
       try {
-        await supabase.from('merchants').update({ kyc_status }).eq('id', merchantId);
+        await supabase.from('merchants').update({
+          kyc_status,
+          kyc_type: effectiveType
+        }).eq('id', merchantId);
       } catch (e) {}
     }
 
@@ -6151,13 +6204,20 @@ app.post('/api/v1/admin/merchants/:id/kyc', requireAdminAuth, async (req, res) =
       action: 'UPDATE_MERCHANT_KYC',
       target_type: 'MERCHANT',
       target_id: merchantId,
-      details: { kyc_status, note }
+      details: {
+        kyc_status,
+        kyc_type: effectiveType,
+        monthly_limit: effectiveLimit,
+        note
+      }
     });
 
     res.json({
       success: true,
-      message: `Statut KYC du marchand mis à jour : ${kyc_status}.`,
-      kyc_status
+      message: `Statut KYC mis à jour : ${kyc_status} (${effectiveType} - Plafond ${effectiveLimit.toLocaleString('fr-FR')} FCFA).`,
+      kyc_status,
+      kyc_type: effectiveType,
+      monthly_limit: effectiveLimit
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

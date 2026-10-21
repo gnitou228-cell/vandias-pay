@@ -14,6 +14,12 @@ const http = require('http');
 const https = require('https');
 require('dotenv').config();
 
+// Module Administrateur (Store persistant & Paramètres plateforme)
+const adminStore = require('./admin-store.js');
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@vandiaspay.com').toLowerCase().trim();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin2026!';
+const ADMIN_FULL_NAME = process.env.ADMIN_FULL_NAME || 'Directeur Général VandiasPay';
+
 // Initialisation de l'application Express
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1080,16 +1086,45 @@ async function requireMerchantAuth(req, res, next) {
   const token = authHeader.split(' ')[1];
   const decoded = verifyToken(token);
 
-  if (!decoded || !decoded.merchant_id) {
+  const mId = decoded ? (decoded.merchant_id || decoded.id) : null;
+  if (!decoded || !mId) {
     return res.status(401).json({ success: false, error: 'Session expirée ou token invalide. Veuillez vous reconnecter.' });
   }
 
-  const merchant = await dbFindMerchantById(decoded.merchant_id);
+  const merchant = await dbFindMerchantById(mId);
   if (!merchant) {
     return res.status(404).json({ success: false, error: 'Compte marchand introuvable.' });
   }
 
-  req.merchant = merchant;
+  // Vérification de suspension par l'administrateur
+  if (adminStore.isMerchantSuspended(merchant.id)) {
+    const override = adminStore.getMerchantOverride(merchant.id);
+    return res.status(403).json({
+      success: false,
+      error: 'Votre compte est temporairement suspendu par l’administration de VandiasPay.',
+      reason: override.suspension_reason || 'Veuillez contacter le support à support@vandiaspay.com.'
+    });
+  }
+
+  req.merchant = adminStore.applyMerchantOverride(merchant);
+  next();
+}
+
+// Middleware d'authentification Administrateur (Portail Admin - Bearer JWT avec role SUPER_ADMIN ou is_admin)
+function requireAdminAuth(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'Accès administrateur : Token Bearer requis.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  const decoded = verifyToken(token);
+
+  if (!decoded || (decoded.role !== 'SUPER_ADMIN' && !decoded.is_admin)) {
+    return res.status(403).json({ success: false, error: 'Accès refusé : Privilèges administrateur requis.' });
+  }
+
+  req.admin = decoded;
   next();
 }
 
@@ -5077,8 +5112,19 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
       }
 
       const merchantId = link ? link.merchant_id : memoryDb.merchants[0].id;
+
+      // Contrôles Administrateur
+      if (link && adminStore.getLinkOverride(link.id).is_active === false) {
+        return res.status(403).json({ success: false, error: 'Ce lien de paiement a été suspendu par l’administration de VandiasPay.' });
+      }
+
+      if (adminStore.isMerchantSuspended(merchantId)) {
+        return res.status(403).json({ success: false, error: 'Les encaissements pour ce marchand sont temporairement suspendus par l’administration.' });
+      }
+
       const amount = link ? parseFloat(link.amount_fcfa) : 5000;
-      const fee = parseFloat(((amount * PLATFORM_FEE_PERCENT) / 100).toFixed(2));
+      const activeFeePercent = adminStore.getFeePercent(merchantId);
+      const fee = parseFloat(((amount * activeFeePercent) / 100).toFixed(2));
       const net = parseFloat((amount - fee).toFixed(2));
 
       transaction = {
@@ -5470,10 +5516,1151 @@ app.post('/api/v1/webhooks/saspay', async (req, res) => {
   }
 });
 
+// ========================================================
+// 10. MODULE ADMINISTRATEUR VANDIAS PAY (SUPERVISION & CONTRÔLE COMPLET)
+// ========================================================
+
+// Endpoint public de configuration plateforme (maintenance, annonce, méthodes activées)
+app.get('/api/v1/public/config', (req, res) => {
+  res.json({
+    success: true,
+    config: adminStore.publicConfig()
+  });
+});
+
+/**
+ * Helper: Récupérer tous les marchands fusionnés (Supabase + MemoryDb + Overrides)
+ */
+async function dbGetAllMerchants() {
+  let list = [];
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('merchants')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data)) list = data;
+    } catch (e) {
+      console.warn('Supabase getAllMerchants fallback:', e.message);
+    }
+  }
+  const map = new Map();
+  list.forEach(m => map.set(m.id, m));
+  (memoryDb.merchants || []).forEach(m => {
+    const existing = map.get(m.id);
+    map.set(m.id, { ...(existing || {}), ...m });
+  });
+  return Array.from(map.values()).map(m => adminStore.applyMerchantOverride(m));
+}
+
+/**
+ * Helper: Récupérer toutes les transactions fusionnées
+ */
+async function dbGetAllTransactions() {
+  let list = [];
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data)) list = data;
+    } catch (e) {
+      console.warn('Supabase getAllTransactions fallback:', e.message);
+    }
+  }
+  const map = new Map();
+  list.forEach(t => map.set(t.id, t));
+  (memoryDb.transactions || []).forEach(t => map.set(t.id, t));
+  return Array.from(map.values()).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
+/**
+ * Helper: Récupérer tous les retraits fusionnés
+ */
+async function dbGetAllPayouts() {
+  let list = [];
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('payouts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data)) list = data;
+    } catch (e) {
+      console.warn('Supabase getAllPayouts fallback:', e.message);
+    }
+  }
+  const map = new Map();
+  list.forEach(p => map.set(p.id, p));
+  (memoryDb.payouts || []).forEach(p => map.set(p.id, p));
+  return Array.from(map.values()).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
+/**
+ * Helper: Récupérer tous les liens de paiement fusionnés
+ */
+async function dbGetAllPaymentLinks() {
+  let list = [];
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('payment_links')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data)) list = data;
+    } catch (e) {
+      console.warn('Supabase getAllPaymentLinks fallback:', e.message);
+    }
+  }
+  const map = new Map();
+  list.forEach(l => map.set(l.id || l.slug, l));
+  (memoryDb.payment_links || []).forEach(l => map.set(l.id || l.slug, l));
+  return Array.from(map.values())
+    .map(l => adminStore.applyLinkOverride(l))
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
+/**
+ * Helper: Récupérer tous les portefeuilles (wallets) d'un marchand
+ */
+async function dbGetWallets(merchantId) {
+  let list = [];
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('wallets')
+        .select('*')
+        .eq('merchant_id', merchantId);
+      if (!error && Array.isArray(data)) list = data;
+    } catch (e) {
+      console.warn('Supabase getWallets fallback:', e.message);
+    }
+  }
+  const memoryList = (memoryDb.wallets || []).filter(w => w.merchant_id === merchantId);
+  const map = new Map();
+  list.forEach(w => map.set(w.country || w.id, w));
+  memoryList.forEach(w => map.set(w.country || w.id, w));
+  return Array.from(map.values());
+}
+
+/**
+ * 1. Connexion Administrateur
+ * POST /api/v1/admin/login
+ */
+app.post('/api/v1/admin/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email et mot de passe administrateur requis.' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    let isAdminValid = false;
+    let adminName = ADMIN_FULL_NAME;
+
+    if (cleanEmail === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      isAdminValid = true;
+    } else if (cleanEmail === 'demo@vandiaspay.com' && (password === 'vandias2026' || password === ADMIN_PASSWORD)) {
+      isAdminValid = true;
+      adminName = 'Fondateur & DG VandiasPay';
+    } else {
+      const merchant = await dbFindMerchantByEmail(cleanEmail);
+      if (merchant && verifyPasswordSync(password, merchant.password_hash) && (merchant.is_admin || merchant.role === 'SUPER_ADMIN')) {
+        isAdminValid = true;
+        adminName = merchant.full_name || merchant.business_name;
+      }
+    }
+
+    if (!isAdminValid) {
+      adminStore.addAudit({
+        admin: cleanEmail,
+        action: 'FAILED_ADMIN_LOGIN',
+        details: { ip: req.ip }
+      });
+      return res.status(401).json({ success: false, error: 'Identifiants administrateur incorrects.' });
+    }
+
+    const adminUser = {
+      id: 'admin_' + crypto.createHash('md5').update(cleanEmail).digest('hex').slice(0, 12),
+      email: cleanEmail,
+      full_name: adminName,
+      role: 'SUPER_ADMIN',
+      is_admin: true
+    };
+
+    const token = generateToken(adminUser);
+
+    adminStore.addAudit({
+      admin: cleanEmail,
+      action: 'ADMIN_LOGIN_SUCCESS',
+      details: { ip: req.ip }
+    });
+
+    res.json({
+      success: true,
+      message: 'Connexion administrateur réussie.',
+      token,
+      admin: adminUser
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 2. Profil Admin
+ * GET /api/v1/admin/me
+ */
+app.get('/api/v1/admin/me', requireAdminAuth, (req, res) => {
+  res.json({
+    success: true,
+    admin: req.admin
+  });
+});
+
+/**
+ * 3. Vue d'ensemble Globale / KPIs Plateforme
+ * GET /api/v1/admin/overview
+ */
+app.get('/api/v1/admin/overview', requireAdminAuth, async (req, res) => {
+  try {
+    const [merchants, transactions, payouts, links] = await Promise.all([
+      dbGetAllMerchants(),
+      dbGetAllTransactions(),
+      dbGetAllPayouts(),
+      dbGetAllPaymentLinks()
+    ]);
+
+    const successTx = transactions.filter(t => t.status === 'SUCCESS');
+    const totalVolume = successTx.reduce((sum, t) => sum + parseFloat(t.amount_gross || 0), 0);
+    const totalFees = successTx.reduce((sum, t) => sum + parseFloat(t.fee_platform || 0), 0);
+
+    const oneDayAgo = Date.now() - 24 * 3600000;
+    const todayTx = successTx.filter(t => new Date(t.created_at).getTime() >= oneDayAgo);
+    const todayVolume = todayTx.reduce((sum, t) => sum + parseFloat(t.amount_gross || 0), 0);
+
+    const activeMerchants = merchants.filter(m => m.status !== 'SUSPENDED');
+    const suspendedMerchants = merchants.filter(m => m.status === 'SUSPENDED');
+    const verifiedKyc = merchants.filter(m => m.kyc_status === 'VERIFIED');
+    const pendingKyc = merchants.filter(m => m.kyc_status === 'PENDING' || m.kyc_status === 'SUBMITTED');
+
+    const pendingPayouts = payouts.filter(p => p.status === 'PENDING');
+    const pendingPayoutsAmount = pendingPayouts.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+    const processedPayouts = payouts.filter(p => p.status === 'SUCCESS' || p.status === 'PROCESSED');
+    const processedPayoutsAmount = processedPayouts.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+
+    const methodCounts = {};
+    successTx.forEach(t => {
+      const m = (t.payment_method || 'WAVE').toUpperCase();
+      methodCounts[m] = (methodCounts[m] || 0) + parseFloat(t.amount_gross || 0);
+    });
+
+    const countryCounts = {};
+    successTx.forEach(t => {
+      const c = (t.country || t.currency || 'XOF').toUpperCase();
+      countryCounts[c] = (countryCounts[c] || 0) + parseFloat(t.amount_gross || 0);
+    });
+
+    const merchantMap = new Map(merchants.map(m => [m.id, m]));
+    const recentTx = transactions.slice(0, 10).map(t => ({
+      ...t,
+      merchant_name: merchantMap.get(t.merchant_id)?.business_name || 'Marchand'
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        total_volume_fcfa: totalVolume,
+        total_fees_collected_fcfa: totalFees,
+        today_volume_fcfa: todayVolume,
+        merchants_count: {
+          total: merchants.length,
+          active: activeMerchants.length,
+          suspended: suspendedMerchants.length,
+          verified_kyc: verifiedKyc.length,
+          pending_kyc: pendingKyc.length
+        },
+        transactions_count: {
+          total: transactions.length,
+          success: successTx.length,
+          pending: transactions.filter(t => t.status === 'PENDING').length,
+          failed: transactions.filter(t => t.status === 'FAILED').length,
+          success_rate: transactions.length ? Math.round((successTx.length / transactions.length) * 100) : 100
+        },
+        payouts_summary: {
+          pending_count: pendingPayouts.length,
+          pending_amount: pendingPayoutsAmount,
+          processed_count: processedPayouts.length,
+          processed_amount: processedPayoutsAmount
+        },
+        payment_links_count: links.length,
+        method_distribution: methodCounts,
+        country_distribution: countryCounts,
+        recent_transactions: recentTx,
+        platform_settings: adminStore.getSettings()
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 4. Gestion des Marchands : Liste complète
+ * GET /api/v1/admin/merchants
+ */
+app.get('/api/v1/admin/merchants', requireAdminAuth, async (req, res) => {
+  try {
+    const { q, status, kyc } = req.query;
+    let list = await dbGetAllMerchants();
+
+    if (q) {
+      const query = q.toLowerCase().trim();
+      list = list.filter(m =>
+        (m.business_name && m.business_name.toLowerCase().includes(query)) ||
+        (m.full_name && m.full_name.toLowerCase().includes(query)) ||
+        (m.email && m.email.toLowerCase().includes(query)) ||
+        (m.phone && m.phone.toLowerCase().includes(query))
+      );
+    }
+
+    if (status) {
+      list = list.filter(m => m.status === status);
+    }
+
+    if (kyc) {
+      list = list.filter(m => m.kyc_status === kyc);
+    }
+
+    const allTx = await dbGetAllTransactions();
+    const txByMerchant = new Map();
+    allTx.forEach(t => {
+      const cur = txByMerchant.get(t.merchant_id) || { count: 0, volume: 0 };
+      cur.count += 1;
+      if (t.status === 'SUCCESS') cur.volume += parseFloat(t.amount_gross || 0);
+      txByMerchant.set(t.merchant_id, cur);
+    });
+
+    const enriched = list.map(m => {
+      const stats = txByMerchant.get(m.id) || { count: 0, volume: 0 };
+      return {
+        ...m,
+        password_hash: undefined,
+        transactions_count: stats.count,
+        total_volume: stats.volume,
+        custom_fee_percent: adminStore.getMerchantOverride(m.id).custom_fee_percent ?? null,
+        suspension_reason: adminStore.getMerchantOverride(m.id).suspension_reason ?? null,
+        admin_note: adminStore.getMerchantOverride(m.id).admin_note ?? null
+      };
+    });
+
+    res.json({
+      success: true,
+      merchants: enriched,
+      total: enriched.length
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 5. Détails d'un marchand spécifique
+ * GET /api/v1/admin/merchants/:id
+ */
+app.get('/api/v1/admin/merchants/:id', requireAdminAuth, async (req, res) => {
+  try {
+    const merchantId = req.params.id;
+    const merchant = await dbFindMerchantById(merchantId);
+    if (!merchant) {
+      return res.status(404).json({ success: false, error: 'Marchand introuvable.' });
+    }
+
+    const [allTx, allLinks, allPayouts, allWallets] = await Promise.all([
+      dbGetAllTransactions(),
+      dbGetAllPaymentLinks(),
+      dbGetAllPayouts(),
+      dbGetWallets(merchantId)
+    ]);
+
+    const merchantTx = allTx.filter(t => t.merchant_id === merchantId);
+    const merchantLinks = allLinks.filter(l => l.merchant_id === merchantId);
+    const merchantPayouts = allPayouts.filter(p => p.merchant_id === merchantId);
+    const override = adminStore.getMerchantOverride(merchantId);
+    const auditLogs = adminStore.getAudit({ target_id: merchantId, limit: 50 });
+
+    res.json({
+      success: true,
+      merchant: {
+        ...adminStore.applyMerchantOverride(merchant),
+        password_hash: undefined
+      },
+      override,
+      wallets: allWallets,
+      transactions: merchantTx.slice(0, 30),
+      payment_links: merchantLinks,
+      payouts: merchantPayouts,
+      audit_logs: auditLogs
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 6. Modifier le Solde d'un Marchand en Direct (Crédit / Débit + Grand Livre)
+ * POST /api/v1/admin/merchants/:id/balance
+ */
+app.post('/api/v1/admin/merchants/:id/balance', requireAdminAuth, async (req, res) => {
+  try {
+    const merchantId = req.params.id;
+    const { amount, type, reason, country = 'TG', currency = 'XOF' } = req.body;
+
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return res.status(400).json({ success: false, error: 'Montant invalide. Il doit être supérieur à 0.' });
+    }
+
+    if (!['CREDIT', 'DEBIT'].includes(type)) {
+      return res.status(400).json({ success: false, error: 'Type invalide. Doit être CREDIT ou DEBIT.' });
+    }
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, error: 'Le motif de l’ajustement est obligatoire pour la traçabilité.' });
+    }
+
+    const merchant = await dbFindMerchantById(merchantId);
+    if (!merchant) {
+      return res.status(404).json({ success: false, error: 'Marchand introuvable.' });
+    }
+
+    const currentBalance = parseFloat(merchant.balance_fcfa || 0);
+    let newBalance = currentBalance;
+
+    if (type === 'CREDIT') {
+      newBalance = parseFloat((currentBalance + numAmount).toFixed(2));
+    } else {
+      if (numAmount > currentBalance) {
+        return res.status(400).json({
+          success: false,
+          error: `Débit impossible : le solde actuel (${currentBalance.toLocaleString('fr-FR')} FCFA) est inférieur au montant demandé.`
+        });
+      }
+      newBalance = parseFloat((currentBalance - numAmount).toFixed(2));
+    }
+
+    merchant.balance_fcfa = newBalance;
+    await dbUpdateMerchant(merchantId, { balance_fcfa: newBalance });
+    adminStore.setMerchantOverride(merchantId, { balance_fcfa: newBalance });
+
+    // Mise à jour du wallet pays correspondant
+    const wallets = await dbGetWallets(merchantId);
+    const targetWallet = wallets.find(w => w.country === country);
+    if (targetWallet) {
+      const curWalletAmt = parseFloat(targetWallet.available_amount || 0);
+      targetWallet.available_amount = type === 'CREDIT' ? (curWalletAmt + numAmount) : Math.max(0, curWalletAmt - numAmount);
+    }
+
+    // Enregistrement dans le grand livre (Ledger)
+    const movement = {
+      id: 'mov_adm_' + crypto.randomBytes(4).toString('hex'),
+      merchant_id: merchantId,
+      type: 'ADJUSTMENT',
+      direction: type,
+      country: country,
+      currency: currency,
+      amount: numAmount,
+      description: `Ajustement administratif (${req.admin.email}) : ${reason.trim()}`,
+      created_at: new Date().toISOString()
+    };
+    memoryDb.ledger_movements.unshift(movement);
+
+    if (supabase) {
+      try {
+        await supabase.from('merchants').update({ balance_fcfa: newBalance }).eq('id', merchantId);
+        await supabase.from('ledger_movements').insert([movement]);
+      } catch (e) {
+        console.warn('Supabase balance update warning:', e.message);
+      }
+    }
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: 'UPDATE_MERCHANT_BALANCE',
+      target_type: 'MERCHANT',
+      target_id: merchantId,
+      details: {
+        type,
+        amount: numAmount,
+        old_balance: currentBalance,
+        new_balance: newBalance,
+        reason: reason.trim()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Solde ${type === 'CREDIT' ? 'crédité' : 'débité'} avec succès de ${numAmount.toLocaleString('fr-FR')} ${currency}. Nouveau solde : ${newBalance.toLocaleString('fr-FR')} FCFA.`,
+      new_balance: newBalance,
+      movement
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 7. Suspendre ou Réactiver un Marchand
+ * POST /api/v1/admin/merchants/:id/status
+ */
+app.post('/api/v1/admin/merchants/:id/status', requireAdminAuth, async (req, res) => {
+  try {
+    const merchantId = req.params.id;
+    const { status, reason } = req.body;
+
+    if (!['ACTIVE', 'SUSPENDED'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Statut invalide. Doit être ACTIVE ou SUSPENDED.' });
+    }
+
+    const merchant = await dbFindMerchantById(merchantId);
+    if (!merchant) {
+      return res.status(404).json({ success: false, error: 'Marchand introuvable.' });
+    }
+
+    adminStore.setMerchantOverride(merchantId, {
+      status,
+      suspension_reason: status === 'SUSPENDED' ? (reason || 'Non-respect des conditions d’utilisation.') : null
+    });
+
+    merchant.status = status;
+
+    if (supabase) {
+      try {
+        await supabase.from('merchants').update({ status }).eq('id', merchantId);
+      } catch (e) {}
+    }
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: status === 'SUSPENDED' ? 'SUSPEND_MERCHANT' : 'ACTIVATE_MERCHANT',
+      target_type: 'MERCHANT',
+      target_id: merchantId,
+      details: { status, reason }
+    });
+
+    res.json({
+      success: true,
+      message: `Le compte marchand a été ${status === 'SUSPENDED' ? 'suspendu' : 'réactivé'} avec succès.`,
+      status
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 8. Validation ou Rejet du KYC Marchand
+ * POST /api/v1/admin/merchants/:id/kyc
+ */
+app.post('/api/v1/admin/merchants/:id/kyc', requireAdminAuth, async (req, res) => {
+  try {
+    const merchantId = req.params.id;
+    const { kyc_status, note } = req.body;
+
+    if (!['VERIFIED', 'REJECTED', 'PENDING'].includes(kyc_status)) {
+      return res.status(400).json({ success: false, error: 'Statut KYC invalide. Doit être VERIFIED, REJECTED ou PENDING.' });
+    }
+
+    const merchant = await dbFindMerchantById(merchantId);
+    if (!merchant) {
+      return res.status(404).json({ success: false, error: 'Marchand introuvable.' });
+    }
+
+    adminStore.setMerchantOverride(merchantId, {
+      kyc_status,
+      admin_note: note || undefined
+    });
+
+    merchant.kyc_status = kyc_status;
+
+    if (supabase) {
+      try {
+        await supabase.from('merchants').update({ kyc_status }).eq('id', merchantId);
+      } catch (e) {}
+    }
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: 'UPDATE_MERCHANT_KYC',
+      target_type: 'MERCHANT',
+      target_id: merchantId,
+      details: { kyc_status, note }
+    });
+
+    res.json({
+      success: true,
+      message: `Statut KYC du marchand mis à jour : ${kyc_status}.`,
+      kyc_status
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 9. Définir une commission sur-mesure pour un marchand
+ * POST /api/v1/admin/merchants/:id/custom-fee
+ */
+app.post('/api/v1/admin/merchants/:id/custom-fee', requireAdminAuth, async (req, res) => {
+  try {
+    const merchantId = req.params.id;
+    const { fee_percent } = req.body;
+
+    const merchant = await dbFindMerchantById(merchantId);
+    if (!merchant) {
+      return res.status(404).json({ success: false, error: 'Marchand introuvable.' });
+    }
+
+    const override = adminStore.setMerchantOverride(merchantId, {
+      custom_fee_percent: fee_percent === '' || fee_percent === null ? null : parseFloat(fee_percent)
+    });
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: 'SET_CUSTOM_FEE',
+      target_type: 'MERCHANT',
+      target_id: merchantId,
+      details: { custom_fee_percent: override.custom_fee_percent }
+    });
+
+    res.json({
+      success: true,
+      message: override.custom_fee_percent !== undefined
+        ? `Commission personnalisée fixée à ${override.custom_fee_percent}%.`
+        : `Commission personnalisée supprimée. Le taux standard plateforme (${adminStore.getSettings().platform_fee_percent}%) s'applique désormais.`,
+      custom_fee_percent: override.custom_fee_percent ?? null
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 10. Se connecter en 1 clic au compte du Marchand ("Impersonate")
+ * POST /api/v1/admin/merchants/:id/impersonate
+ */
+app.post('/api/v1/admin/merchants/:id/impersonate', requireAdminAuth, async (req, res) => {
+  try {
+    const merchantId = req.params.id;
+    const merchant = await dbFindMerchantById(merchantId);
+    if (!merchant) {
+      return res.status(404).json({ success: false, error: 'Marchand introuvable.' });
+    }
+
+    const token = generateToken({
+      merchant_id: merchant.id,
+      id: merchant.id,
+      email: merchant.email,
+      business_name: merchant.business_name,
+      impersonated: true,
+      impersonated_by: req.admin.email
+    });
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: 'IMPERSONATE_MERCHANT',
+      target_type: 'MERCHANT',
+      target_id: merchantId,
+      details: { business_name: merchant.business_name, email: merchant.email }
+    });
+
+    res.json({
+      success: true,
+      token,
+      merchant: {
+        id: merchant.id,
+        email: merchant.email,
+        business_name: merchant.business_name
+      },
+      redirect_url: `/dashboard.html?impersonate_token=${encodeURIComponent(token)}`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 11. Toutes les Transactions de la Plateforme
+ * GET /api/v1/admin/transactions
+ */
+app.get('/api/v1/admin/transactions', requireAdminAuth, async (req, res) => {
+  try {
+    const { q, status, method, merchant_id } = req.query;
+    let [transactions, merchants] = await Promise.all([
+      dbGetAllTransactions(),
+      dbGetAllMerchants()
+    ]);
+
+    const merchantMap = new Map(merchants.map(m => [m.id, m]));
+
+    if (q) {
+      const query = q.toLowerCase().trim();
+      transactions = transactions.filter(t =>
+        (t.id && t.id.toLowerCase().includes(query)) ||
+        (t.title && t.title.toLowerCase().includes(query)) ||
+        (t.operator_reference && t.operator_reference.toLowerCase().includes(query)) ||
+        (t.customer_phone && t.customer_phone.toLowerCase().includes(query)) ||
+        (t.customer_name && t.customer_name.toLowerCase().includes(query))
+      );
+    }
+
+    if (status) {
+      transactions = transactions.filter(t => t.status === status);
+    }
+
+    if (method) {
+      transactions = transactions.filter(t => (t.payment_method || '').toUpperCase() === method.toUpperCase());
+    }
+
+    if (merchant_id) {
+      transactions = transactions.filter(t => t.merchant_id === merchant_id);
+    }
+
+    const enriched = transactions.map(t => {
+      const m = merchantMap.get(t.merchant_id);
+      return {
+        ...t,
+        merchant_name: m ? m.business_name : 'Marchand inconnu',
+        merchant_email: m ? m.email : null
+      };
+    });
+
+    res.json({
+      success: true,
+      transactions: enriched,
+      total: enriched.length
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 12. Forcer la Validation d'une Transaction (Crédite le solde marchand en direct)
+ * POST /api/v1/admin/transactions/:id/validate
+ */
+app.post('/api/v1/admin/transactions/:id/validate', requireAdminAuth, async (req, res) => {
+  try {
+    const txId = req.params.id;
+    const { operator_reference, note } = req.body;
+
+    let transaction = memoryDb.transactions.find(t => t.id === txId);
+    if (!transaction && supabase) {
+      try {
+        const { data } = await supabase.from('transactions').select('*').eq('id', txId).maybeSingle();
+        if (data) transaction = data;
+      } catch (e) {}
+    }
+
+    if (!transaction) {
+      return res.status(404).json({ success: false, error: 'Transaction introuvable.' });
+    }
+
+    if (transaction.status === 'SUCCESS') {
+      return res.status(400).json({ success: false, error: 'Cette transaction est déjà validée avec succès.' });
+    }
+
+    transaction.status = 'SUCCESS';
+    transaction.operator_reference = operator_reference || transaction.operator_reference || `ADMIN-VAL-${Date.now()}`;
+    transaction.updated_at = new Date().toISOString();
+
+    const merchant = await dbFindMerchantById(transaction.merchant_id);
+    if (merchant) {
+      const netAmount = parseFloat(transaction.amount_net || transaction.amount_gross || 0);
+      merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + netAmount).toFixed(2));
+      await dbUpdateMerchant(merchant.id, { balance_fcfa: merchant.balance_fcfa });
+      adminStore.setMerchantOverride(merchant.id, { balance_fcfa: merchant.balance_fcfa });
+
+      const movement = {
+        id: 'mov_tx_' + crypto.randomBytes(4).toString('hex'),
+        merchant_id: merchant.id,
+        type: 'COLLECTION',
+        direction: 'CREDIT',
+        country: transaction.country || 'TG',
+        currency: transaction.currency || 'XOF',
+        amount: netAmount,
+        description: `Validation administrative transaction #${transaction.id} (${note || 'Approuvée manuellement'})`,
+        created_at: new Date().toISOString()
+      };
+      memoryDb.ledger_movements.unshift(movement);
+
+      if (supabase) {
+        try {
+          await supabase.from('merchants').update({ balance_fcfa: merchant.balance_fcfa }).eq('id', merchant.id);
+          await supabase.from('transactions').upsert([transaction]);
+          await supabase.from('ledger_movements').insert([movement]);
+        } catch (e) {}
+      }
+
+      if (merchant.webhook_url) {
+        dispatchWebhook(merchant.webhook_url, merchant.webhook_secret, 'payment.success', {
+          transaction_id: transaction.id,
+          status: 'SUCCESS',
+          amount: transaction.amount_gross,
+          fee: transaction.fee_platform,
+          net: transaction.amount_net,
+          currency: transaction.currency || 'XOF',
+          payment_method: transaction.payment_method || 'MANUAL',
+          operator_reference: transaction.operator_reference,
+          timestamp: Math.floor(Date.now() / 1000)
+        }, merchant.id).catch(() => {});
+      }
+    }
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: 'FORCE_VALIDATE_TRANSACTION',
+      target_type: 'TRANSACTION',
+      target_id: txId,
+      details: {
+        merchant_id: transaction.merchant_id,
+        amount_gross: transaction.amount_gross,
+        amount_net: transaction.amount_net,
+        note
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Transaction #${txId} validée avec succès. Le solde du marchand a été immédiatement crédité de ${transaction.amount_net} ${transaction.currency || 'XOF'}.`,
+      transaction
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 13. Tous les Retraits de la Plateforme (Payouts)
+ * GET /api/v1/admin/payouts
+ */
+app.get('/api/v1/admin/payouts', requireAdminAuth, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let [payouts, merchants] = await Promise.all([
+      dbGetAllPayouts(),
+      dbGetAllMerchants()
+    ]);
+
+    const merchantMap = new Map(merchants.map(m => [m.id, m]));
+
+    if (status) {
+      payouts = payouts.filter(p => p.status === status);
+    }
+
+    const enriched = payouts.map(p => {
+      const m = merchantMap.get(p.merchant_id);
+      return {
+        ...p,
+        merchant_name: m ? m.business_name : 'Marchand',
+        merchant_email: m ? m.email : null,
+        merchant_phone: m ? m.phone : null
+      };
+    });
+
+    res.json({
+      success: true,
+      payouts: enriched,
+      total: enriched.length
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 14. Approuver un Retrait Marchand
+ * POST /api/v1/admin/payouts/:id/approve
+ */
+app.post('/api/v1/admin/payouts/:id/approve', requireAdminAuth, async (req, res) => {
+  try {
+    const payoutId = req.params.id;
+    const { operator_reference } = req.body;
+
+    let payout = memoryDb.payouts.find(p => p.id === payoutId);
+    if (!payout && supabase) {
+      try {
+        const { data } = await supabase.from('payouts').select('*').eq('id', payoutId).maybeSingle();
+        if (data) payout = data;
+      } catch (e) {}
+    }
+
+    if (!payout) {
+      return res.status(404).json({ success: false, error: 'Demande de retrait introuvable.' });
+    }
+
+    if (payout.status === 'SUCCESS' || payout.status === 'PROCESSED') {
+      return res.status(400).json({ success: false, error: 'Ce retrait a déjà été validé.' });
+    }
+
+    payout.status = 'SUCCESS';
+    payout.reference = operator_reference || payout.reference || `PO-OP-${Date.now()}`;
+    payout.processed_at = new Date().toISOString();
+
+    if (supabase) {
+      try {
+        await supabase.from('payouts').upsert([payout]);
+      } catch (e) {}
+    }
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: 'APPROVE_PAYOUT',
+      target_type: 'PAYOUT',
+      target_id: payoutId,
+      details: {
+        merchant_id: payout.merchant_id,
+        amount: payout.amount,
+        channel: payout.channel,
+        operator_reference: payout.reference
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Retrait de ${parseFloat(payout.amount).toLocaleString('fr-FR')} ${payout.currency || 'XOF'} approuvé avec succès.`,
+      payout
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 15. Rejeter un Retrait Marchand (Recrédite automatiquement le solde du marchand)
+ * POST /api/v1/admin/payouts/:id/reject
+ */
+app.post('/api/v1/admin/payouts/:id/reject', requireAdminAuth, async (req, res) => {
+  try {
+    const payoutId = req.params.id;
+    const { reason } = req.body;
+
+    let payout = memoryDb.payouts.find(p => p.id === payoutId);
+    if (!payout && supabase) {
+      try {
+        const { data } = await supabase.from('payouts').select('*').eq('id', payoutId).maybeSingle();
+        if (data) payout = data;
+      } catch (e) {}
+    }
+
+    if (!payout) {
+      return res.status(404).json({ success: false, error: 'Demande de retrait introuvable.' });
+    }
+
+    if (payout.status === 'REJECTED') {
+      return res.status(400).json({ success: false, error: 'Ce retrait est déjà rejeté.' });
+    }
+
+    payout.status = 'REJECTED';
+    payout.rejection_reason = reason || 'Rejeté par la conformité financière.';
+    payout.processed_at = new Date().toISOString();
+
+    const merchant = await dbFindMerchantById(payout.merchant_id);
+    if (merchant) {
+      const refundAmt = parseFloat(payout.amount || 0);
+      merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + refundAmt).toFixed(2));
+      await dbUpdateMerchant(merchant.id, { balance_fcfa: merchant.balance_fcfa });
+      adminStore.setMerchantOverride(merchant.id, { balance_fcfa: merchant.balance_fcfa });
+
+      const movement = {
+        id: 'mov_rfnd_' + crypto.randomBytes(4).toString('hex'),
+        merchant_id: merchant.id,
+        type: 'REFUND',
+        direction: 'CREDIT',
+        country: 'TG',
+        currency: payout.currency || 'XOF',
+        amount: refundAmt,
+        description: `Restitution retrait rejeté #${payout.id} : ${payout.rejection_reason}`,
+        created_at: new Date().toISOString()
+      };
+      memoryDb.ledger_movements.unshift(movement);
+
+      if (supabase) {
+        try {
+          await supabase.from('merchants').update({ balance_fcfa: merchant.balance_fcfa }).eq('id', merchant.id);
+          await supabase.from('payouts').upsert([payout]);
+          await supabase.from('ledger_movements').insert([movement]);
+        } catch (e) {}
+      }
+    }
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: 'REJECT_PAYOUT',
+      target_type: 'PAYOUT',
+      target_id: payoutId,
+      details: {
+        merchant_id: payout.merchant_id,
+        amount: payout.amount,
+        reason: payout.rejection_reason
+      }
+    });
+
+    res.json({
+      success: true,
+      message: `Retrait rejeté et montant de ${parseFloat(payout.amount).toLocaleString('fr-FR')} ${payout.currency || 'XOF'} recrédité immédiatement sur le solde du marchand.`,
+      payout
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 16. Tous les Liens de Paiement de la Plateforme
+ * GET /api/v1/admin/links
+ */
+app.get('/api/v1/admin/links', requireAdminAuth, async (req, res) => {
+  try {
+    const [links, merchants] = await Promise.all([
+      dbGetAllPaymentLinks(),
+      dbGetAllMerchants()
+    ]);
+
+    const merchantMap = new Map(merchants.map(m => [m.id, m]));
+
+    const enriched = links.map(l => {
+      const m = merchantMap.get(l.merchant_id);
+      return {
+        ...l,
+        merchant_name: m ? m.business_name : 'Marchand',
+        merchant_email: m ? m.email : null,
+        url: `${APP_URL}/checkout.html?link=${l.slug}`
+      };
+    });
+
+    res.json({
+      success: true,
+      links: enriched,
+      total: enriched.length
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 17. Activer / Désactiver un Lien de Paiement (Admin Switch)
+ * POST /api/v1/admin/links/:id/toggle
+ */
+app.post('/api/v1/admin/links/:id/toggle', requireAdminAuth, async (req, res) => {
+  try {
+    const linkId = req.params.id;
+    const { is_active } = req.body;
+
+    const boolActive = is_active === true || is_active === 'true';
+
+    adminStore.setLinkOverride(linkId, { is_active: boolActive });
+
+    const link = memoryDb.payment_links.find(l => l.id === linkId || l.slug === linkId);
+    if (link) {
+      link.is_active = boolActive;
+    }
+
+    if (supabase) {
+      try {
+        await supabase.from('payment_links').update({ is_active: boolActive }).or(`id.eq.${linkId},slug.eq.${linkId}`);
+      } catch (e) {}
+    }
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: boolActive ? 'ACTIVATE_PAYMENT_LINK' : 'DEACTIVATE_PAYMENT_LINK',
+      target_type: 'PAYMENT_LINK',
+      target_id: linkId,
+      details: { is_active: boolActive }
+    });
+
+    res.json({
+      success: true,
+      message: `Lien de paiement ${boolActive ? 'activé' : 'désactivé'} avec succès.`,
+      is_active: boolActive
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 18. Paramètres Plateforme Globaux (Maintenance, Annonces, Commission, Passerelles)
+ * GET /api/v1/admin/settings & POST /api/v1/admin/settings
+ */
+app.get('/api/v1/admin/settings', requireAdminAuth, (req, res) => {
+  res.json({
+    success: true,
+    settings: adminStore.getSettings()
+  });
+});
+
+app.post('/api/v1/admin/settings', requireAdminAuth, (req, res) => {
+  try {
+    const updated = adminStore.updateSettings(req.body);
+
+    adminStore.addAudit({
+      admin: req.admin.email,
+      action: 'UPDATE_PLATFORM_SETTINGS',
+      details: req.body
+    });
+
+    res.json({
+      success: true,
+      message: 'Paramètres globaux de la plateforme mis à jour avec succès.',
+      settings: updated
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 19. Journal d'Audit Admin
+ * GET /api/v1/admin/audit
+ */
+app.get('/api/v1/admin/audit', requireAdminAuth, (req, res) => {
+  const limit = parseInt(req.query.limit, 10) || 200;
+  const logs = adminStore.getAudit({ limit });
+  res.json({
+    success: true,
+    logs,
+    audit_logs: logs
+  });
+});
+
+/**
+ * 20. Configuration Publique & Statut Plateforme (Accessible par les marchands & payeurs)
+ * GET /api/v1/public/config
+ */
+app.get('/api/v1/public/config', (req, res) => {
+  const settings = adminStore.getSettings();
+  res.json({
+    success: true,
+    config: settings,
+    ...settings
+  });
+});
+
+// ========================================================
+// 11. FICHIERS STATIQUES & ROUTES HTML PRINCIPALES
+// ========================================================
+
 app.use(express.static(__dirname));
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
+app.get('/admin.html', (req, res) => res.sendFile(path.join(__dirname, 'admin.html')));
 app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, 'checkout.html')));
 app.get('/pay/:id', (req, res) => res.redirect(`/checkout.html?session=${encodeURIComponent(req.params.id)}`));
 

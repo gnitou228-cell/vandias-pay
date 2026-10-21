@@ -18,8 +18,5 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# IDE and Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
+# Local runtime data
+.vandias-data/

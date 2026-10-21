@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VANDIAS PAY — Console d'Administration Suprême</title>
+  <meta name="description" content="Panneau de contrôle et de supervision globale de la plateforme de paiement VandiasPay.">
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            adm: {
+              sapphire: '#0052FF',
+              navy: '#0A2540',
+              bg: '#F8F9FD',
+              card: '#FFFFFF',
+              border: '#ECEEF6',
+              text: '#111827',
+              muted: '#6B7280',
+              success: '#10B981',
+              warning: '#F59E0B',
+              danger: '#EF4444'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="icon" type="image/png" href="logo.png">
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+    .nav-admin-item.active {
+      background-color: #0052FF;
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px 0 rgba(0, 82, 255, 0.25);
+    }
+    .nav-admin-item.active svg {
+      color: #FFFFFF;
+    }
+  </style>
+</head>
+<body class="bg-[#F8F9FD] text-[#111827] font-sans antialiased min-h-screen selection:bg-[#0052FF] selection:text-white">
+
+  <!-- ========================================================
+       1. ÉCRAN DE CONNEXION ADMINISTRATEUR (Si non authentifié)
+       ======================================================== -->
+  <div id="adminLoginSection" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A2540] bg-opacity-95 backdrop-blur-md">
+    <div class="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl border border-slate-200 space-y-6 relative overflow-hidden">
+      <!-- Glow effect top -->
+      <div class="absolute -top-24 -left-24 w-48 h-48 bg-[#0052FF]/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Header / Logo -->
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center p-3 bg-[#0A2540] rounded-2xl shadow-lg border border-slate-700 mx-auto">
+          <img src="logo.png" alt="VandiasPay" class="w-10 h-10 object-contain">
+        </div>
+        <div class="inline-block px-3 py-1 rounded-full bg-blue-50 text-[#0052FF] text-[10px] font-extrabold uppercase tracking-widest mt-1">
+          Portail Administrateur Suprême
+        </div>
+        <h1 class="text-2xl font-extrabold text-[#111827] tracking-tight">Supervision VandiasPay</h1>
+        <p class="text-xs text-slate-500">Accès restreint au pilotage général et contrôle des utilisateurs.</p>
+      </div>
+
+      <!-- Formulaire Login Admin -->
+      <form id="adminLoginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Email administrateur</label>
+          <div class="relative">
+            <input type="email" id="adminLoginEmail" required placeholder="admin@vandiaspay.com" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] focus:outline-none focus:border-[#0052FF] focus:bg-white transition-all">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Mot de passe de sécurité</label>
+          <div class="relative">
+            <input type="password" id="adminLoginPassword" required placeholder="••••••••••••" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] focus:outline-none focus:border-[#0052FF] focus:bg-white transition-all">
+          </div>
+        </div>
+
+        <!-- Bouton pré-remplissage rapide pour confort administrateur -->
+        <button type="button" onclick="fillAdminDefaultCredentials()" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors">
+          <span>⚡ Remplir identifiants par défaut (admin@vandiaspay.com)</span>
+        </button>
+
+        <button type="submit" id="btnAdminLoginSubmit" class="w-full py-3.5 px-4 rounded-2xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs sm:text-sm font-bold shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2">
+          <span>Connexion à la Console</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </form>
+
+      <div class="text-center pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+        <a href="/index.html" class="hover:text-[#0052FF] transition-colors">← Retour au site</a>
+        <a href="/dashboard.html" class="hover:text-[#0052FF] transition-colors">Espace Marchand →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       2. APPLICATION DU DASHBOARD ADMINISTRATEUR (Après Login)
+       ======================================================== -->
+  <div id="adminAppSection" class="hidden min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-white border-b border-[#ECEEF6] px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
+      <!-- Left: Logo & Badges -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2.5">
+          <img src="logo.png" alt="VandiasPay" class="w-9 h-9 object-contain rounded-xl p-1 bg-[#0A2540] shadow-sm">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-extrabold text-[#111827] tracking-tight">VANDIAS PAY</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0A2540] text-amber-400 border border-slate-700">SUPER ADMIN</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-medium">Panneau de Supervision Globale</span>
+          </div>
+        </div>
+
+        <div class="hidden md:flex items-center gap-2 ml-4 pl-4 border-l border-slate-200">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Passerelle SasPay LIVE
+          </span>
+          <span id="adminMaintenanceStatusBadge" class="hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
+            ⚠️ Maintenance Active
+          </span>
+        </div>
+      </div>
+
+      <!-- Right Actions & Admin Profile -->
+      <div class="flex items-center gap-3">
+        <a href="/dashboard.html" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors shadow-xs" title="Ouvrir le dashboard marchand">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          <span>Espace Marchand</span>
+        </a>
+
+        <!-- Admin user chip -->
+        <div class="flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-200">
+          <div class="w-8 h-8 rounded-full bg-[#0052FF] text-white flex items-center justify-center text-xs font-extrabold shadow-sm">
+            DG
+          </div>
+          <div class="hidden sm:flex flex-col text-left">
+            <span id="topAdminName" class="text-xs font-bold text-[#111827]">Directeur Général</span>
+            <span id="topAdminEmail" class="text-[10px] text-slate-400">admin@vandiaspay.com</span>
+          </div>
+          <button onclick="adminLogout()" class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" title="Déconnexion Administrateur">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container: Sidebar + Content -->
+    <div class="flex-1 flex overflow-hidden">
+
+      <!-- ==================== SIDEBAR ==================== -->
+      <aside class="w-64 bg-white border-r border-[#ECEEF6] flex flex-col justify-between shrink-0 p-3 space-y-4 overflow-y-auto hidden md:flex">
+        <nav class="space-y-1" id="adminSidebarNav">
+          <div class="px-3 py-2 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Supervision</div>
+
+          <!-- 1. Vue d'ensemble -->
+          <button class="nav-admin-item active w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#111827] hover:bg-slate-100 transition-all" data-tab="overview">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            <span>Tableau de bord</span>
+          </button>
+
+          <!-- 2. Marchands (Contrôle Utilisateurs) -->
+          <button class="nav-admin-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#111827] hover:bg-slate-100 transition-all" data-tab="merchants">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              <span>Marchands & Clients</span>
+            </div>
+            <span id="badgeMerchantsCount" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">0</span>
+          </button>
+
+          <!-- 3. Transactions Globales -->
+          <button class="nav-admin-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#111827] hover:bg-slate-100 transition-all" data-tab="transactions">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+              <span>Transactions</span>
+            </div>
+            <span id="badgeTransactionsCount" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">0</span>
+          </button>
+
+          <!-- 4. Liens de Paiement -->
+          <button class="nav-admin-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#111827] hover:bg-slate-100 transition-all" data-tab="links">
+            <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            <span>Liens de paiement</span>
+          </button>
+
+          <!-- 5. Retraits & Décaissements -->
+          <button class="nav-admin-item w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#111827] hover:bg-slate-100 transition-all" data-tab="payouts">
+            <div class="flex items-center gap-3">
+              <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 0118 0z"/></svg>
+              <span>Retraits (Payouts)</span>
+            </div>
+            <span id="badgePayoutsPending" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">0</span>
+          </button>
+
+          <div class="pt-4 px-3 py-2 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Pilotage Système</div>
+
+          <!-- 6. Paramètres Plateforme Globaux -->
+          <button class="nav-admin-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#111827] hover:bg-slate-100 transition-all" data-tab="settings">
+            <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>Contrôle Plateforme</span>
+          </button>
+
+          <!-- 7. Journal d'Audit -->
+          <button class="nav-admin-item w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-[#111827] hover:bg-slate-100 transition-all" data-tab="audit">
+            <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span>Journal d'audit</span>
+          </button>
+        </nav>
+
+        <!-- Bottom Quick Switch & Status -->
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-2">
+          <div class="text-[11px] font-bold text-slate-800">Mode Administrateur</div>
+          <div class="text-[10px] text-slate-500">Toutes les actions ont un impact immédiat sur les utilisateurs.</div>
+          <button onclick="refreshCurrentAdminTab()" class="w-full py-1.5 px-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-[11px] font-bold transition-colors">
+            ↻ Actualiser données
+          </button>
+        </div>
+      </aside>
+
+      <!-- ==================== MAIN CONTENT AREA ==================== -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- ================= SECTION 1 : VUE D'ENSEMBLE (OVERVIEW) ================= -->
+        <section id="admin-sec-overview" class="admin-tab-section space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-extrabold text-[#111827]">Tableau de Bord Général</h1>
+              <p class="text-xs sm:text-sm text-slate-500">Supervision en direct des volumes, commissions et activités de VandiasPay.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="openBroadcastModal()" class="px-4 py-2 rounded-xl bg-[#0A2540] hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                📢 Diffuser une annonce
+              </button>
+              <button onclick="loadAdminOverview()" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-all">
+                ↻ Rafraîchir
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Main Metric Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <!-- Card 1: Volume Global Encaissé -->
+            <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-xs relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Volume Total</span>
+                <span class="p-2 rounded-xl bg-blue-50 text-[#0052FF]">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+              </div>
+              <div class="mt-3">
+                <span id="kpiTotalVolume" class="text-2xl font-extrabold text-[#111827] font-mono">0 FCFA</span>
+              </div>
+              <div class="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
+                <span>Aujourd'hui :</span>
+                <span id="kpiTodayVolume" class="font-bold text-slate-700 font-mono">0 FCFA</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Revenus & Commissions Plateforme -->
+            <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-xs relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Commissions Récoltées</span>
+                <span class="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+              </div>
+              <div class="mt-3">
+                <span id="kpiTotalFees" class="text-2xl font-extrabold text-emerald-600 font-mono">0 FCFA</span>
+              </div>
+              <div class="mt-1 text-[11px] text-slate-400">
+                Marge brute plateforme (2.5%)
+              </div>
+            </div>
+
+            <!-- Card 3: Marchands Actifs -->
+            <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-xs relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Marchands Inscrits</span>
+                <span class="p-2 rounded-xl bg-purple-50 text-purple-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </span>
+              </div>
+              <div class="mt-3">
+                <span id="kpiTotalMerchants" class="text-2xl font-extrabold text-[#111827]">0</span>
+              </div>
+              <div class="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
+                <span class="text-emerald-600 font-bold" id="kpiActiveMerchants">0 actifs</span>
+                <span>•</span>
+                <span class="text-rose-500 font-bold" id="kpiSuspendedMerchants">0 suspendus</span>
+              </div>
+            </div>
+
+            <!-- Card 4: Retraits en Attente -->
+            <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-xs relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Retraits en Attente</span>
+                <span class="p-2 rounded-xl bg-amber-50 text-amber-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </span>
+              </div>
+              <div class="mt-3">
+                <span id="kpiPendingPayoutsAmount" class="text-2xl font-extrabold text-amber-600 font-mono">0 FCFA</span>
+              </div>
+              <div class="mt-1 text-[11px] text-slate-400">
+                <span id="kpiPendingPayoutsCount" class="font-bold text-slate-700">0</span> demande(s) à traiter
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Transactions & Methods Breakdown Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: 10 Recent Transactions -->
+            <div class="lg:col-span-2 bg-white border border-[#ECEEF6] rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-extrabold text-[#111827]">Flux des Transactions en Temps Réel</h3>
+                <button onclick="switchAdminTab('transactions')" class="text-xs font-bold text-[#0052FF] hover:underline">Voir tout →</button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="text-slate-400 uppercase text-[11px] font-bold border-b border-slate-100">
+                    <tr>
+                      <th class="py-2.5 px-3">Marchand</th>
+                      <th class="py-2.5 px-3">Montant</th>
+                      <th class="py-2.5 px-3">Méthode</th>
+                      <th class="py-2.5 px-3">Statut</th>
+                      <th class="py-2.5 px-3">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overviewRecentTxTableBody" class="divide-y divide-slate-50">
+                    <!-- Dynamic -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Right: Payment Methods Breakdown & Quick Control -->
+            <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+              <h3 class="text-sm font-extrabold text-[#111827]">Passerelles & Moyens Actifs</h3>
+              <div id="overviewMethodsList" class="space-y-3">
+                <!-- Dynamic -->
+              </div>
+              <div class="pt-3 border-t border-slate-100">
+                <button onclick="switchAdminTab('settings')" class="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors">
+                  Gérer les passerelles & coupures →
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 2 : GESTION DES MARCHANDS (UTILISATEURS) ================= -->
+        <section id="admin-sec-merchants" class="admin-tab-section hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-extrabold text-[#111827]">Marchands & Utilisateurs</h1>
+              <p class="text-xs sm:text-sm text-slate-500">Contrôle complet des comptes, soldes, statuts KYC et suspensions en temps réel.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="merchantsListCountBadge" class="px-3 py-1.5 rounded-xl bg-blue-50 text-[#0052FF] text-xs font-bold">0 Marchands</span>
+            </div>
+          </div>
+
+          <!-- Filters bar -->
+          <div class="bg-white border border-[#ECEEF6] rounded-3xl p-4 sm:p-5 shadow-xs space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <input type="text" id="filterMerchantQuery" placeholder="Rechercher par nom, email, téléphone..." class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-xl px-3.5 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]" oninput="filterMerchantsList()">
+              </div>
+              <div>
+                <select id="filterMerchantStatus" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#111827] font-semibold focus:outline-none focus:border-[#0052FF]" onchange="filterMerchantsList()">
+                  <option value="">Tous les statuts de compte</option>
+                  <option value="ACTIVE">Actif uniquement</option>
+                  <option value="SUSPENDED">Suspendu uniquement</option>
+                </select>
+              </div>
+              <div>
+                <select id="filterMerchantKyc" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#111827] font-semibold focus:outline-none focus:border-[#0052FF]" onchange="filterMerchantsList()">
+                  <option value="">Tous les statuts KYC</option>
+                  <option value="VERIFIED">Vérifié ✓</option>
+                  <option value="PENDING">En attente KYC ⏳</option>
+                  <option value="REJECTED">Rejeté ✕</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Table of Merchants -->
+            <div class="overflow-x-auto pt-2">
+              <table class="w-full text-left text-xs">
+                <thead class="text-slate-400 uppercase text-[11px] font-bold border-b border-slate-100">
+                  <tr>
+                    <th class="py-3 px-3">Marchand / Entreprise</th>
+                    <th class="py-3 px-3">Contact</th>
+                    <th class="py-3 px-3">Solde Disponible</th>
+                    <th class="py-3 px-3">Statut</th>
+                    <th class="py-3 px-3">KYC</th>
+                    <th class="py-3 px-3">Commission</th>
+                    <th class="py-3 px-3 text-right">Actions de Contrôle</th>
+                  </tr>
+                </thead>
+                <tbody id="merchantsTableBody" class="divide-y divide-slate-100">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 3 : TRANSACTIONS GLOBALES ================= -->
+        <section id="admin-sec-transactions" class="admin-tab-section hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-extrabold text-[#111827]">Toutes les Transactions</h1>
+              <p class="text-xs sm:text-sm text-slate-500">Supervision en direct de tous les paiements initiés sur la plateforme.</p>
+            </div>
+            <button onclick="loadAdminTransactions()" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold">
+              ↻ Actualiser
+            </button>
+          </div>
+
+          <!-- Filters Bar -->
+          <div class="bg-white border border-[#ECEEF6] rounded-3xl p-4 sm:p-5 shadow-xs space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <input type="text" id="filterTxQuery" placeholder="Rechercher par ID, client, référence..." class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-xl px-3.5 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]" oninput="filterTransactionsList()">
+              </div>
+              <div>
+                <select id="filterTxStatus" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#111827] font-semibold focus:outline-none focus:border-[#0052FF]" onchange="filterTransactionsList()">
+                  <option value="">Tous les statuts</option>
+                  <option value="SUCCESS">Succès ✓</option>
+                  <option value="PENDING">En attente ⏳</option>
+                  <option value="FAILED">Échoué ✕</option>
+                </select>
+              </div>
+              <div>
+                <select id="filterTxMethod" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#111827] font-semibold focus:outline-none focus:border-[#0052FF]" onchange="filterTransactionsList()">
+                  <option value="">Toutes les méthodes</option>
+                  <option value="WAVE">Wave</option>
+                  <option value="ORANGE">Orange Money</option>
+                  <option value="MTN">MTN MoMo</option>
+                  <option value="MOOV">Moov Money</option>
+                  <option value="CARD">Carte Bancaire (Visa/Mastercard)</option>
+                  <option value="CRYPTO">Crypto USDT</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="text-slate-400 uppercase text-[11px] font-bold border-b border-slate-100">
+                  <tr>
+                    <th class="py-3 px-3">ID / Réf Opérateur</th>
+                    <th class="py-3 px-3">Marchand</th>
+                    <th class="py-3 px-3">Client</th>
+                    <th class="py-3 px-3">Montant Brut</th>
+                    <th class="py-3 px-3">Frais Admin</th>
+                    <th class="py-3 px-3">Net Marchand</th>
+                    <th class="py-3 px-3">Méthode</th>
+                    <th class="py-3 px-3">Statut</th>
+                    <th class="py-3 px-3 text-right">Action Admin</th>
+                  </tr>
+                </thead>
+                <tbody id="adminTransactionsTableBody" class="divide-y divide-slate-100">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 4 : LIENS DE PAIEMENT ================= -->
+        <section id="admin-sec-links" class="admin-tab-section hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-extrabold text-[#111827]">Liens de Paiement de la Plateforme</h1>
+              <p class="text-xs sm:text-sm text-slate-500">Supervision et blocage préventif des liens suspects ou non conformes.</p>
+            </div>
+            <button onclick="loadAdminLinks()" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold">
+              ↻ Actualiser
+            </button>
+          </div>
+
+          <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-xs space-y-4">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="text-slate-400 uppercase text-[11px] font-bold border-b border-slate-100">
+                  <tr>
+                    <th class="py-3 px-3">Titre du Lien</th>
+                    <th class="py-3 px-3">Marchand Propriétaire</th>
+                    <th class="py-3 px-3">Montant</th>
+                    <th class="py-3 px-3">Ventes</th>
+                    <th class="py-3 px-3">Statut</th>
+                    <th class="py-3 px-3 text-right">Interrupteur Admin</th>
+                  </tr>
+                </thead>
+                <tbody id="adminLinksTableBody" class="divide-y divide-slate-100">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 5 : RETRAITS & DÉCAISSEMENTS (PAYOUTS) ================= -->
+        <section id="admin-sec-payouts" class="admin-tab-section hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-extrabold text-[#111827]">Gestion des Retraits Marchands</h1>
+              <p class="text-xs sm:text-sm text-slate-500">Valider manuellement les décaissements ou rejeter avec recrédit automatique.</p>
+            </div>
+            <button onclick="loadAdminPayouts()" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold">
+              ↻ Actualiser
+            </button>
+          </div>
+
+          <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-xs space-y-4">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="text-slate-400 uppercase text-[11px] font-bold border-b border-slate-100">
+                  <tr>
+                    <th class="py-3 px-3">ID / Date</th>
+                    <th class="py-3 px-3">Marchand</th>
+                    <th class="py-3 px-3">Montant Demandé</th>
+                    <th class="py-3 px-3">Canal</th>
+                    <th class="py-3 px-3">Coordonnées / Tél</th>
+                    <th class="py-3 px-3">Statut</th>
+                    <th class="py-3 px-3 text-right">Décision Admin</th>
+                  </tr>
+                </thead>
+                <tbody id="adminPayoutsTableBody" class="divide-y divide-slate-100">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= SECTION 6 : PARAMÈTRES PLATEFORME GLOBAUX ================= -->
+        <section id="admin-sec-settings" class="admin-tab-section hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-extrabold text-[#111827]">Contrôle Global du Système</h1>
+              <p class="text-xs sm:text-sm text-slate-500">Mode maintenance, annonces marchands, taux de commission et coupure de passerelles.</p>
+            </div>
+            <button onclick="saveAdminSettingsForm()" class="px-5 py-2.5 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold shadow-md shadow-blue-500/25 transition-all">
+              💾 Enregistrer les Paramètres
+            </button>
+          </div>
+
+          <form id="adminSettingsForm" class="space-y-6">
+            <!-- Row 1: Mode Maintenance & Annonce -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Maintenance Mode Card -->
+              <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-xs space-y-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="text-sm font-extrabold text-[#111827]">Mode Maintenance Général</h3>
+                    <p class="text-[11px] text-slate-500">Met en pause tous les paiements et bloque l'accès public avec un message d'information.</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input type="checkbox" id="cfgMaintenanceMode" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+                  </label>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-[#111827] mb-1">Message de maintenance affiché</label>
+                  <textarea id="cfgMaintenanceMessage" rows="2" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl p-3 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]"></textarea>
+                </div>
+              </div>
+
+              <!-- Announcement Banner Card -->
+              <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-xs space-y-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="text-sm font-extrabold text-[#111827]">Bannière d'Annonce en Direct</h3>
+                    <p class="text-[11px] text-slate-500">Affiche une alerte en haut du tableau de bord de TOUS les marchands.</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input type="checkbox" id="cfgAnnouncementActive" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052FF]"></div>
+                  </label>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-[#111827] mb-1">Message d'annonce</label>
+                  <input type="text" id="cfgAnnouncementMessage" placeholder="Ex: Promotion spéciale : 1% de frais jusqu'à dimanche !" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-[#111827] mb-1">Type d'alerte</label>
+                  <select id="cfgAnnouncementType" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3 py-2 text-xs text-[#111827]">
+                    <option value="info">Info (Bleu)</option>
+                    <option value="success">Succès (Vert)</option>
+                    <option value="warning">Avertissement (Orange)</option>
+                    <option value="danger">Urgent (Rouge)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Commission & Plafonds -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-xs space-y-2">
+                <label class="block text-xs font-bold text-[#111827]">Taux Commission Plateforme (%)</label>
+                <p class="text-[11px] text-slate-400">Pourcentage standard prélevé sur chaque transaction.</p>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="cfgPlatformFeePercent" step="0.1" min="0" max="20" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-sm font-bold text-[#111827] font-mono">
+                  <span class="text-sm font-bold text-slate-500">%</span>
+                </div>
+              </div>
+
+              <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-xs space-y-2">
+                <label class="block text-xs font-bold text-[#111827]">Montant Minimum de Retrait (FCFA)</label>
+                <p class="text-[11px] text-slate-400">Seuil minimal autorisé pour faire une demande de retrait.</p>
+                <input type="number" id="cfgMinPayoutAmount" step="100" min="100" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-sm font-bold text-[#111827] font-mono">
+              </div>
+
+              <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-xs space-y-2">
+                <label class="block text-xs font-bold text-[#111827]">Plafond par Transaction (FCFA)</label>
+                <p class="text-[11px] text-slate-400">Montant maximum autorisé par transaction unitaire.</p>
+                <input type="number" id="cfgMaxTransactionAmount" step="10000" min="10000" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-sm font-bold text-[#111827] font-mono">
+              </div>
+            </div>
+
+            <!-- Row 3: Coupure Individuelle des Moyens de Paiement -->
+            <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 shadow-xs space-y-4">
+              <div>
+                <h3 class="text-sm font-extrabold text-[#111827]">Interrupteurs des Moyens de Paiement</h3>
+                <p class="text-xs text-slate-500">Permet de suspendre temporairement un réseau en cas de panne de l'opérateur.</p>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <!-- Wave -->
+                <div class="p-3.5 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] flex flex-col items-center justify-between gap-3 text-center">
+                  <span class="text-xs font-bold text-slate-800">🌊 Wave</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" data-method="WAVE" class="method-toggle sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                <!-- Orange -->
+                <div class="p-3.5 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] flex flex-col items-center justify-between gap-3 text-center">
+                  <span class="text-xs font-bold text-slate-800">🍊 Orange Money</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" data-method="ORANGE" class="method-toggle sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                <!-- MTN -->
+                <div class="p-3.5 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] flex flex-col items-center justify-between gap-3 text-center">
+                  <span class="text-xs font-bold text-slate-800">🟡 MTN MoMo</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" data-method="MTN" class="method-toggle sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                <!-- Moov -->
+                <div class="p-3.5 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] flex flex-col items-center justify-between gap-3 text-center">
+                  <span class="text-xs font-bold text-slate-800">🔵 Moov Money</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" data-method="MOOV" class="method-toggle sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                <!-- Carte -->
+                <div class="p-3.5 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] flex flex-col items-center justify-between gap-3 text-center">
+                  <span class="text-xs font-bold text-slate-800">💳 Carte Visa/MC</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" data-method="CARD" class="method-toggle sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                <!-- Crypto -->
+                <div class="p-3.5 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] flex flex-col items-center justify-between gap-3 text-center">
+                  <span class="text-xs font-bold text-slate-800">💎 Crypto USDT</span>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" data-method="CRYPTO" class="method-toggle sr-only peer" checked>
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <!-- ================= SECTION 7 : JOURNAL D'AUDIT ================= -->
+        <section id="admin-sec-audit" class="admin-tab-section hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 class="text-2xl font-extrabold text-[#111827]">Journal d'Audit Immuable</h1>
+              <p class="text-xs sm:text-sm text-slate-500">Historique chronologique et traçabilité de toutes les actions d'administration.</p>
+            </div>
+            <button onclick="loadAdminAuditLogs()" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold">
+              ↻ Actualiser
+            </button>
+          </div>
+
+          <div class="bg-white border border-[#ECEEF6] rounded-3xl p-5 shadow-xs space-y-4">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="text-slate-400 uppercase text-[11px] font-bold border-b border-slate-100">
+                  <tr>
+                    <th class="py-3 px-3">Date & Heure</th>
+                    <th class="py-3 px-3">Administrateur</th>
+                    <th class="py-3 px-3">Action Réalisée</th>
+                    <th class="py-3 px-3">Cible</th>
+                    <th class="py-3 px-3">Détails de l'Ajustement</th>
+                  </tr>
+                </thead>
+                <tbody id="adminAuditTableBody" class="divide-y divide-slate-100 font-mono text-[11px]">
+                  <!-- Dynamic rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODALS DE PILOTAGE ADMINISTRATEUR
+       ======================================================== -->
+
+  <!-- Modal 1 : Ajustement du Solde d'un Marchand (Crédit / Débit) -->
+  <div id="modalEditBalance" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-extrabold text-[#111827]">Ajuster le Solde Marchand</h3>
+          <p id="modalBalanceMerchantName" class="text-xs text-slate-400">Marchand sélectionné</p>
+        </div>
+        <button onclick="closeAdminModal('modalEditBalance')" class="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+
+      <form id="formEditBalance" class="space-y-4">
+        <input type="hidden" id="balanceMerchantId">
+
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Type d'opération</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center justify-center p-2.5 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 has-[:checked]:text-emerald-700 text-xs font-bold transition-all">
+              <input type="radio" name="balanceType" value="CREDIT" checked class="sr-only">
+              <span>+ Créditer (Ajouter)</span>
+            </label>
+            <label class="flex items-center justify-center p-2.5 rounded-xl border border-slate-200 cursor-pointer has-[:checked]:border-rose-500 has-[:checked]:bg-rose-50 has-[:checked]:text-rose-700 text-xs font-bold transition-all">
+              <input type="radio" name="balanceType" value="DEBIT" class="sr-only">
+              <span>- Débiter (Retirer)</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Montant en FCFA *</label>
+          <input type="number" id="balanceAmountInput" required min="100" placeholder="50000" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-3 text-sm font-bold font-mono text-[#111827] focus:outline-none focus:border-[#0052FF]">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Motif administratif obligatoire *</label>
+          <input type="text" id="balanceReasonInput" required placeholder="Ex: Réconciliation virement Wave manuel #CMD-94812" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]">
+          <p class="text-[10px] text-slate-400 mt-1">Ce motif sera enregistré dans le grand livre et visible par le marchand.</p>
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeAdminModal('modalEditBalance')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100">Annuler</button>
+          <button type="submit" id="btnSubmitBalance" class="px-5 py-2.5 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold shadow-md shadow-blue-500/25">Appliquer l'ajustement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2 : Suspendre / Réactiver un Marchand -->
+  <div id="modalSuspendMerchant" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 id="modalSuspendTitle" class="text-base font-extrabold text-[#111827]">Statut du Compte Marchand</h3>
+          <p id="modalSuspendMerchantName" class="text-xs text-slate-400">Marchand</p>
+        </div>
+        <button onclick="closeAdminModal('modalSuspendMerchant')" class="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+
+      <form id="formSuspendMerchant" class="space-y-4">
+        <input type="hidden" id="suspendMerchantId">
+        <input type="hidden" id="suspendTargetStatus">
+
+        <div id="suspendReasonWrapper">
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Motif de suspension (affiché au marchand)</label>
+          <textarea id="suspendReasonInput" rows="3" placeholder="Ex: Activité suspecte détectée, non-conformité avec les CGU..." class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl p-3 text-xs text-[#111827] focus:outline-none focus:border-rose-500"></textarea>
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeAdminModal('modalSuspendMerchant')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100">Annuler</button>
+          <button type="submit" id="btnSubmitSuspend" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md shadow-rose-500/25">Confirmer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3 : Examen & Décision KYC -->
+  <div id="modalKycReview" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-extrabold text-[#111827]">Vérification d'Identité (KYC)</h3>
+          <p id="modalKycMerchantName" class="text-xs text-slate-400">Marchand</p>
+        </div>
+        <button onclick="closeAdminModal('modalKycReview')" class="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+
+      <div class="space-y-4">
+        <input type="hidden" id="kycMerchantId">
+
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs space-y-1">
+          <div><span class="text-slate-400">Nom complet :</span> <span id="kycFullName" class="font-bold text-slate-800">-</span></div>
+          <div><span class="text-slate-400">Entreprise :</span> <span id="kycBusinessName" class="font-bold text-slate-800">-</span></div>
+          <div><span class="text-slate-400">Pays :</span> <span id="kycCountry" class="font-bold text-slate-800">-</span></div>
+          <div><span class="text-slate-400">Statut actuel :</span> <span id="kycCurrentStatus" class="font-bold text-amber-600">-</span></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Note de conformité (optionnelle)</label>
+          <input type="text" id="kycNoteInput" placeholder="Ex: Pièce d'identité CNI validée avec succès" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button type="button" onclick="submitKycDecision('REJECTED')" class="py-2.5 px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors">
+            ✕ Rejeter le dossier
+          </button>
+          <button type="button" onclick="submitKycDecision('VERIFIED')" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm">
+            ✓ Valider le compte
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4 : Commission sur-mesure -->
+  <div id="modalCustomFee" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-extrabold text-[#111827]">Commission Sur-Mesure</h3>
+          <p id="modalFeeMerchantName" class="text-xs text-slate-400">Marchand</p>
+        </div>
+        <button onclick="closeAdminModal('modalCustomFee')" class="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+
+      <form id="formCustomFee" class="space-y-4">
+        <input type="hidden" id="customFeeMerchantId">
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Pourcentage appliqué pour ce marchand (%)</label>
+          <div class="flex items-center gap-2">
+            <input type="number" id="customFeeInput" step="0.1" min="0" max="20" placeholder="2.5" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-3 text-sm font-bold font-mono text-[#111827] focus:outline-none focus:border-[#0052FF]">
+            <span class="text-sm font-bold text-slate-500">%</span>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-1">Laissez vide pour réinitialiser au taux standard de la plateforme.</p>
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeAdminModal('modalCustomFee')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100">Annuler</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold shadow-md shadow-blue-500/25">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 5 : Forcer la validation d'une transaction -->
+  <div id="modalForceValidate" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-extrabold text-[#111827]">Forcer la Validation de Transaction</h3>
+          <p id="modalForceTxId" class="text-xs text-slate-400">Transaction ID</p>
+        </div>
+        <button onclick="closeAdminModal('modalForceValidate')" class="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+
+      <form id="formForceValidateTx" class="space-y-4">
+        <input type="hidden" id="forceValidateTxId">
+
+        <div class="p-3.5 rounded-2xl bg-blue-50 text-[#0052FF] text-xs space-y-1">
+          <div class="font-bold">⚠️ Action Administrative Exceptionnelle</div>
+          <div>Cette action passera la transaction au statut <span class="font-extrabold">SUCCÈS</span> et créditera instantanément le compte du marchand concerné.</div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Référence Opérateur (optionnelle)</label>
+          <input type="text" id="forceOpRefInput" placeholder="Ex: WAV-MANUEL-94812" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Note de validation</label>
+          <input type="text" id="forceNoteInput" placeholder="Ex: Validation suite à capture d'écran reçue par WhatsApp" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]">
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+          <button type="button" onclick="closeAdminModal('modalForceValidate')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100">Annuler</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-500/25">Valider & Créditer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 6 : Traiter un Retrait (Approuver / Rejeter) -->
+  <div id="modalProcessPayout" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-extrabold text-[#111827]">Décision sur la Demande de Retrait</h3>
+          <p id="modalPayoutMerchantDetails" class="text-xs text-slate-400">Détails marchand</p>
+        </div>
+        <button onclick="closeAdminModal('modalProcessPayout')" class="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+
+      <div class="space-y-4">
+        <input type="hidden" id="processPayoutId">
+
+        <div class="p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] space-y-1 text-xs">
+          <div><span class="text-slate-400">Montant :</span> <span id="modalPayoutAmount" class="text-base font-extrabold text-slate-900 font-mono">0 FCFA</span></div>
+          <div><span class="text-slate-400">Canal / Opérateur :</span> <span id="modalPayoutChannel" class="font-bold text-slate-800">-</span></div>
+          <div><span class="text-slate-400">Bénéficiaire :</span> <span id="modalPayoutRecipient" class="font-bold text-slate-800">-</span></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Référence de transfert opérateur (si approbation)</label>
+          <input type="text" id="payoutOpRefInput" placeholder="Ex: WAV-TX-849102" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-[#111827] mb-1.5">Motif de rejet (si refus — le marchand sera recrédité)</label>
+          <input type="text" id="payoutRejectReasonInput" placeholder="Ex: Numéro Wave invalide ou non enregistré" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-2.5 text-xs text-[#111827] focus:outline-none focus:border-rose-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button type="button" onclick="submitPayoutDecision('REJECT')" class="py-2.5 px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors">
+            ✕ Rejeter & Recréditer
+          </button>
+          <button type="button" onclick="submitPayoutDecision('APPROVE')" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm">
+            ✓ Approuver le virement
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="adminToastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- Admin Application Logic Script -->
+  <script src="admin.js"></script>
+</body>
+</html>

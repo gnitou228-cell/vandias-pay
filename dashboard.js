@@ -123,6 +123,20 @@ const VPState = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Support impersonation directe depuis la console administrateur
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const impToken = urlParams.get('impersonate_token') || urlParams.get('token');
+    if (impToken) {
+      localStorage.setItem('vandias_token', impToken);
+      VPState.token = impToken;
+      // Nettoyer l'URL proprement sans recharger la page
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  } catch (e) {
+    console.warn('[Dashboard] Parsing query params:', e);
+  }
+
   initSidebarTabs();
   initMobileDrawer();
   initProfileDropdown();
@@ -145,6 +159,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   initCustomersSection();
   initDisputesSection();
 
+  // Chargement des annonces globales & paramètres publics
+  checkPlatformAnnouncement();
+
   // Vérification de la session et chargement dynamique
   if (VPState.token) {
     const success = await loadMerchantDashboard();
@@ -156,6 +173,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     promptAuthModal();
   }
 });
+
+async function checkPlatformAnnouncement() {
+  try {
+    const res = await fetch('/api/v1/public/config');
+    if (!res.ok) return;
+    const data = await res.json();
+    const ann = (data && data.announcement) || (data && data.config && data.config.announcement);
+    if (!ann) return;
+
+    if (ann.active && ann.message) {
+      displayPlatformAnnouncement(ann);
+    }
+  } catch (err) {
+    console.warn('[Platform Announcement] Non disponible:', err);
+  }
+}
+
+function displayPlatformAnnouncement(ann) {
+  const existing = document.getElementById('platformAnnouncementBanner');
+  if (existing) existing.remove();
+
+  const mainContent = document.getElementById('dashboardMainContent');
+  if (!mainContent) return;
+
+  const bgStyles = {
+    info: 'bg-blue-50 border-blue-200 text-blue-900',
+    success: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+    warning: 'bg-amber-50 border-amber-200 text-amber-900',
+    danger: 'bg-rose-50 border-rose-200 text-rose-900'
+  };
+
+  const icons = {
+    info: '📢',
+    success: '🎉',
+    warning: '⚠️',
+    danger: '🚨'
+  };
+
+  const banner = document.createElement('div');
+  banner.id = 'platformAnnouncementBanner';
+  banner.className = `p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold shadow-xs mb-4 ${bgStyles[ann.type] || bgStyles.info}`;
+  banner.innerHTML = `
+    <div class="flex items-center gap-2.5">
+      <span class="text-base">${icons[ann.type] || '📢'}</span>
+      <span>${ann.message}</span>
+    </div>
+    <button onclick="this.parentElement.remove()" class="opacity-60 hover:opacity-100 text-xs font-bold px-2 py-1 rounded-lg hover:bg-black/5">✕</button>
+  `;
+
+  mainContent.insertBefore(banner, mainContent.firstChild);
+}
 
 /* ========================================================
    1. AUTHENTIFICATION & CHARGEMENT DYNAMIQUE DU MARCHAND
@@ -216,7 +284,11 @@ async function loadMerchantDashboard() {
     });
 
     if (!meRes.ok) {
-      if (meRes.status === 401) {
+      const errData = await meRes.json().catch(() => ({}));
+      if (errData.error) {
+        showToast('Accès Restreint', errData.error, 'danger');
+      }
+      if (meRes.status === 401 || meRes.status === 403) {
         localStorage.removeItem('vandias_token');
         VPState.token = null;
       }

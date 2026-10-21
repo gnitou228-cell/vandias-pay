@@ -3874,6 +3874,17 @@ function initAuthModalEvents() {
           return;
         }
 
+        if (data.is_admin) {
+          localStorage.setItem('vandias_admin_token', data.token);
+          if (data.admin) localStorage.setItem('vandias_admin_user', JSON.stringify(data.admin));
+          closeModal('modalAuth');
+          showToast('Super Administrateur Reconnu', 'Redirection immédiate vers la Console d\'Administration...');
+          setTimeout(() => {
+            window.location.href = data.redirect || '/admin.html';
+          }, 500);
+          return;
+        }
+
         if (data.success && data.token) {
           localStorage.setItem('vandias_token', data.token);
           VPState.token = data.token;

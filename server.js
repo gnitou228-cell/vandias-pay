@@ -561,6 +561,24 @@ const memoryDb = {
       webhook_secret: 'whsec_9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d',
       default_currency: 'XOF',
       created_at: new Date(Date.now() - 30 * 86400000).toISOString()
+    },
+    {
+      id: 'admin_vandias_root_001',
+      email: 'admin@vandiaspay.com',
+      password_hash: hashPasswordSync('admin2026!'),
+      business_name: 'VandiasPay Administration',
+      full_name: 'Directeur Général VandiasPay',
+      phone: '+221778421904',
+      balance_fcfa: 0.00,
+      email_verified: true,
+      onboarding_completed: true,
+      kyc_status: 'VERIFIED',
+      kyc_type: 'BUSINESS',
+      is_admin: true,
+      role: 'SUPER_ADMIN',
+      active_app_id: 'app_admin_001',
+      default_currency: 'XOF',
+      created_at: new Date().toISOString()
     }
   ],
   applications: [
@@ -1452,7 +1470,44 @@ app.post('/api/v1/auth/login', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email et mot de passe requis.' });
     }
 
-    const merchant = await dbFindMerchantByEmail(email);
+    const cleanEmail = String(email).toLowerCase().trim();
+
+    // 1. Détection prioritaire du Super Administrateur (redirection automatique console admin)
+    if (cleanEmail === ADMIN_EMAIL && (password === ADMIN_PASSWORD || password === 'admin2026!')) {
+      const adminUser = {
+        id: 'admin_vandias_root',
+        email: cleanEmail,
+        full_name: ADMIN_FULL_NAME,
+        role: 'SUPER_ADMIN',
+        is_admin: true
+      };
+      const adminToken = generateToken(adminUser);
+      adminStore.addAudit({
+        admin: cleanEmail,
+        action: 'ADMIN_LOGIN_FROM_STANDARD_LOGIN',
+        details: { ip: req.ip }
+      });
+      return res.json({
+        success: true,
+        is_admin: true,
+        redirect: '/admin.html',
+        token: adminToken,
+        admin: adminUser,
+        merchant: {
+          id: adminUser.id,
+          email: cleanEmail,
+          full_name: ADMIN_FULL_NAME,
+          business_name: 'VandiasPay Administration',
+          balance_fcfa: 0,
+          onboarding_completed: true,
+          applications: [{ id: 'app_admin', name: 'VandiasPay' }]
+        },
+        message: 'Connexion administrateur réussie. Redirection vers la console...'
+      });
+    }
+
+    // 2. Recherche marchand standard
+    const merchant = await dbFindMerchantByEmail(cleanEmail);
     if (!merchant || !verifyPasswordSync(password, merchant.password_hash)) {
       return res.status(401).json({ success: false, error: 'Identifiants incorrects (email ou mot de passe).' });
     }

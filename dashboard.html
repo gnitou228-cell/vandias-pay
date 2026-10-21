@@ -649,6 +649,206 @@
       </section>
 
       <!-- ====================================================
+           SECTION 4-B : CRÉER UN LIEN DE PAIEMENT (100% CONFORME CAPTURE SASPAY)
+           ==================================================== -->
+      <section id="section-create-payment-link" class="dashboard-section hidden space-y-4">
+        <!-- Breadcrumb / Back button -->
+        <div>
+          <button type="button" onclick="switchTab('links')" class="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-500 hover:text-[#0052FF] transition-colors py-1 group">
+            <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <span>Liens de paiement</span>
+          </button>
+        </div>
+
+        <!-- Form Card -->
+        <div class="bg-white border border-[#ECEEF6] rounded-3xl p-6 sm:p-8 shadow-sm space-y-6 max-w-4xl">
+          <h1 class="text-xl sm:text-2xl font-extrabold text-[#111827]">Créer un lien de paiement</h1>
+
+          <form id="fullCreatePaymentLinkForm" class="space-y-6">
+            <!-- Row 1: Nom & Description -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-xs font-bold text-[#111827] mb-1.5">Nom <span class="text-rose-500">*</span></label>
+                <input type="text" id="formLinkName" required placeholder="Facture de service" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-[#111827] mb-1.5">Description (optionnel)</label>
+                <input type="text" id="formLinkDescription" placeholder="" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+              </div>
+            </div>
+
+            <!-- Row 2: Montant Section -->
+            <div class="space-y-3">
+              <label class="block text-xs font-bold text-[#111827]">Montant</label>
+              <!-- Segmented Pill Selector -->
+              <div class="inline-flex items-center p-1 bg-[#F1F3F9] rounded-2xl gap-1">
+                <button type="button" id="btnPillFixed" onclick="togglePaymentLinkMode('fixed')" class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-[#0052FF] text-white shadow-xs">
+                  Montant fixe
+                </button>
+                <button type="button" id="btnPillFree" onclick="togglePaymentLinkMode('free')" class="px-4 py-2 rounded-xl text-xs font-bold transition-all text-[#6B7280] hover:text-[#111827]">
+                  Montant libre
+                </button>
+              </div>
+
+              <!-- 3-Column Amount Row -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                <div id="wrapperFormLinkAmount">
+                  <label class="block text-xs font-bold text-[#111827] mb-1.5">Montant <span class="text-rose-500">*</span></label>
+                  <input type="number" id="formLinkAmount" required min="100" placeholder="5000" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm font-mono text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+                </div>
+                <div id="wrapperFormLinkCurrency">
+                  <label class="block text-xs font-bold text-[#111827] mb-1.5">Devise <span class="text-rose-500">*</span></label>
+                  <select id="formLinkCurrency" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm font-bold text-[#111827] focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+                    <option value="XOF" selected>XOF</option>
+                    <option value="XAF">XAF</option>
+                    <option value="GNF">GNF</option>
+                    <option value="GHS">GHS</option>
+                    <option value="NGN">NGN</option>
+                    <option value="CDF">CDF</option>
+                    <option value="KES">KES</option>
+                    <option value="TZS">TZS</option>
+                    <option value="UGX">UGX</option>
+                    <option value="RWF">RWF</option>
+                    <option value="ZMW">ZMW</option>
+                    <option value="MWK">MWK</option>
+                    <option value="MZN">MZN</option>
+                    <option value="SLE">SLE</option>
+                    <option value="ZAR">ZAR</option>
+                    <option value="MAD">MAD</option>
+                    <option value="EGP">EGP</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="CAD">CAD</option>
+                    <option value="CHF">CHF</option>
+                    <option value="AED">AED</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-[#111827] mb-1.5">Utilisations max (optionnel)</label>
+                  <input type="number" id="formLinkMaxUses" min="1" placeholder="" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 3: Pays par défaut & Date expiration -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-xs font-bold text-[#111827] mb-1.5">Pays par défaut (optionnel)</label>
+                <select id="formLinkDefaultCountry" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+                  <option value="" selected>Laisser le client choisir</option>
+                  <option value="TG">🇹🇬 Togo</option>
+                  <option value="BJ">🇧🇯 Bénin</option>
+                  <option value="CI">🇨🇮 Côte d'Ivoire</option>
+                  <option value="SN">🇸🇳 Sénégal</option>
+                  <option value="BF">🇧🇫 Burkina Faso</option>
+                  <option value="ML">🇲🇱 Mali</option>
+                  <option value="NE">🇳🇪 Niger</option>
+                  <option value="GN">🇬🇳 Guinée Conakry</option>
+                  <option value="GH">🇬🇭 Ghana</option>
+                  <option value="NG">🇳🇬 Nigéria</option>
+                  <option value="CM">🇨🇲 Cameroun</option>
+                  <option value="GA">🇬🇦 Gabon</option>
+                  <option value="CG">🇨🇬 Congo-Brazzaville</option>
+                  <option value="CD">🇨🇩 Congo (RDC)</option>
+                  <option value="TD">🇹🇩 Tchad</option>
+                  <option value="CF">🇨🇫 Centrafrique</option>
+                  <option value="RW">🇷🇼 Rwanda</option>
+                  <option value="KE">🇰🇪 Kenya</option>
+                  <option value="TZ">🇹🇿 Tanzanie</option>
+                  <option value="UG">🇺🇬 Ouganda</option>
+                  <option value="ZM">🇿🇲 Zambie</option>
+                  <option value="MW">🇲🇼 Malawi</option>
+                  <option value="SL">🇸🇱 Sierra Leone</option>
+                  <option value="GM">🇬🇲 Gambie</option>
+                  <option value="MG">🇲🇬 Madagascar</option>
+                  <option value="MZ">🇲🇿 Mozambique</option>
+                  <option value="ZA">🇿🇦 Afrique du Sud</option>
+                  <option value="MA">🇲🇦 Maroc</option>
+                  <option value="EG">🇪🇬 Égypte</option>
+                  <option value="FR">🇫🇷 France & Diaspora</option>
+                  <option value="US">🇺🇸 États-Unis & International</option>
+                </select>
+                <p class="text-[11px] text-slate-400 mt-1.5">Moyens de paiement et devise présélectionnés à l'ouverture du lien — le client garde toujours la main pour changer de pays.</p>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-[#111827] mb-1.5">Expire le (optionnel)</label>
+                <input type="date" id="formLinkExpiresAt" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+              </div>
+            </div>
+
+            <!-- Section Options -->
+            <div class="space-y-3 pt-2">
+              <h2 class="text-xs font-extrabold text-[#111827] uppercase tracking-wider">Options</h2>
+              <div class="flex items-center justify-between p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6]">
+                <div class="pr-4">
+                  <div class="text-xs sm:text-sm font-bold text-[#111827]">Demander le numéro de téléphone</div>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Obligatoire pour tous les moyens de paiement, y compris carte/crypto (qui ne le demandent pas par défaut).</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input type="checkbox" id="formLinkRequirePhone" class="sr-only peer">
+                  <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052FF]"></div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Section Intégrations -->
+            <div class="space-y-3 pt-2">
+              <h2 class="text-xs font-extrabold text-[#111827] uppercase tracking-wider">Intégrations</h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-[#111827] mb-1.5">Facebook Pixel ID</label>
+                  <input type="text" id="formLinkPixelId" placeholder="123456789012345" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-[#111827] mb-1.5">Google Ads ID</label>
+                  <input type="text" id="formLinkGoogleAdsId" placeholder="AW-123456789" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+                </div>
+              </div>
+            </div>
+
+            <!-- Section Page de confirmation -->
+            <div class="space-y-3 pt-2">
+              <h2 class="text-xs font-extrabold text-[#111827] uppercase tracking-wider">Page de confirmation</h2>
+              <div class="flex items-center justify-between p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6]">
+                <div class="pr-4">
+                  <div class="text-xs sm:text-sm font-bold text-[#111827]">Afficher la page de confirmation</div>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Le client voit la page de confirmation VandiasPay après paiement.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input type="checkbox" id="formLinkShowConfirmation" class="sr-only peer" checked>
+                  <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#0052FF]"></div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Section Champs personnalisés -->
+            <div class="space-y-3 pt-2">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 class="text-xs font-extrabold text-[#111827] uppercase tracking-wider">Champs personnalisés</h2>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Informations supplémentaires demandées au client au moment du paiement.</p>
+                </div>
+                <button type="button" onclick="addPaymentLinkCustomField()" class="self-start sm:self-auto px-4 py-2.5 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+                  + Ajouter des champs personnalisés
+                </button>
+              </div>
+              <div id="customFieldsListContainer" class="space-y-2.5">
+                <!-- Dynamically populated rows -->
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="pt-4">
+              <button type="submit" id="btnSubmitFullCreateLink" class="px-8 py-3.5 rounded-2xl bg-[#0052FF] hover:bg-[#0040D0] text-white text-sm font-bold shadow-lg shadow-blue-500/25 transition-all">
+                Créer le lien
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ====================================================
            SECTION 5 : SESSIONS DE CHECKOUT (100% CONFORME CAPTURE SASPAY)
            ==================================================== -->
       <section id="section-checkout-sessions" class="dashboard-section hidden space-y-6">

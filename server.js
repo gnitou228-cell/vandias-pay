@@ -899,8 +899,8 @@ async function dbFindMerchantByEmail(email) {
       if (!error && data) {
         if (!memMerchant) return data;
         return {
-          ...memMerchant,
           ...data,
+          ...memMerchant,
           email_verified: memMerchant.email_verified !== undefined ? memMerchant.email_verified : (data.email_verified !== undefined ? data.email_verified : true),
           email_verification_code: memMerchant.email_verification_code !== undefined ? memMerchant.email_verification_code : data.email_verification_code,
           onboarding_completed: memMerchant.onboarding_completed !== undefined ? memMerchant.onboarding_completed : (data.onboarding_completed || false),
@@ -928,8 +928,8 @@ async function dbFindMerchantById(id) {
       if (!error && data) {
         if (!memMerchant) return data;
         return {
-          ...memMerchant,
           ...data,
+          ...memMerchant,
           email_verified: memMerchant.email_verified !== undefined ? memMerchant.email_verified : (data.email_verified !== undefined ? data.email_verified : true),
           email_verification_code: memMerchant.email_verification_code !== undefined ? memMerchant.email_verification_code : data.email_verification_code,
           onboarding_completed: memMerchant.onboarding_completed !== undefined ? memMerchant.onboarding_completed : (data.onboarding_completed || false),
@@ -1008,6 +1008,7 @@ async function dbGetApiKeys(merchantId) {
 }
 
 async function dbGetPaymentLinks(merchantId) {
+  let links = [];
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -1015,12 +1016,25 @@ async function dbGetPaymentLinks(merchantId) {
         .select('*')
         .eq('merchant_id', merchantId)
         .order('created_at', { ascending: false });
-      if (!error && data) return data;
+      if (!error && data && data.length > 0) {
+        links = data;
+      }
     } catch (e) {
       console.warn('Supabase getPaymentLinks fallback:', e.message);
     }
   }
-  return memoryDb.payment_links.filter(l => l.merchant_id === merchantId);
+  // Ensure we ALWAYS include all memoryDb payment links for this merchant
+  const memLinks = (memoryDb.payment_links || []).filter(l => l.merchant_id === merchantId);
+  const seenIds = new Set(links.map(l => l.id));
+  const merged = [...links];
+  for (const ml of memLinks) {
+    if (!seenIds.has(ml.id)) {
+      merged.push(ml);
+      seenIds.add(ml.id);
+    }
+  }
+  merged.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  return merged;
 }
 
 async function dbGetTransactions(merchantId) {
@@ -1634,12 +1648,36 @@ app.get('/api/v1/merchant/links', requireMerchantAuth, async (req, res) => {
  */
 app.post('/api/v1/merchant/links', requireMerchantAuth, async (req, res) => {
   try {
-    const { title, amount_fcfa, currency, redirect_url, description } = req.body;
+    const {
+      title,
+      amount_fcfa,
+      currency,
+      redirect_url,
+      description,
+      is_fixed_amount,
+      max_uses,
+      default_country,
+      expires_at,
+      require_phone,
+      facebook_pixel_id,
+      google_ads_id,
+      show_confirmation_page,
+      custom_fields
+    } = req.body;
 
-    if (!title || !amount_fcfa || isNaN(amount_fcfa) || parseFloat(amount_fcfa) <= 0) {
+    const isFixed = is_fixed_amount !== false;
+
+    if (!title || !title.trim()) {
       return res.status(400).json({
         success: false,
-        error: 'Titre du produit et montant valide supérieur à 0 requis.'
+        error: 'Le nom du lien de paiement est requis.'
+      });
+    }
+
+    if (isFixed && (!amount_fcfa || isNaN(amount_fcfa) || parseFloat(amount_fcfa) <= 0)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Veuillez saisir un montant valide supérieur à 0 pour un montant fixe.'
       });
     }
 
@@ -1658,10 +1696,19 @@ app.post('/api/v1/merchant/links', requireMerchantAuth, async (req, res) => {
       merchant_id: req.merchant.id,
       slug,
       title: title.trim(),
-      description: description || null,
-      amount_fcfa: parseFloat(amount_fcfa),
+      description: description ? description.trim() : null,
+      amount_fcfa: isFixed ? parseFloat(amount_fcfa) : 0,
       currency: (currency || 'XOF').toUpperCase(),
       redirect_url: redirect_url || null,
+      is_fixed_amount: isFixed,
+      max_uses: max_uses ? parseInt(max_uses, 10) : null,
+      default_country: default_country || null,
+      expires_at: expires_at || null,
+      require_phone: require_phone === true,
+      facebook_pixel_id: facebook_pixel_id ? facebook_pixel_id.trim() : null,
+      google_ads_id: google_ads_id ? google_ads_id.trim() : null,
+      show_confirmation_page: show_confirmation_page !== false,
+      custom_fields: Array.isArray(custom_fields) ? custom_fields : [],
       is_active: true,
       views_count: 0,
       sales_count: 0,
@@ -1672,7 +1719,24 @@ app.post('/api/v1/merchant/links', requireMerchantAuth, async (req, res) => {
 
     if (supabase) {
       try {
-        await supabase.from('payment_links').insert([newLink]);
+        const supabaseRow = {
+          id: newLink.id,
+          merchant_id: newLink.merchant_id,
+          slug: newLink.slug,
+          title: newLink.title,
+          description: newLink.description,
+          amount_fcfa: (newLink.amount_fcfa && newLink.amount_fcfa > 0) ? newLink.amount_fcfa : 1,
+          currency: newLink.currency,
+          redirect_url: newLink.redirect_url,
+          is_active: true,
+          views_count: 0,
+          sales_count: 0,
+          created_at: newLink.created_at
+        };
+        const { error: insErr } = await supabase.from('payment_links').insert([supabaseRow]);
+        if (insErr) {
+          console.warn('Supabase link insert notice:', insErr.message);
+        }
       } catch (err) {
         console.warn('Supabase link sync warning:', err.message);
       }
@@ -4929,6 +4993,13 @@ app.get('/api/v1/pay/:id', async (req, res) => {
           currency: paymentLink.currency || 'XOF',
           title: paymentLink.title,
           description: paymentLink.description,
+          is_fixed_amount: paymentLink.is_fixed_amount !== false,
+          default_country: paymentLink.default_country || null,
+          require_phone: paymentLink.require_phone === true,
+          facebook_pixel_id: paymentLink.facebook_pixel_id || null,
+          google_ads_id: paymentLink.google_ads_id || null,
+          show_confirmation_page: paymentLink.show_confirmation_page !== false,
+          custom_fields: paymentLink.custom_fields || [],
           merchant_name: merchant ? merchant.business_name : 'Marchand VandiasPay',
           status: 'PENDING',
           mode: 'live',

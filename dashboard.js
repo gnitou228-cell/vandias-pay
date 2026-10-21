@@ -928,8 +928,11 @@ async function renderPaymentLinksList() {
       headers: { 'Authorization': `Bearer ${VPState.token}` }
     });
     const data = await res.json();
-    if (data.success && data.links) {
-      VPState.paymentLinks = data.links;
+    if (data.success && Array.isArray(data.links)) {
+      const linkMap = new Map();
+      (VPState.paymentLinks || []).forEach(l => linkMap.set(l.id || l.slug, l));
+      data.links.forEach(l => linkMap.set(l.id || l.slug, l));
+      VPState.paymentLinks = Array.from(linkMap.values());
     }
   } catch (e) {
     console.warn('Fallback local paymentLinks:', e.message);
@@ -971,10 +974,15 @@ async function renderPaymentLinksList() {
   }
 
   paginated.forEach(lnk => {
-    const amountStr = parseFloat(lnk.amount_fcfa || lnk.amount || 0).toLocaleString('fr-FR');
+    const isFixed = lnk.is_fixed_amount !== false;
     const currencyStr = lnk.currency || 'XOF';
+    const amountVal = parseFloat(lnk.amount_fcfa || lnk.amount || 0);
+    const amountFormatted = amountVal.toLocaleString('fr-FR');
+    const amountStr = isFixed ? `${amountFormatted} ${currencyStr}` : `Montant libre (${currencyStr})`;
     const uses = lnk.sales_count ?? 0;
+    const usesStr = lnk.max_uses ? `${uses} / ${lnk.max_uses}` : `${uses}`;
     const desc = lnk.description || 'Sans description';
+    const linkUrl = lnk.url || `${window.location.origin}/checkout.html?link=${lnk.slug || lnk.id}`;
 
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-[#F8F9FD] transition-colors';
@@ -984,19 +992,22 @@ async function renderPaymentLinksList() {
         <div class="text-[11px] text-slate-400 mt-0.5">${desc}</div>
       </td>
       <td class="py-3.5 px-3">
-        <span class="text-xs font-bold text-[#111827] font-mono">${amountStr} ${currencyStr}</span>
+        <span class="text-xs font-bold text-[#111827] font-mono">${amountStr}</span>
       </td>
       <td class="py-3.5 px-3">
         <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E6F8F0] text-[#10B981]">Actif</span>
       </td>
       <td class="py-3.5 px-3">
-        <span class="text-xs text-slate-700 font-medium">${uses}</span>
+        <span class="text-xs text-slate-700 font-medium">${usesStr}</span>
       </td>
       <td class="py-3.5 px-3 text-right">
         <div class="flex items-center justify-end gap-1">
-          <button class="text-slate-400 hover:text-[#0052FF] p-1.5 transition-colors" title="Copier le lien" onclick="navigator.clipboard.writeText('${lnk.url}'); showToast('Copié !', 'Lien copié dans le presse-papier.');">
+          <button class="text-slate-400 hover:text-[#0052FF] p-1.5 transition-colors" title="Copier le lien" onclick="navigator.clipboard.writeText('${linkUrl}'); showToast('Copié !', 'Lien copié dans le presse-papier.');">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
           </button>
+          <a href="${linkUrl}" target="_blank" class="text-slate-400 hover:text-[#0052FF] p-1.5 transition-colors" title="Ouvrir la page de paiement">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
           <button class="text-rose-500 hover:text-rose-700 p-1.5 transition-colors" title="Supprimer" onclick="deletePaymentLink('${lnk.id}')">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
           </button>
@@ -4458,7 +4469,8 @@ function switchTab(tabKey) {
   const sections = document.querySelectorAll('.dashboard-section');
 
   navItems.forEach(item => {
-    if (item.getAttribute('data-tab') === tabKey) {
+    const itemTab = item.getAttribute('data-tab');
+    if (itemTab === tabKey || (tabKey === 'create-payment-link' && itemTab === 'links')) {
       item.classList.add('active');
     } else {
       item.classList.remove('active');
@@ -4474,6 +4486,10 @@ function switchTab(tabKey) {
       sec.classList.remove('active');
     }
   });
+
+  if (tabKey === 'create-payment-link') {
+    resetCreatePaymentLinkForm();
+  }
 
   if (tabKey === 'wallet') {
     loadAndRenderWallets();
@@ -4624,8 +4640,212 @@ function closeModal(modalId) {
   }
 }
 
+window.paymentLinkAmountMode = 'fixed';
+
+function togglePaymentLinkMode(mode) {
+  window.paymentLinkAmountMode = mode;
+  const btnFixed = document.getElementById('btnPillFixed');
+  const btnFree = document.getElementById('btnPillFree');
+  const wrapperAmount = document.getElementById('wrapperFormLinkAmount');
+  const amountInput = document.getElementById('formLinkAmount');
+
+  if (mode === 'fixed') {
+    if (btnFixed) {
+      btnFixed.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all bg-[#0052FF] text-white shadow-xs';
+    }
+    if (btnFree) {
+      btnFree.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all text-[#6B7280] hover:text-[#111827]';
+    }
+    if (wrapperAmount) wrapperAmount.classList.remove('hidden');
+    if (amountInput) amountInput.required = true;
+  } else {
+    if (btnFixed) {
+      btnFixed.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all text-[#6B7280] hover:text-[#111827]';
+    }
+    if (btnFree) {
+      btnFree.className = 'px-4 py-2 rounded-xl text-xs font-bold transition-all bg-[#0052FF] text-white shadow-xs';
+    }
+    if (wrapperAmount) wrapperAmount.classList.add('hidden');
+    if (amountInput) amountInput.required = false;
+  }
+}
+
+function resetCreatePaymentLinkForm() {
+  const form = document.getElementById('fullCreatePaymentLinkForm');
+  if (form) form.reset();
+  togglePaymentLinkMode('fixed');
+  const cfContainer = document.getElementById('customFieldsListContainer');
+  if (cfContainer) cfContainer.innerHTML = '';
+  const showConf = document.getElementById('formLinkShowConfirmation');
+  if (showConf) showConf.checked = true;
+}
+
+function addPaymentLinkCustomField(name = '', type = 'text', required = false) {
+  const container = document.getElementById('customFieldsListContainer');
+  if (!container) return;
+  const fieldId = 'cf_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+  const div = document.createElement('div');
+  div.className = 'custom-field-row flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6] transition-all';
+  div.id = fieldId;
+  div.innerHTML = `
+    <div class="flex-1 w-full sm:w-auto">
+      <input type="text" placeholder="Intitulé du champ (ex: Taille, Numéro WhatsApp)" value="${name}" class="cf-name w-full bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]">
+    </div>
+    <div class="w-full sm:w-36">
+      <select class="cf-type w-full bg-white border border-[#ECEEF6] rounded-xl px-3 py-2 text-xs text-[#111827] focus:outline-none focus:border-[#0052FF]">
+        <option value="text" ${type === 'text' ? 'selected' : ''}>Texte</option>
+        <option value="number" ${type === 'number' ? 'selected' : ''}>Nombre</option>
+        <option value="email" ${type === 'email' ? 'selected' : ''}>Email</option>
+        <option value="phone" ${type === 'phone' ? 'selected' : ''}>Téléphone</option>
+      </select>
+    </div>
+    <div class="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+      <label class="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+        <input type="checkbox" class="cf-required rounded text-[#0052FF] focus:ring-0" ${required ? 'checked' : ''}>
+        <span>Obligatoire</span>
+      </label>
+      <button type="button" onclick="document.getElementById('${fieldId}').remove()" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors ml-auto sm:ml-0" title="Supprimer ce champ">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      </button>
+    </div>
+  `;
+  container.appendChild(div);
+}
+
 function openCreateLinkModal() {
-  openModal('modalCreateLink');
+  switchTab('create-payment-link');
+}
+
+function initFullPaymentLinkCreation() {
+  const fullForm = document.getElementById('fullCreatePaymentLinkForm');
+  if (!fullForm) return;
+
+  fullForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const title = document.getElementById('formLinkName')?.value?.trim();
+    const description = document.getElementById('formLinkDescription')?.value?.trim() || '';
+    const isFixed = window.paymentLinkAmountMode !== 'free';
+    const amountVal = isFixed ? parseFloat(document.getElementById('formLinkAmount')?.value || 0) : 0;
+    const currency = document.getElementById('formLinkCurrency')?.value || 'XOF';
+    const maxUses = document.getElementById('formLinkMaxUses')?.value ? parseInt(document.getElementById('formLinkMaxUses').value) : null;
+    const defaultCountry = document.getElementById('formLinkDefaultCountry')?.value || null;
+    const expiresAt = document.getElementById('formLinkExpiresAt')?.value || null;
+    const requirePhone = !!document.getElementById('formLinkRequirePhone')?.checked;
+    const facebookPixelId = document.getElementById('formLinkPixelId')?.value?.trim() || null;
+    const googleAdsId = document.getElementById('formLinkGoogleAdsId')?.value?.trim() || null;
+    const showConfirmationPage = document.getElementById('formLinkShowConfirmation') ? document.getElementById('formLinkShowConfirmation').checked : true;
+
+    // Custom fields
+    const customFields = [];
+    document.querySelectorAll('.custom-field-row').forEach(row => {
+      const name = row.querySelector('.cf-name')?.value?.trim();
+      const type = row.querySelector('.cf-type')?.value || 'text';
+      const required = !!row.querySelector('.cf-required')?.checked;
+      if (name) {
+        customFields.push({ name, type, required });
+      }
+    });
+
+    if (!title) {
+      showToast("Champ requis", "Veuillez renseigner le nom du lien de paiement.");
+      return;
+    }
+
+    if (isFixed && (!amountVal || isNaN(amountVal) || amountVal <= 0)) {
+      showToast("Montant invalide", "Veuillez renseigner un montant fixe supérieur à 0.");
+      return;
+    }
+
+    const submitBtn = document.getElementById('btnSubmitFullCreateLink');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Création en cours...';
+    }
+
+    try {
+      const res = await fetch('/api/v1/merchant/links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${VPState.token}`
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          is_fixed_amount: isFixed,
+          amount_fcfa: amountVal,
+          currency,
+          max_uses: maxUses,
+          default_country: defaultCountry,
+          expires_at: expiresAt,
+          require_phone: requirePhone,
+          facebook_pixel_id: facebookPixelId,
+          google_ads_id: googleAdsId,
+          show_confirmation_page: showConfirmationPage,
+          custom_fields: customFields
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.payment_link) {
+        if (!Array.isArray(VPState.paymentLinks)) {
+          VPState.paymentLinks = [];
+        }
+        VPState.paymentLinks.unshift(data.payment_link);
+
+        renderPaymentLinksList();
+        renderOverviewDashboardKPIs();
+        resetCreatePaymentLinkForm();
+
+        const fullUrl = data.payment_link.url || `${window.location.origin}/checkout.html?link=${data.payment_link.slug}`;
+        const prodNameEl = document.getElementById('successLinkProductName');
+        const badgeEl = document.getElementById('successLinkAmountBadge');
+        const urlInput = document.getElementById('successLinkUrlInput');
+        const copyBtn = document.getElementById('btnCopySuccessLink');
+        const copyBtnText = document.getElementById('copySuccessLinkBtnText');
+        const openBtn = document.getElementById('btnOpenSuccessLink');
+
+        if (prodNameEl) prodNameEl.textContent = `Lien : ${data.payment_link.title}`;
+        if (badgeEl) {
+          if (data.payment_link.is_fixed_amount === false) {
+            badgeEl.textContent = `Montant libre (${data.payment_link.currency || 'XOF'})`;
+          } else {
+            badgeEl.textContent = `${parseFloat(data.payment_link.amount_fcfa || data.payment_link.amount || 0).toLocaleString('fr-FR')} ${data.payment_link.currency || 'XOF'}`;
+          }
+        }
+        if (urlInput) urlInput.value = fullUrl;
+
+        if (copyBtn) {
+          copyBtn.onclick = () => {
+            navigator.clipboard.writeText(fullUrl);
+            if (copyBtnText) copyBtnText.textContent = 'Copié !';
+            showToast("Lien copié !", "Prêt à être envoyé à votre client.");
+            setTimeout(() => { if (copyBtnText) copyBtnText.textContent = 'Copier'; }, 2500);
+          };
+        }
+
+        if (openBtn) {
+          openBtn.onclick = () => {
+            window.open(fullUrl, '_blank');
+          };
+        }
+
+        openModal('modalLinkCreatedSuccess');
+        showToast("Succès", `Lien « ${data.payment_link.title} » créé avec succès !`);
+      } else {
+        showToast("Erreur", data.error || "Impossible de créer le lien de paiement.");
+      }
+    } catch (err) {
+      showToast("Erreur réseau", err.message);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Créer le lien';
+      }
+    }
+  });
 }
 
 function initActionModals() {
@@ -4636,10 +4856,13 @@ function initActionModals() {
 
   const btnCreateLink = document.getElementById('btnOpenCreateLinkModal');
   if (btnCreateLink) {
-    btnCreateLink.addEventListener('click', () => openModal('modalCreateLink'));
+    btnCreateLink.addEventListener('click', () => switchTab('create-payment-link'));
   }
 
-  // Création d'un lien de paiement
+  // Initialise le nouveau formulaire de création de lien de paiement pleine page conforme
+  initFullPaymentLinkCreation();
+
+  // Création d'un lien de paiement (support modal classique si présent)
   const createForm = document.getElementById('createLinkForm');
   if (createForm) {
     createForm.addEventListener('submit', async (e) => {
@@ -4671,7 +4894,6 @@ function initActionModals() {
           closeModal('modalCreateLink');
           createForm.reset();
 
-          // Afficher immédiatement la modale de succès avec le lien prêt et le bouton copier
           const fullUrl = data.payment_link.url || `${window.location.origin}/checkout.html?link=${data.payment_link.slug}`;
           const prodNameEl = document.getElementById('successLinkProductName');
           const badgeEl = document.getElementById('successLinkAmountBadge');

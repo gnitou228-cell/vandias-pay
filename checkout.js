@@ -119,6 +119,9 @@ async function initCheckoutParams() {
             const nameInput = document.getElementById('payerName');
             if (nameInput) nameInput.value = s.customer.name;
           }
+          if (s.default_country && typeof selectCountry === 'function') {
+            selectCountry(s.default_country);
+          }
           if (s.status === 'SUCCESS' || urlParams.get('status') === 'success') {
             applyCheckoutDOM();
             triggerPaymentSuccess({

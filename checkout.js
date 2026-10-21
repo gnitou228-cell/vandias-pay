@@ -41,8 +41,15 @@ function formatCurrency(amount, currency = 'FCFA') {
   return new Intl.NumberFormat('fr-FR').format(amount) + ' ' + currency;
 }
 
+function getFlagUrl(countryCode) {
+  if (!countryCode) return 'https://flagcdn.com/w40/tg.png';
+  const c = countryCode.toLowerCase();
+  return 'https://flagcdn.com/w40/' + c + '.png';
+}
+
 function applyCheckoutDOM() {
   const merchantEl = document.getElementById('checkoutMerchantName');
+  const avatarEl = document.getElementById('merchantAvatarCircle');
   const amountEl = document.getElementById('checkoutAmountDisplay');
   const currencyEl = document.getElementById('checkoutCurrencyDisplay');
   const productTitleEl = document.getElementById('checkoutProductTitle');
@@ -50,23 +57,34 @@ function applyCheckoutDOM() {
   const summaryUnitPriceEl = document.getElementById('summaryUnitPrice');
   const summaryOrderRefEl = document.getElementById('summaryOrderRef');
 
+  if (avatarEl && CheckoutState.merchant) {
+    const initials = CheckoutState.merchant
+      .split(' ')
+      .map(w => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+    avatarEl.textContent = initials || 'VP';
+  }
+
   if (merchantEl) {
-    merchantEl.innerHTML = `${CheckoutState.merchant} <svg class="w-4 h-4 text-emerald-400 inline" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>`;
+    merchantEl.innerHTML = CheckoutState.merchant + ' <svg class="w-4 h-4 text-emerald-500 inline shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>';
   }
   if (amountEl) amountEl.textContent = new Intl.NumberFormat('fr-FR').format(CheckoutState.amount);
   if (currencyEl) currencyEl.textContent = CheckoutState.currency;
-  if (productTitleEl) productTitleEl.textContent = `🛒 ${CheckoutState.productTitle}`;
+  if (productTitleEl) productTitleEl.textContent = CheckoutState.productTitle;
   if (summaryItemEl) summaryItemEl.textContent = CheckoutState.productTitle;
   if (summaryUnitPriceEl) summaryUnitPriceEl.textContent = formatCurrency(CheckoutState.amount, CheckoutState.currency);
   if (summaryOrderRefEl) {
-    summaryOrderRefEl.textContent = CheckoutState.sessionId ? `CMD-VP-${CheckoutState.sessionId.slice(-6).toUpperCase()}` : `CMD-VP-${Math.floor(Math.random() * 89999 + 10000)}`;
+    summaryOrderRefEl.textContent = CheckoutState.sessionId ? ('CMD-VP-' + CheckoutState.sessionId.slice(-6).toUpperCase()) : ('CMD-VP-' + Math.floor(Math.random() * 89999 + 10000));
   }
 
-  const summaryFlagEl = document.getElementById('summaryCountryFlag');
+  const summaryFlagImg = document.getElementById('summaryCountryFlagImg');
   const summaryNameEl = document.getElementById('summaryCountryName');
   const countryData = countryOperators[CheckoutState.country] || countryOperators.TG;
-  if (summaryFlagEl) summaryFlagEl.textContent = countryData.flag;
-  if (summaryNameEl) summaryNameEl.textContent = `${countryData.countryName} (${countryData.prefix})`;
+  if (summaryFlagImg) summaryFlagImg.src = getFlagUrl(CheckoutState.country);
+  if (summaryNameEl) summaryNameEl.textContent = countryData.countryName + ' (' + countryData.prefix + ')';
 
   updatePayButtonText();
 }
@@ -148,7 +166,7 @@ const countryOperators = {
         id: 'moov_tg',
         method: 'moov',
         name: 'Moov Money (Flooz)',
-        badge: 'Moov Togo',
+        badge: 'Flooz direct',
         desc: 'Validation Flooz directe ou tapez *155#',
         logo: 'assets/operators/moov.png',
         hint: () => '🔵 Un ordre de débit Flooz vous a été transmis. Composez votre code PIN sur votre mobile pour valider.'
@@ -157,7 +175,7 @@ const countryOperators = {
         id: 'tmoney_tg',
         method: 'tmoney',
         name: 'Mixx by Yas (T-Money)',
-        badge: 'Togo Uniquement',
+        badge: 'USSD direct',
         desc: 'Prompt USSD direct ou tapez *145#',
         logo: 'assets/operators/mixx.png',
         hint: () => '🟡 Un prompt USSD Mixx by Yas a été envoyé. Saisissez votre code PIN sur votre mobile (ou composez le *145#).'
@@ -166,9 +184,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement international sécurisé 3D-Secure',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -184,7 +202,7 @@ const countryOperators = {
         id: 'mtn_bj',
         method: 'mtn',
         name: 'MTN Mobile Money',
-        badge: 'MTN Bénin',
+        badge: 'MoMo direct',
         desc: 'Prompt USSD direct sur votre écran',
         logo: 'assets/operators/mtn.svg',
         hint: () => '🟡 Un prompt USSD a été envoyé sur votre téléphone. Saisissez votre code secret MoMo.'
@@ -193,7 +211,7 @@ const countryOperators = {
         id: 'moov_bj',
         method: 'moov',
         name: 'Moov Money Bénin',
-        badge: 'Moov Bénin',
+        badge: 'Flooz direct',
         desc: 'Validation Flooz sécurisée',
         logo: 'assets/operators/moov.png',
         hint: () => '🔵 Validez la demande de débit Moov Money sur votre téléphone avec votre code PIN.'
@@ -202,18 +220,18 @@ const countryOperators = {
         id: 'celtiis_bj',
         method: 'celtiis',
         name: 'Celtiis Cash',
-        badge: 'Celtiis Bénin',
+        badge: 'Celtiis Cash',
         desc: 'Paiement direct compte Celtiis',
-        logo: 'assets/operators/celtiis.png',
+        logo: 'assets/operators/celtiis.svg',
         hint: () => '🟣 Confirmez le paiement sur votre compte ou application Celtiis Cash.'
       },
       {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -229,9 +247,9 @@ const countryOperators = {
         id: 'wave_ci',
         method: 'wave',
         name: 'Wave Côte d\'Ivoire',
-        badge: 'Wave CI (1%)',
+        badge: '1% ou 0F',
         desc: 'Push ou ouverture appli Wave',
-        logo: 'assets/operators/wave.png',
+        logo: 'assets/operators/wave.svg',
         hint: () => '🌊 Ouvrez votre application Wave sur votre téléphone et confirmez le paiement.'
       },
       {
@@ -240,7 +258,7 @@ const countryOperators = {
         name: 'Orange Money',
         badge: 'OM Côte d\'Ivoire (OTP)',
         desc: 'Code OTP via #144*77#',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         requiresOtp: true,
         ussdTemplate: () => '#144*77#',
         hint: () => '🟠 Composez le #144*77# sur votre mobile Orange pour obtenir votre code d\'autorisation OTP.'
@@ -249,7 +267,7 @@ const countryOperators = {
         id: 'mtn_ci',
         method: 'mtn',
         name: 'MTN Mobile Money',
-        badge: 'MTN CI',
+        badge: 'MoMo direct',
         desc: 'Validation prompt USSD',
         logo: 'assets/operators/mtn.svg',
         hint: () => '🟡 Un prompt USSD a été envoyé sur votre téléphone MTN. Entrez votre code secret.'
@@ -258,7 +276,7 @@ const countryOperators = {
         id: 'moov_ci',
         method: 'moov',
         name: 'Moov Money CI',
-        badge: 'Moov CI',
+        badge: 'Flooz direct',
         desc: 'Validation Flooz sécurisée',
         logo: 'assets/operators/moov.png',
         hint: () => '🔵 Validez le paiement sur votre compte Moov Money.'
@@ -267,9 +285,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -285,25 +303,25 @@ const countryOperators = {
         id: 'wave_sn',
         method: 'wave',
         name: 'Wave Sénégal',
-        badge: 'Wave Sénégal',
+        badge: '1% ou 0F',
         desc: 'Push ou scan QR instantané (1%)',
-        logo: 'assets/operators/wave.png',
+        logo: 'assets/operators/wave.svg',
         hint: () => '🌊 Ouvrez votre application Wave pour confirmer le paiement de la commande.'
       },
       {
         id: 'orange_sn',
         method: 'orange',
         name: 'Orange Money Sénégal',
-        badge: 'OM Sénégal',
+        badge: 'Instantané',
         desc: 'Validation push ou code secret',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Confirmez la transaction sur votre compte Orange Money Sénégal.'
       },
       {
         id: 'free_sn',
         method: 'freemoney',
         name: 'Free Money',
-        badge: 'Free Sénégal',
+        badge: 'Free Money',
         desc: 'Validation compte Free',
         logo: 'assets/operators/freemoney.svg',
         hint: () => '🔴 Confirmez l\'opération Free Money sur votre mobile.'
@@ -312,9 +330,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -330,9 +348,9 @@ const countryOperators = {
         id: 'orange_bf',
         method: 'orange',
         name: 'Orange Money Burkina',
-        badge: 'OM Burkina (OTP Requis)',
+        badge: 'Code OTP',
         desc: 'Code OTP via *144*4*6*MONTANT#',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         requiresOtp: true,
         ussdTemplate: (amt) => "*144*4*6*" + amt + "#",
         hint: (amt) => "🟠 Composez le *144*4*6*" + amt + "# sur votre mobile Orange pour recevoir votre code OTP d\'autorisation."
@@ -341,7 +359,7 @@ const countryOperators = {
         id: 'moov_bf',
         method: 'moov',
         name: 'Moov Money Burkina',
-        badge: 'Moov Burkina',
+        badge: 'Flooz direct',
         desc: 'Validation Flooz Moov',
         logo: 'assets/operators/moov.png',
         hint: () => '🔵 Validez la demande sur votre compte Moov Money Burkina.'
@@ -350,18 +368,18 @@ const countryOperators = {
         id: 'wave_bf',
         method: 'wave',
         name: 'Wave Burkina Faso',
-        badge: 'Wave Burkina',
+        badge: '1% ou 0F',
         desc: 'Application Wave directe',
-        logo: 'assets/operators/wave.png',
+        logo: 'assets/operators/wave.svg',
         hint: () => '🌊 Ouvrez votre application Wave pour confirmer le paiement.'
       },
       {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -377,16 +395,16 @@ const countryOperators = {
         id: 'orange_ml',
         method: 'orange',
         name: 'Orange Money Mali',
-        badge: 'OM Mali',
+        badge: 'Instantané',
         desc: 'Validation push OM',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Validez le paiement sur votre compte Orange Money Mali.'
       },
       {
         id: 'moov_ml',
         method: 'moov',
         name: 'Moov Money (Malitel)',
-        badge: 'Moov Mali',
+        badge: 'Flooz direct',
         desc: 'Validation Moov Money',
         logo: 'assets/operators/moov.png',
         hint: () => '🔵 Validez le paiement sur votre compte Moov Mali.'
@@ -395,18 +413,18 @@ const countryOperators = {
         id: 'wave_ml',
         method: 'wave',
         name: 'Wave Mali',
-        badge: 'Wave Mali',
+        badge: '1% ou 0F',
         desc: 'Appli Wave instantanée',
-        logo: 'assets/operators/wave.png',
+        logo: 'assets/operators/wave.svg',
         hint: () => '🌊 Validez sur votre application Wave Mali.'
       },
       {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -422,9 +440,9 @@ const countryOperators = {
         id: 'airtel_ne',
         method: 'airtel',
         name: 'Airtel Money Niger',
-        badge: 'Airtel Niger',
+        badge: 'Airtel Money',
         desc: 'Prompt USSD direct',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Validez le débit sur votre compte Airtel Money Niger.'
       },
       {
@@ -440,9 +458,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -458,16 +476,16 @@ const countryOperators = {
         id: 'orange_gn',
         method: 'orange',
         name: 'Orange Money Guinée',
-        badge: 'OM Guinée',
+        badge: 'Instantané',
         desc: 'Validation compte OM',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Validez le paiement sur votre compte Orange Money Guinée.'
       },
       {
         id: 'mtn_gn',
         method: 'mtn',
         name: 'MTN Mobile Money Guinée',
-        badge: 'MTN Guinée',
+        badge: 'MoMo direct',
         desc: 'Prompt USSD MoMo',
         logo: 'assets/operators/mtn.svg',
         hint: () => '🟡 Confirmez le prompt USSD sur votre mobile MTN Guinée.'
@@ -476,9 +494,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -494,7 +512,7 @@ const countryOperators = {
         id: 'mtn_gh',
         method: 'mtn',
         name: 'MTN Mobile Money Ghana',
-        badge: 'MTN MoMo Ghana',
+        badge: 'MoMo USSD',
         desc: 'USSD prompt validation',
         logo: 'assets/operators/mtn.svg',
         hint: () => '🟡 Saisissez votre code PIN MTN MoMo sur votre mobile.'
@@ -512,9 +530,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -530,7 +548,7 @@ const countryOperators = {
         id: 'opay_ng',
         method: 'opay',
         name: 'OPay Wallet',
-        badge: 'OPay Nigéria',
+        badge: 'Instantané',
         desc: 'Appli ou USSD instantané',
         logo: 'assets/operators/opay.svg',
         hint: () => '🟢 Ouvrez l\'application OPay ou validez l\'invite sur votre mobile.'
@@ -539,9 +557,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire (Naira/USD)',
-        badge: 'Verve / Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé en ligne',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -557,16 +575,16 @@ const countryOperators = {
         id: 'orange_sl',
         method: 'orange',
         name: 'Orange Money Sierra Leone',
-        badge: 'OM Sierra Leone',
+        badge: 'Instantané',
         desc: 'Validation mobile',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Validez le paiement sur votre mobile Orange Sierra Leone.'
       },
       {
         id: 'afrimoney_sl',
         method: 'afrimoney',
         name: 'Afrimoney (Africell)',
-        badge: 'Afrimoney SL',
+        badge: 'Afrimoney',
         desc: 'Validation invite mobile',
         logo: 'assets/operators/afrimoney.png',
         hint: () => '🟣 Validez le débit sur votre compte Afrimoney Sierra Leone.'
@@ -575,9 +593,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -593,16 +611,16 @@ const countryOperators = {
         id: 'orange_cm',
         method: 'orange',
         name: 'Orange Money Cameroun',
-        badge: 'OM Cameroun',
+        badge: 'Instantané',
         desc: 'Validation Orange Money',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Confirmez le débit sur votre compte Orange Money Cameroun.'
       },
       {
         id: 'mtn_cm',
         method: 'mtn',
         name: 'MTN Mobile Money',
-        badge: 'MTN Cameroun',
+        badge: 'MoMo USSD',
         desc: 'Validation prompt USSD',
         logo: 'assets/operators/mtn.svg',
         hint: () => '🟡 Un prompt USSD s\'affiche sur votre mobile MTN. Saisissez votre code PIN.'
@@ -611,9 +629,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -629,9 +647,9 @@ const countryOperators = {
         id: 'airtel_ga',
         method: 'airtel',
         name: 'Airtel Money Gabon',
-        badge: 'Airtel Gabon',
+        badge: 'Airtel Money',
         desc: 'Prompt USSD direct',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Validez le prompt Airtel Money sur votre mobile Gabon.'
       },
       {
@@ -647,9 +665,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -665,16 +683,16 @@ const countryOperators = {
         id: 'airtel_cg',
         method: 'airtel',
         name: 'Airtel Money Congo',
-        badge: 'Airtel Congo',
+        badge: 'Airtel Money',
         desc: 'Validation push USSD',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Validez le prompt Airtel Money sur votre mobile.'
       },
       {
         id: 'mtn_cg',
         method: 'mtn',
         name: 'MTN Mobile Money',
-        badge: 'MTN Congo',
+        badge: 'MoMo USSD',
         desc: 'Prompt USSD MTN',
         logo: 'assets/operators/mtn.svg',
         hint: () => '🟡 Saisissez votre code PIN MTN sur votre mobile.'
@@ -683,9 +701,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -701,34 +719,34 @@ const countryOperators = {
         id: 'airtel_cd',
         method: 'airtel',
         name: 'Airtel Money RDC',
-        badge: 'Airtel RDC',
+        badge: 'Airtel Money',
         desc: 'Prompt USSD Airtel',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Saisissez votre PIN Airtel Money sur votre écran.'
       },
       {
         id: 'orange_cd',
         method: 'orange',
         name: 'Orange Money RDC',
-        badge: 'OM RDC',
+        badge: 'Instantané',
         desc: 'Validation Orange RDC',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Confirmez la transaction sur votre compte Orange RDC.'
       },
       {
         id: 'mpesa_cd',
         method: 'mpesa',
         name: 'Vodacom M-Pesa RDC',
-        badge: 'M-Pesa RDC',
+        badge: 'M-Pesa STK',
         desc: 'Validation instantanée M-Pesa',
-        logo: 'assets/operators/mpesa.png',
+        logo: 'assets/operators/mpesa.svg',
         hint: () => '🟢 Validez le débit M-Pesa sur votre mobile Vodacom RDC.'
       },
       {
         id: 'afrimoney_cd',
         method: 'afrimoney',
         name: 'Afrimoney (Africell RDC)',
-        badge: 'Afrimoney RDC',
+        badge: 'Afrimoney',
         desc: 'Validation compte Afrimoney',
         logo: 'assets/operators/afrimoney.png',
         hint: () => '🟣 Validez le paiement sur votre compte Afrimoney RDC.'
@@ -737,9 +755,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire (USD/CDF)',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -755,9 +773,9 @@ const countryOperators = {
         id: 'airtel_td',
         method: 'airtel',
         name: 'Airtel Money Tchad',
-        badge: 'Airtel Tchad',
+        badge: 'Airtel Money',
         desc: 'Validation USSD',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Validez le prompt Airtel Money sur votre mobile Tchad.'
       },
       {
@@ -773,9 +791,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -791,9 +809,9 @@ const countryOperators = {
         id: 'orange_cf',
         method: 'orange',
         name: 'Orange Money Centrafrique',
-        badge: 'OM Centrafrique',
+        badge: 'Instantané',
         desc: 'Validation mobile',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Validez la transaction sur votre mobile Orange Centrafrique.'
       },
       {
@@ -809,9 +827,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -827,16 +845,16 @@ const countryOperators = {
         id: 'airtel_rw',
         method: 'airtel',
         name: 'Airtel Money Rwanda',
-        badge: 'Airtel Rwanda',
+        badge: 'Airtel Money',
         desc: 'Prompt USSD Airtel',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Validez le paiement sur votre mobile Airtel Rwanda.'
       },
       {
         id: 'mtn_rw',
         method: 'mtn',
         name: 'MTN MoMo Rwanda',
-        badge: 'MTN Rwanda',
+        badge: 'MoMo USSD',
         desc: 'Prompt USSD direct',
         logo: 'assets/operators/mtn.svg',
         hint: () => '🟡 Saisissez votre code PIN MTN MoMo sur votre mobile.'
@@ -845,9 +863,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -863,27 +881,27 @@ const countryOperators = {
         id: 'airtel_ke',
         method: 'airtel',
         name: 'Airtel Money Kenya',
-        badge: 'Airtel Kenya',
+        badge: 'Airtel Money',
         desc: 'Prompt USSD Airtel',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Validez l\'ordre de débit Airtel Money sur votre mobile.'
       },
       {
         id: 'mpesa_ke',
         method: 'mpesa',
         name: 'Safaricom M-Pesa',
-        badge: 'M-Pesa Kenya (STK Push)',
+        badge: 'STK Push',
         desc: 'Prompt STK Push direct',
-        logo: 'assets/operators/mpesa.png',
+        logo: 'assets/operators/mpesa.svg',
         hint: () => '🟢 Entrez votre code PIN M-Pesa sur le prompt Safaricom de votre téléphone.'
       },
       {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -899,27 +917,27 @@ const countryOperators = {
         id: 'airtel_tz',
         method: 'airtel',
         name: 'Airtel Money Tanzanie',
-        badge: 'Airtel Tanzanie',
+        badge: 'Airtel Money',
         desc: 'Prompt USSD Airtel',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Confirmez l\'opération sur votre mobile Airtel Tanzanie.'
       },
       {
         id: 'mpesa_tz',
         method: 'mpesa',
         name: 'Vodacom M-Pesa Tanzanie',
-        badge: 'M-Pesa TZ',
+        badge: 'M-Pesa STK',
         desc: 'Prompt USSD M-Pesa',
-        logo: 'assets/operators/mpesa.png',
+        logo: 'assets/operators/mpesa.svg',
         hint: () => '🟢 Validez le débit sur votre mobile Vodacom M-Pesa.'
       },
       {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -935,16 +953,16 @@ const countryOperators = {
         id: 'airtel_ug',
         method: 'airtel',
         name: 'Airtel Money Uganda',
-        badge: 'Airtel Uganda',
+        badge: 'Airtel Money',
         desc: 'Prompt USSD Airtel',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Confirmez la transaction sur votre compte Airtel Money Uganda.'
       },
       {
         id: 'mtn_ug',
         method: 'mtn',
         name: 'MTN Mobile Money Uganda',
-        badge: 'MTN Uganda',
+        badge: 'MoMo direct',
         desc: 'Prompt USSD MoMo',
         logo: 'assets/operators/mtn.svg',
         hint: () => '🟡 Saisissez votre code PIN MTN sur votre mobile Ouganda.'
@@ -953,9 +971,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -971,16 +989,16 @@ const countryOperators = {
         id: 'airtel_zm',
         method: 'airtel',
         name: 'Airtel Money Zambia',
-        badge: 'Airtel Zambia',
+        badge: 'Airtel Money',
         desc: 'Prompt USSD Airtel',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Saisissez votre code secret Airtel Money.'
       },
       {
         id: 'mtn_zm',
         method: 'mtn',
         name: 'MTN MoMo Zambia',
-        badge: 'MTN Zambia',
+        badge: 'MoMo direct',
         desc: 'Prompt USSD MoMo',
         logo: 'assets/operators/mtn.svg',
         hint: () => '🟡 Validez le paiement sur votre mobile MTN Zambia.'
@@ -989,9 +1007,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -1007,18 +1025,18 @@ const countryOperators = {
         id: 'airtel_mw',
         method: 'airtel',
         name: 'Airtel Money Malawi',
-        badge: 'Airtel Malawi',
+        badge: 'Airtel Money',
         desc: 'Validation mobile',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Validez la demande sur votre mobile Airtel Malawi.'
       },
       {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -1034,7 +1052,7 @@ const countryOperators = {
         id: 'afrimoney_gm',
         method: 'afrimoney',
         name: 'Afrimoney Gambie',
-        badge: 'Afrimoney GM',
+        badge: 'Afrimoney',
         desc: 'Validation compte Afrimoney',
         logo: 'assets/operators/afrimoney.png',
         hint: () => '🟣 Validez le paiement sur votre mobile Afrimoney Gambie.'
@@ -1043,9 +1061,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -1061,27 +1079,27 @@ const countryOperators = {
         id: 'orange_mg',
         method: 'orange',
         name: 'Orange Money Madagascar',
-        badge: 'OM Madagascar',
+        badge: 'Instantané',
         desc: 'Validation compte Orange',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Validez le paiement sur votre compte Orange Money Madagascar.'
       },
       {
         id: 'airtel_mg',
         method: 'airtel',
         name: 'Airtel Money Madagascar',
-        badge: 'Airtel Madagascar',
+        badge: 'Airtel Money',
         desc: 'Prompt USSD direct',
-        logo: 'assets/operators/airtel.png',
+        logo: 'assets/operators/airtel.svg',
         hint: () => '🔴 Validez la transaction sur votre compte Airtel Money Madagascar.'
       },
       {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -1097,18 +1115,18 @@ const countryOperators = {
         id: 'mpesa_mz',
         method: 'mpesa',
         name: 'Vodacom M-Pesa Moçambique',
-        badge: 'M-Pesa MZ',
+        badge: 'M-Pesa STK',
         desc: 'Validation M-Pesa',
-        logo: 'assets/operators/mpesa.png',
+        logo: 'assets/operators/mpesa.svg',
         hint: () => '🟢 Validez le débit sur votre compte Vodacom M-Pesa.'
       },
       {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -1124,9 +1142,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire (ZAR/USD)',
-        badge: 'Visa / Mastercard',
+        badge: '3D-Secure',
         desc: 'Paiement 3D-Secure',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -1142,9 +1160,9 @@ const countryOperators = {
         id: 'orange_ma',
         method: 'orange',
         name: 'Orange Money Maroc',
-        badge: 'OM Maroc',
+        badge: 'Instantané',
         desc: 'Validation mobile',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Validez le paiement sur votre mobile Orange Maroc.'
       },
       {
@@ -1160,9 +1178,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire CMI (Dirham/EUR)',
-        badge: 'Visa / Mastercard / CMI',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé 3D-Secure',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -1189,16 +1207,16 @@ const countryOperators = {
         name: 'Orange Cash Égypte',
         badge: 'Orange Cash',
         desc: 'Validation mobile',
-        logo: 'assets/operators/orange.png',
+        logo: 'assets/operators/orange.svg',
         hint: () => '🟠 Confirmez le débit sur votre compte Orange Cash.'
       },
       {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire (EGP/USD)',
-        badge: 'Visa / Mastercard / Meeza',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé par carte',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -1214,9 +1232,9 @@ const countryOperators = {
         id: 'card',
         method: 'card',
         name: 'Carte Bancaire',
-        badge: 'Visa / Mastercard / Amex',
+        badge: '3D-Secure',
         desc: 'Paiement sécurisé 3D Secure 2.0',
-        logo: 'assets/operators/card.png',
+        logo: 'assets/operators/card.svg',
         hint: () => '💳 Saisissez vos coordonnées de carte bancaire pour régler.',
         isCard: true
       }
@@ -1231,39 +1249,54 @@ function renderCountryOperators(countryCode) {
   const countryData = countryOperators[countryCode] || countryOperators.TG;
   grid.innerHTML = '';
 
+  const opCount = countryData.operators.length;
+
   countryData.operators.forEach((op, index) => {
     const isFirst = index === 0;
+    const isOddLast = (opCount % 2 !== 0) && (index === opCount - 1);
+    const spanClass = isOddLast ? 'sm:col-span-2' : '';
+
     const card = document.createElement('div');
-    card.className = `payment-method-card p-3 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
-      isFirst ? 'active border-2 border-[#0052FF] bg-[#EEF4FF]' : 'border-[#ECEEF6] bg-[#F8F9FD] hover:bg-[#F1F3F9]'
-    }`;
+    card.className = 'payment-method-card group relative p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between ' + spanClass + ' ' + (isFirst ? 'active' : '');
     card.setAttribute('data-method', op.method);
     card.setAttribute('data-op-id', op.id);
 
-    const isSvg = op.logo.endsWith('.svg');
-    const isOrange = op.logo.includes('orange');
-    const imgFitClass = isSvg 
-      ? 'w-full h-full object-contain p-1.5' 
-      : (isOrange ? 'w-full h-full object-contain p-1' : 'w-full h-full object-cover scale-[1.03]');
+    // Clean badge styling
+    let badgeHtml = '';
+    if (op.badge) {
+      let badgeStyle = 'bg-blue-50 text-[#0052FF] border-blue-100';
+      if (op.badge.includes('OTP')) {
+        badgeStyle = 'bg-amber-50 text-amber-800 border-amber-200';
+      } else if (op.badge.includes('1%') || op.badge.includes('0F')) {
+        badgeStyle = 'bg-cyan-50 text-cyan-800 border-cyan-200';
+      } else if (op.badge.includes('3D') || op.badge.includes('Secure')) {
+        badgeStyle = 'bg-slate-100 text-slate-700 border-slate-200';
+      } else if (op.badge.includes('USSD') || op.badge.includes('STK') || op.badge.includes('Flooz')) {
+        badgeStyle = 'bg-blue-50 text-[#0052FF] border-blue-100';
+      }
+      badgeHtml = '<span class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ' + badgeStyle + ' whitespace-nowrap">' + op.badge + '</span>';
+    }
 
     card.innerHTML = `
-      <div class="flex items-center gap-3.5">
-        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white flex items-center justify-center p-0.5 shadow-sm border border-slate-200 overflow-hidden shrink-0">
-          <img src="${op.logo}" alt="${op.name}" class="${imgFitClass} rounded-xl">
+      <div class="flex items-center gap-3.5 min-w-0">
+        <!-- Logo Box: Always centered, never cropped -->
+        <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center p-2 shadow-xs shrink-0 group-hover:scale-[1.02] transition-transform">
+          <img src="${op.logo}" alt="${op.name}" class="w-full h-full object-contain" loading="lazy">
         </div>
-        <div>
-          <div class="text-xs sm:text-sm font-bold text-[#0F172A] flex items-center gap-1.5 flex-wrap">
-            <span>${op.name}</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-[#0052FF] font-bold border border-purple-100 flex items-center gap-1 shadow-xs">
-              <span class="text-xs leading-none">${countryData.flag}</span>
-              <span>${op.badge}</span>
-            </span>
+        <!-- Info -->
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap mb-0.5">
+            <span class="text-xs sm:text-sm font-extrabold text-[#0F172A] tracking-tight">${op.name}</span>
+            ${badgeHtml}
           </div>
-          <span class="text-[10.5px] sm:text-xs text-slate-500 font-medium">${op.desc}</span>
+          <p class="text-[11px] sm:text-xs text-slate-500 font-medium leading-snug">${op.desc}</p>
         </div>
       </div>
-      <div class="custom-radio w-4 h-4 rounded-full border-2 ${isFirst ? 'border-[#0052FF]' : 'border-slate-300'} flex items-center justify-center shrink-0">
-        <div class="w-2 h-2 rounded-full bg-[#0052FF] radio-dot ${isFirst ? '' : 'hidden'}"></div>
+      <!-- Luxury Radio with Checkmark -->
+      <div class="custom-radio w-5 h-5 rounded-full border-2 ${isFirst ? 'border-[#0052FF] bg-[#0052FF]' : 'border-slate-300 bg-white group-hover:border-slate-400'} flex items-center justify-center shrink-0 ml-3 transition-all duration-200 shadow-xs">
+        <svg class="w-3 h-3 text-white radio-check ${isFirst ? '' : 'hidden'}" viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
     `;
 
@@ -1274,7 +1307,7 @@ function renderCountryOperators(countryCode) {
     grid.appendChild(card);
   });
 
-  // Sélectionner le 1er opérateur par défaut
+  // Automatically select first operator
   if (countryData.operators.length > 0) {
     selectOperator(countryData.operators[0]);
   }
@@ -1292,27 +1325,32 @@ function selectOperator(op) {
   const otpUssdDisplay = document.getElementById('otpUssdCodeDisplay');
   const otpInstructionText = document.getElementById('otpInstructionText');
   const otpInput = document.getElementById('payerOtpCode');
+  const phoneLabel = document.getElementById('phoneInputLabel');
 
   cards.forEach(card => {
     const isThis = card.getAttribute('data-op-id') === op.id;
-    const dot = card.querySelector('.radio-dot');
+    const check = card.querySelector('.radio-check');
     const radio = card.querySelector('.custom-radio');
     if (isThis) {
-      card.className = 'payment-method-card p-3 rounded-2xl border-2 border-[#0052FF] bg-[#EEF4FF] cursor-pointer transition-all flex items-center justify-between active';
-      if (dot) dot.classList.remove('hidden');
+      card.classList.add('active');
+      if (check) check.classList.remove('hidden');
       if (radio) {
-        radio.classList.remove('border-slate-300');
-        radio.classList.add('border-[#0052FF]');
+        radio.classList.remove('border-slate-300', 'bg-white');
+        radio.classList.add('border-[#0052FF]', 'bg-[#0052FF]');
       }
     } else {
-      card.className = 'payment-method-card p-3 rounded-2xl border border-[#ECEEF6] bg-[#F8F9FD] hover:bg-[#F1F3F9] cursor-pointer transition-all flex items-center justify-between';
-      if (dot) dot.classList.add('hidden');
+      card.classList.remove('active');
+      if (check) check.classList.add('hidden');
       if (radio) {
-        radio.classList.add('border-slate-300');
-        radio.classList.remove('border-[#0052FF]');
+        radio.classList.add('border-slate-300', 'bg-white');
+        radio.classList.remove('border-[#0052FF]', 'bg-[#0052FF]');
       }
     }
   });
+
+  if (phoneLabel) {
+    phoneLabel.textContent = 'Numéro de téléphone ' + op.name;
+  }
 
   if (op.isCard) {
     if (fieldsMobile) fieldsMobile.classList.add('hidden');
@@ -1325,11 +1363,11 @@ function selectOperator(op) {
   } else {
     if (fieldsMobile) fieldsMobile.classList.remove('hidden');
     if (fieldsCard) fieldsCard.classList.add('hidden');
-    
+
     const hintText = (typeof op.hint === 'function') ? op.hint(CheckoutState.amount) : op.hint;
     if (hintEl) hintEl.textContent = hintText || 'Validez la transaction sur votre appareil mobile.';
 
-    // GESTION DU CHAMP CODE OTP POUR ORANGE MONEY (Burkina Faso / Côte d\'Ivoire)
+    // GESTION DU CHAMP CODE OTP POUR ORANGE MONEY
     if (op.requiresOtp) {
       if (otpContainer) otpContainer.classList.remove('hidden');
       if (otpInput) {
@@ -1338,7 +1376,7 @@ function selectOperator(op) {
       const ussdSyntax = (typeof op.ussdTemplate === 'function') ? op.ussdTemplate(CheckoutState.amount) : op.ussdTemplate;
       if (otpUssdDisplay) otpUssdDisplay.textContent = ussdSyntax;
       if (otpInstructionText) {
-        otpInstructionText.innerHTML = `Composez le <code class="font-mono font-bold text-xs bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded font-black">${ussdSyntax}</code> sur votre mobile Orange pour générer votre code OTP, puis saisissez-le ci-dessous :`;
+        otpInstructionText.innerHTML = 'Composez le <code class="font-mono font-black text-xs bg-amber-200/90 text-amber-950 px-2 py-0.5 rounded">' + ussdSyntax + '</code> sur votre mobile Orange pour générer votre code OTP, puis saisissez-le ci-dessous :';
       }
     } else {
       if (otpContainer) otpContainer.classList.add('hidden');
@@ -1354,41 +1392,176 @@ function selectOperator(op) {
 
 function initCountrySelector() {
   const select = document.getElementById('countrySelect');
-  const prefixSpan = document.getElementById('phoneCountryPrefix');
-  const flagSpan = document.getElementById('phoneCountryFlag');
+  const pickerBtn = document.getElementById('countryPickerBtn');
+  const dropdown = document.getElementById('countryPickerDropdown');
+  const searchInput = document.getElementById('countrySearchInput');
+  const quickChips = document.getElementById('quickCountryChips');
+  const countryList = document.getElementById('countryDropdownList');
+  const chevron = document.getElementById('countryDropdownChevron');
 
-  if (!select) return;
+  const selectedFlag = document.getElementById('selectedCountryFlagImg');
+  const selectedName = document.getElementById('selectedCountryNameText');
+  const selectedPrefix = document.getElementById('selectedCountryPrefixText');
 
-  const updateCountry = (countryCode) => {
-    const countryData = countryOperators[countryCode] || countryOperators.TG;
-    CheckoutState.country = countryCode;
-    CheckoutState.prefix = countryData.prefix;
-    CheckoutState.flag = countryData.flag;
+  const phoneFlag = document.getElementById('phoneCountryFlagImg');
+  const phonePrefix = document.getElementById('phoneCountryPrefixText');
+  const phoneInput = document.getElementById('payerPhone');
 
-    if (prefixSpan) {
-      prefixSpan.innerHTML = `<span id="phoneCountryFlag" class="text-base leading-none">${countryData.flag}</span> ${countryData.prefix}`;
+  const summaryFlag = document.getElementById('summaryCountryFlagImg');
+  const summaryName = document.getElementById('summaryCountryName');
+
+  // Populate hidden select
+  if (select) {
+    select.innerHTML = '';
+    for (const [code, data] of Object.entries(countryOperators)) {
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = data.countryName + ' (' + data.prefix + ')';
+      select.appendChild(opt);
     }
+  }
 
-    const summaryFlagEl = document.getElementById('summaryCountryFlag');
-    const summaryNameEl = document.getElementById('summaryCountryName');
-    if (summaryFlagEl) summaryFlagEl.textContent = countryData.flag;
-    if (summaryNameEl) summaryNameEl.textContent = countryData.countryName + ' (' + countryData.prefix + ')';
+  // Define top countries for quick chips
+  const topCountries = ['TG', 'CI', 'BJ', 'SN', 'CM', 'BF', 'ML', 'CD', 'FR'];
+  if (quickChips) {
+    quickChips.innerHTML = '';
+    topCountries.forEach(code => {
+      const data = countryOperators[code];
+      if (!data) return;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'country-chip px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-[#0052FF] text-[11px] font-bold text-slate-700 flex items-center gap-1.5 shrink-0 transition-colors border border-transparent hover:border-blue-200';
+      chip.innerHTML = '<img src="' + getFlagUrl(code) + '" class="w-4 h-3 rounded object-cover shadow-xs border border-slate-200"> <span>' + data.countryName + '</span>';
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyCountry(code);
+        closeDropdown();
+      });
+      quickChips.appendChild(chip);
+    });
+  }
 
-    const phoneInput = document.getElementById('payerPhone');
-    if (phoneInput && countryData.sample) {
-      phoneInput.value = countryData.sample;
-      phoneInput.placeholder = countryData.sample;
+  function renderDropdownItems(filter = '') {
+    if (!countryList) return;
+    countryList.innerHTML = '';
+    const norm = filter.trim().toLowerCase();
+
+    for (const [code, data] of Object.entries(countryOperators)) {
+      const matchName = data.countryName.toLowerCase().includes(norm);
+      const matchPrefix = data.prefix.toLowerCase().includes(norm);
+      const matchCode = code.toLowerCase().includes(norm);
+      const matchOps = data.operators.some(o => o.name.toLowerCase().includes(norm));
+
+      if (norm && !matchName && !matchPrefix && !matchCode && !matchOps) continue;
+
+      const isCurrent = CheckoutState.country === code;
+      const row = document.createElement('div');
+      row.className = 'country-item p-2.5 rounded-xl border border-transparent cursor-pointer flex items-center justify-between transition-colors ' + (isCurrent ? 'selected bg-blue-50/80 border-blue-200' : 'hover:bg-slate-50');
+
+      const opsSummary = data.operators.map(o => o.name.split(' ')[0]).join(' • ');
+
+      row.innerHTML = `
+        <div class="flex items-center gap-3 min-w-0">
+          <img src="${getFlagUrl(code)}" alt="${data.countryName}" class="w-6 h-4.5 rounded object-cover shadow-xs border border-slate-200 shrink-0">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs sm:text-sm font-bold text-[#0F172A] truncate">${data.countryName}</span>
+              <span class="text-[11px] font-mono font-bold text-slate-500">${data.prefix}</span>
+            </div>
+            <span class="text-[10px] text-slate-400 block truncate font-medium">${opsSummary}</span>
+          </div>
+        </div>
+        ${isCurrent ? '<span class="text-[#0052FF] font-black text-xs ml-2">✓</span>' : ''}
+      `;
+
+      row.addEventListener('click', () => {
+        applyCountry(code);
+        closeDropdown();
+      });
+
+      countryList.appendChild(row);
+    }
+  }
+
+  function applyCountry(countryCode) {
+    const data = countryOperators[countryCode] || countryOperators.TG;
+    CheckoutState.country = countryCode;
+    CheckoutState.prefix = data.prefix;
+    CheckoutState.flag = data.flag;
+
+    if (select) select.value = countryCode;
+
+    // Trigger button
+    if (selectedFlag) selectedFlag.src = getFlagUrl(countryCode);
+    if (selectedName) selectedName.textContent = data.countryName;
+    if (selectedPrefix) selectedPrefix.textContent = data.prefix;
+
+    // Summary Column
+    if (summaryFlag) summaryFlag.src = getFlagUrl(countryCode);
+    if (summaryName) summaryName.textContent = data.countryName + ' (' + data.prefix + ')';
+
+    // Phone input
+    if (phoneFlag) phoneFlag.src = getFlagUrl(countryCode);
+    if (phonePrefix) phonePrefix.textContent = data.prefix;
+    if (phoneInput && data.sample) {
+      phoneInput.value = data.sample;
+      phoneInput.placeholder = data.sample;
     }
 
     renderCountryOperators(countryCode);
-  };
+    renderDropdownItems(searchInput ? searchInput.value : '');
+  }
 
-  select.addEventListener('change', () => {
-    updateCountry(select.value);
+  function openDropdown() {
+    if (!dropdown) return;
+    dropdown.classList.remove('hidden');
+    if (chevron) chevron.classList.add('rotate-180');
+    renderDropdownItems('');
+    if (searchInput) {
+      searchInput.value = '';
+      setTimeout(() => searchInput.focus(), 60);
+    }
+  }
+
+  function closeDropdown() {
+    if (!dropdown) return;
+    dropdown.classList.add('hidden');
+    if (chevron) chevron.classList.remove('rotate-180');
+  }
+
+  if (pickerBtn) {
+    pickerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (dropdown.classList.contains('hidden')) {
+        openDropdown();
+      } else {
+        closeDropdown();
+      }
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      renderDropdownItems(searchInput.value);
+    });
+    searchInput.addEventListener('click', (e) => e.stopPropagation());
+  }
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (dropdown && !dropdown.contains(e.target) && pickerBtn && !pickerBtn.contains(e.target)) {
+      closeDropdown();
+    }
   });
 
-  // Initialisation immédiate avec le pays sélectionné
-  updateCountry(select.value || 'TG');
+  if (select) {
+    select.addEventListener('change', () => {
+      applyCountry(select.value);
+    });
+  }
+
+  // Initial apply
+  applyCountry(select?.value || 'TG');
 }
 
 function initPaymentMethodSelector() {
@@ -1399,12 +1572,9 @@ function updatePayButtonText() {
   const btnText = document.getElementById('btnPayText');
   if (!btnText) return;
   const opName = CheckoutState.selectedOp?.name || 'Payer';
-  btnText.textContent = `Payer ${new Intl.NumberFormat('fr-FR').format(CheckoutState.amount)} ${CheckoutState.currency} avec ${opName}`;
+  btnText.textContent = 'Payer ' + new Intl.NumberFormat('fr-FR').format(CheckoutState.amount) + ' ' + CheckoutState.currency + ' avec ' + opName;
 }
 
-/* ========================================================
-   4. CARD INPUT FORMATTING & BRAND DETECTION
-   ======================================================== */
 function initCardFormatting() {
   const cardInput = document.getElementById('cardNumber');
   const expiryInput = document.getElementById('cardExpiry');
@@ -1500,7 +1670,7 @@ function initPaymentSubmission() {
       id: CheckoutState.method,
       method: CheckoutState.method,
       name: CheckoutState.method.toUpperCase(),
-      logo: 'assets/operators/card.png'
+      logo: 'assets/operators/card.svg'
     };
 
     // Validation OTP obligatoire pour Orange Money Burkina Faso & CI
@@ -1575,7 +1745,7 @@ function startPendingValidation(apiResponse = null) {
   const op = CheckoutState.selectedOp || {
     id: CheckoutState.method,
     name: CheckoutState.method.toUpperCase(),
-    logo: 'assets/operators/card.png',
+    logo: 'assets/operators/card.svg',
     hint: 'Validez la transaction sur votre appareil mobile.'
   };
 
@@ -1656,7 +1826,7 @@ function triggerPaymentSuccess(receipt = null) {
   const op = CheckoutState.selectedOp || {
     id: CheckoutState.method,
     name: CheckoutState.method.toUpperCase(),
-    logo: 'assets/operators/card.png'
+    logo: 'assets/operators/card.svg'
   };
 
   const finalTxId = receipt?.id || `tx_live_${Math.random().toString(36).substring(2, 10)}`;
@@ -1677,11 +1847,11 @@ function triggerPaymentSuccess(receipt = null) {
   if (refEl) refEl.textContent = finalRef;
   const cData = countryOperators[CheckoutState.country] || countryOperators.TG;
   if (methodEl) {
-    methodEl.innerHTML = `<span class="inline-flex items-center gap-1.5"><img src="${op.logo}" class="w-4 h-4 object-contain inline rounded"> ${op.name} <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-[#0052FF] font-bold border border-purple-100">${cData.flag}</span></span>`;
+    methodEl.innerHTML = '<span class="inline-flex items-center gap-1.5"><img src="' + op.logo + '" class="w-5 h-5 object-contain inline rounded"> ' + op.name + '</span>';
   }
   const countryEl = document.getElementById('successCountryLabel');
   if (countryEl) {
-    countryEl.innerHTML = `<span class="text-sm">${cData.flag}</span> <span>${cData.countryName} (${cData.prefix})</span>`;
+    countryEl.innerHTML = '<img src="' + getFlagUrl(CheckoutState.country) + '" class="w-4.5 h-3 rounded object-cover shadow-xs border border-slate-200 inline mr-1.5"> <span>' + cData.countryName + ' (' + cData.prefix + ')</span>';
   }
   if (dateEl) {
     const now = new Date();

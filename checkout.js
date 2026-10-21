@@ -256,7 +256,7 @@ const countryOperators = {
         id: 'orange_ci',
         method: 'orange',
         name: 'Orange Money',
-        badge: 'OM Côte d\'Ivoire (OTP)',
+        badge: 'Code OTP',
         desc: 'Code OTP via #144*77#',
         logo: 'assets/operators/orange.svg',
         requiresOtp: true,
@@ -1249,15 +1249,11 @@ function renderCountryOperators(countryCode) {
   const countryData = countryOperators[countryCode] || countryOperators.TG;
   grid.innerHTML = '';
 
-  const opCount = countryData.operators.length;
-
   countryData.operators.forEach((op, index) => {
     const isFirst = index === 0;
-    const isOddLast = (opCount % 2 !== 0) && (index === opCount - 1);
-    const spanClass = isOddLast ? 'sm:col-span-2' : '';
 
     const card = document.createElement('div');
-    card.className = 'payment-method-card group relative p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between ' + spanClass + ' ' + (isFirst ? 'active' : '');
+    card.className = 'payment-method-card group relative p-3 sm:p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between w-full ' + (isFirst ? 'active' : '');
     card.setAttribute('data-method', op.method);
     card.setAttribute('data-op-id', op.id);
 
@@ -1274,22 +1270,22 @@ function renderCountryOperators(countryCode) {
       } else if (op.badge.includes('USSD') || op.badge.includes('STK') || op.badge.includes('Flooz')) {
         badgeStyle = 'bg-blue-50 text-[#0052FF] border-blue-100';
       }
-      badgeHtml = '<span class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border ' + badgeStyle + ' whitespace-nowrap">' + op.badge + '</span>';
+      badgeHtml = '<span class="inline-flex items-center text-[10px] font-bold px-2.5 py-0.5 rounded-full border ' + badgeStyle + ' whitespace-nowrap shrink-0">' + op.badge + '</span>';
     }
 
     card.innerHTML = `
-      <div class="flex items-center gap-3.5 min-w-0">
-        <!-- Logo Box: Always centered, never cropped -->
-        <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-white border border-slate-200/80 flex items-center justify-center p-2 shadow-xs shrink-0 group-hover:scale-[1.02] transition-transform">
+      <div class="flex items-center gap-3.5 min-w-0 flex-1">
+        <!-- Logo Box: Slim, centered & never cropped -->
+        <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white border border-slate-200/80 flex items-center justify-center p-1.5 shadow-xs shrink-0 group-hover:scale-[1.02] transition-transform">
           <img src="${op.logo}" alt="${op.name}" class="w-full h-full object-contain" loading="lazy">
         </div>
-        <!-- Info -->
-        <div class="min-w-0">
-          <div class="flex items-center gap-2 flex-wrap mb-0.5">
-            <span class="text-xs sm:text-sm font-extrabold text-[#0F172A] tracking-tight">${op.name}</span>
+        <!-- Info: Horizontal alignment, no wrapping -->
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap mb-0.5">
+            <span class="text-xs sm:text-sm font-extrabold text-[#0F172A] tracking-tight truncate">${op.name}</span>
             ${badgeHtml}
           </div>
-          <p class="text-[11px] sm:text-xs text-slate-500 font-medium leading-snug">${op.desc}</p>
+          <p class="text-[11px] sm:text-xs text-slate-500 font-medium leading-snug truncate">${op.desc}</p>
         </div>
       </div>
       <!-- Luxury Radio with Checkmark -->

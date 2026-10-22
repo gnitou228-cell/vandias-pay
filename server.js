@@ -359,7 +359,15 @@ function normalizeAfricanPhone(phone, countryCode = 'TG') {
     return '+' + digits;
   }
 
-  if (digits.startsWith('0') && ['TG', 'BF', 'BJ'].includes(cUpper) && digits.length === 9) {
+  if (cUpper === 'BJ') {
+    let cleanBJ = digits.startsWith('+') ? digits.slice(1) : digits;
+    if (cleanBJ.startsWith('229')) cleanBJ = cleanBJ.slice(3);
+    if (cleanBJ.startsWith('0') && cleanBJ.length === 9) cleanBJ = cleanBJ.slice(1);
+    if (cleanBJ.length === 8) cleanBJ = '01' + cleanBJ;
+    return '+229' + cleanBJ;
+  }
+
+  if (digits.startsWith('0') && ['TG', 'BF'].includes(cUpper) && digits.length === 9) {
     digits = digits.slice(1);
   }
 

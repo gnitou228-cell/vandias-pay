@@ -802,6 +802,36 @@ const memoryDb = {
 };
 
 // ========================================================
+// 2.a PRÉCHARGEMENT INITIAL ET PERSISTANCE SUPABASE ⇄ MÉMOIRE
+// Assure que les liens de paiement et transactions ne disparaissent JAMAIS au redémarrage
+// ========================================================
+async function preloadDataFromSupabase() {
+  if (!supabase) return;
+  try {
+    const { data: links, error: lErr } = await supabase.from('payment_links').select('*');
+    if (!lErr && links && links.length > 0) {
+      const linkMap = new Map();
+      (memoryDb.payment_links || []).forEach(l => linkMap.set(l.id || l.slug, l));
+      links.forEach(l => linkMap.set(l.id || l.slug, l));
+      memoryDb.payment_links = Array.from(linkMap.values());
+      console.log(`📦 [PERSISTANCE] ${memoryDb.payment_links.length} liens de paiement synchronisés et sécurisés depuis Supabase.`);
+    }
+
+    const { data: txs, error: tErr } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(100);
+    if (!tErr && txs && txs.length > 0) {
+      const txMap = new Map();
+      (memoryDb.transactions || []).forEach(t => txMap.set(t.id, t));
+      txs.forEach(t => txMap.set(t.id, t));
+      memoryDb.transactions = Array.from(txMap.values());
+      console.log(`📦 [PERSISTANCE] ${memoryDb.transactions.length} transactions synchronisées depuis Supabase.`);
+    }
+  } catch (err) {
+    console.warn('⚠️ [PERSISTANCE] Avertissement synchronisation initiale:', err.message);
+  }
+}
+preloadDataFromSupabase();
+
+// ========================================================
 // 2.b MOTEUR TEMPS RÉEL (SERVER-SENT EVENTS — SSE)
 // Synchronisation instantanée Super Admin ⇄ Marchands
 // ========================================================

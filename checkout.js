@@ -1838,7 +1838,7 @@ function startPendingValidation(apiResponse = null) {
   if (promptDescEl) {
     const hintText = (typeof op.hint === 'function') ? op.hint(CheckoutState.amount) : op.hint;
     const sasRef = apiResponse && apiResponse.operator_reference ? apiResponse.operator_reference : '';
-    const refBadge = sasRef ? `<div class="mt-2.5 text-[11px] font-mono text-emerald-700 bg-emerald-50 py-1.5 px-3 rounded-xl border border-emerald-200 inline-flex items-center gap-1.5 shadow-xs"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Réf. SasPay Direct : <strong>${sasRef}</strong></div>` : '';
+    const refBadge = sasRef ? `<div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-[11px] font-mono text-emerald-800 shadow-xs"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span><span>Réf. VandiasPay : <strong class="font-bold text-emerald-950">${sasRef}</strong></span></div>` : '';
     promptDescEl.innerHTML = `${hintText || 'Une demande de confirmation USSD a été transmise à votre opérateur.'}<br><span class="text-slate-500 font-normal">Numéro cible :</span> <strong class="text-[#0F172A] font-mono">${displayPhone}</strong><br>${refBadge}`;
   }
 

@@ -3803,7 +3803,6 @@ function initAuthModalEvents() {
   const formVerifyEmail = document.getElementById('authVerifyEmailForm');
   const title = document.getElementById('authModalTitle');
   const subtitle = document.getElementById('authModalSubtitle');
-  const btnQuickDemo = document.getElementById('btnQuickDemoLogin');
 
   if (tabLogin && tabRegister && formLogin && formRegister) {
     tabLogin.addEventListener('click', () => {
@@ -3897,15 +3896,6 @@ function initAuthModalEvents() {
           submitBtn.innerHTML = '<span>Se connecter</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';
         }
       }
-    });
-  }
-
-  // Bouton Connexion Démo Rapide
-  if (btnQuickDemo) {
-    btnQuickDemo.addEventListener('click', async () => {
-      document.getElementById('loginEmail').value = 'gnitessowedeou@gmail.com';
-      document.getElementById('loginPassword').value = '9342Well@';
-      formLogin.dispatchEvent(new Event('submit'));
     });
   }
 

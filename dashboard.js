@@ -3241,6 +3241,91 @@ function initDeveloperSection() {
   if (btnConfirmDeleteIp) {
     btnConfirmDeleteIp.addEventListener('click', confirmDeleteIp);
   }
+
+  // 9. Documentation SaaS & Sélecteur de langage
+  const langBtns = document.querySelectorAll('.lang-tab-btn');
+  langBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lang = btn.getAttribute('data-lang');
+      langBtns.forEach(b => {
+        b.className = 'lang-tab-btn px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white';
+      });
+      btn.className = 'lang-tab-btn px-2.5 py-1 rounded-lg font-semibold text-white bg-[#0052FF]';
+
+      document.querySelectorAll('.code-snippet-block').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(`codeSnippet-${lang}`);
+      if (target) target.classList.remove('hidden');
+    });
+  });
+
+  // Copie de l'exemple de code actif
+  const btnCopyCode = document.getElementById('btnCopyApiCode');
+  if (btnCopyCode) {
+    btnCopyCode.addEventListener('click', () => {
+      const activeBlock = document.querySelector('.code-snippet-block:not(.hidden)');
+      if (activeBlock) {
+        navigator.clipboard.writeText(activeBlock.innerText).then(() => {
+          showToast('Copié !', 'Exemple de code copié dans le presse-papier.');
+        });
+      }
+    });
+  }
+
+  // 10. Console de test interactive (API Playground)
+  const formPlayground = document.getElementById('formApiPlaygroundTest');
+  if (formPlayground) {
+    formPlayground.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById('testApiAmount')?.value || 2500);
+      const title = document.getElementById('testApiTitle')?.value || 'Test Abonnement SaaS';
+      const btn = document.getElementById('btnRunApiPlayground');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Création en cours...';
+      }
+
+      try {
+        const res = await fetch('/api/v1/merchant/checkout-sessions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${VPState.token}`
+          },
+          body: JSON.stringify({
+            amount,
+            currency: 'XOF',
+            title,
+            customer_name: 'Testeur SaaS',
+            customer_email: 'test@saas.com',
+            redirect_url: window.location.href,
+            metadata: { source: 'api_playground' }
+          })
+        });
+
+        const data = await res.json();
+        const resContainer = document.getElementById('testApiResultContainer');
+        const jsonPre = document.getElementById('testApiResponseJson');
+        const linkA = document.getElementById('testApiCheckoutLink');
+
+        if (data.success && data.checkout_url) {
+          if (jsonPre) jsonPre.textContent = JSON.stringify(data, null, 2);
+          if (linkA) linkA.href = safeGetCheckoutUrl(data.checkout_url, data.id);
+          if (resContainer) resContainer.classList.remove('hidden');
+          showToast('Session prête !', 'La session de paiement a été créée avec succès.');
+        } else {
+          showToast('Erreur', data.error || 'Impossible de créer la session de test.');
+        }
+      } catch (err) {
+        showToast('Erreur', err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span>⚡ Créer la session</span>';
+        }
+      }
+    });
+  }
 }
 
 function switchDevSubTab(tabId) {
@@ -3269,6 +3354,12 @@ function switchDevSubTab(tabId) {
     loadAndRenderApiKeys(VPState.devKeySearchQuery);
   } else if (tabId === 'whitelist') {
     loadAndRenderIpWhitelist();
+  } else if (tabId === 'docs') {
+    const currentBase = window.location.origin;
+    document.querySelectorAll('.code-snippet-block code').forEach(el => {
+      if (!el.dataset.raw) el.dataset.raw = el.innerHTML;
+      el.innerHTML = el.dataset.raw.replace(/https:\/\/api\.vandiaspay\.com/g, currentBase);
+    });
   }
 }
 

@@ -1261,7 +1261,7 @@
         <!-- Layout Grille 4 colonnes SasPay Développeur -->
         <div class="grid gap-6 lg:grid-cols-4">
           
-          <!-- Navigation des 2 sous-onglets Développeur (Gauche) -->
+          <!-- Navigation des 3 sous-onglets Développeur (Gauche) -->
           <nav id="devSubTabsNav" class="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible pb-2 lg:pb-0">
             <!-- 1. Clés API (Active pill) -->
             <button type="button" class="dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all bg-[#0052FF] text-white shadow-[0_8px_18px_-8px_rgba(0, 82, 255,0.6)]" data-dev-tab="keys">
@@ -1273,6 +1273,12 @@
             <button type="button" class="dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]" data-dev-tab="whitelist">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
               <span>IP Whitelist</span>
+            </button>
+
+            <!-- 3. Intégration SaaS & Guide API -->
+            <button type="button" class="dev-subtab-btn flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition-all text-[#6B7280] hover:bg-blue-50 hover:text-[#111827]" data-dev-tab="docs">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+              <span>Intégration SaaS</span>
             </button>
           </nav>
 
@@ -1372,6 +1378,261 @@
                     <!-- Rempli dynamiquement -->
                   </tbody>
                 </table>
+              </div>
+
+            </div>
+
+            <!-- ================= SUB-PANEL 3 : INTÉGRATION SAAS & GUIDE API ================= -->
+            <div id="dev-panel-docs" class="dev-subtab-panel hidden space-y-6">
+              
+              <!-- Bannière d'en-tête -->
+              <div class="rounded-2xl bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-transparent p-5 border border-blue-500/20">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#0052FF] text-white mb-2 shadow-xs">
+                      ⚡ API REST v1
+                    </span>
+                    <h3 class="text-lg font-extrabold text-[#111827]">Intégrez VandiasPay dans votre SaaS</h3>
+                    <p class="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                      Encaisser vos abonnements et ventes en Afrique (Wave, Orange Money, MTN, Moov, Cartes bancaires) via une simple requête HTTP POST.
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="switchDevSubTab('keys')" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 hover:bg-slate-50 transition-colors shadow-xs">
+                      🔑 Gérer mes clés
+                    </button>
+                    <button type="button" onclick="switchTab('webhooks')" class="px-3.5 py-2 rounded-xl bg-[#0052FF] text-white text-xs font-semibold hover:bg-[#0040D0] transition-colors shadow-xs">
+                      📡 Configurer Webhooks
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Étape 1 : Création de Session de Paiement -->
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-full bg-[#0052FF] text-white flex items-center justify-center font-bold text-xs">1</span>
+                  <h4 class="text-sm font-bold text-[#111827]">Créer une session de paiement SaaS (Checkout Session)</h4>
+                </div>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                  Envoyez une requête <code class="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-[#0052FF] font-semibold">POST /api/v1/checkout-sessions</code> depuis votre backend SaaS avec votre clé secrète (<code class="font-mono text-slate-700">sk_live_...</code>).
+                </p>
+
+                <!-- Sélecteur de langage de programmation -->
+                <div class="rounded-2xl border border-slate-200 overflow-hidden bg-slate-900 text-slate-200">
+                  <div class="flex items-center justify-between border-b border-slate-800 px-4 py-2 bg-slate-950/60">
+                    <div class="flex items-center gap-2 text-xs" id="codeLangTabs">
+                      <button type="button" class="lang-tab-btn px-2.5 py-1 rounded-lg font-semibold text-white bg-[#0052FF]" data-lang="curl">cURL</button>
+                      <button type="button" class="lang-tab-btn px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white" data-lang="node">Node.js</button>
+                      <button type="button" class="lang-tab-btn px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white" data-lang="python">Python</button>
+                      <button type="button" class="lang-tab-btn px-2.5 py-1 rounded-lg font-semibold text-slate-400 hover:text-white" data-lang="php">PHP</button>
+                    </div>
+                    <button type="button" id="btnCopyApiCode" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-mono transition-colors">
+                      <span>📋 Copier</span>
+                    </button>
+                  </div>
+
+                  <!-- Blocs de Code préformatés -->
+                  <div class="p-4 overflow-x-auto text-xs font-mono leading-relaxed" id="apiCodeDisplayContainer">
+                    <!-- cURL (Default) -->
+                    <pre class="code-snippet-block text-emerald-400" id="codeSnippet-curl"><code>curl -X POST https://api.vandiaspay.com/api/v1/checkout-sessions \
+  -H "Authorization: Bearer VOTRE_CLE_SECRETE_sk_live" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 5000,
+    "currency": "XOF",
+    "title": "Abonnement SaaS Pro (1 Mois)",
+    "customer_name": "Jean Dupont",
+    "customer_email": "jean@exemple.com",
+    "customer_phone": "+22890000000",
+    "redirect_url": "https://votresite.com/merci",
+    "metadata": {
+      "user_id": "usr_9482",
+      "plan": "pro_monthly"
+    }
+  }'</code></pre>
+
+                    <!-- Node.js -->
+                    <pre class="code-snippet-block hidden text-sky-300" id="codeSnippet-node"><code>const axios = require('axios');
+
+async function createSaaSPaymentSession() {
+  const response = await axios.post('https://api.vandiaspay.com/api/v1/checkout-sessions', {
+    amount: 5000,
+    currency: 'XOF',
+    title: 'Abonnement SaaS Pro (1 Mois)',
+    customer_name: 'Jean Dupont',
+    customer_email: 'jean@exemple.com',
+    customer_phone: '+22890000000',
+    redirect_url: 'https://votresite.com/merci',
+    metadata: { user_id: 'usr_9482', plan: 'pro_monthly' }
+  }, {
+    headers: {
+      'Authorization': 'Bearer VOTRE_CLE_SECRETE_sk_live',
+      'Content-Type': 'application/json'
+    }
+  });
+
+  // Rediriger le client vers l'URL sécurisée de paiement VandiasPay :
+  console.log('Lien de paiement :', response.data.checkout_url);
+  return response.data.checkout_url;
+}</code></pre>
+
+                    <!-- Python -->
+                    <pre class="code-snippet-block hidden text-yellow-300" id="codeSnippet-python"><code>import requests
+
+def create_saas_payment_session():
+    url = "https://api.vandiaspay.com/api/v1/checkout-sessions"
+    headers = {
+        "Authorization": "Bearer VOTRE_CLE_SECRETE_sk_live",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "amount": 5000,
+        "currency": "XOF",
+        "title": "Abonnement SaaS Pro (1 Mois)",
+        "customer_name": "Jean Dupont",
+        "customer_email": "jean@exemple.com",
+        "customer_phone": "+22890000000",
+        "redirect_url": "https://votresite.com/merci",
+        "metadata": {"user_id": "usr_9482", "plan": "pro_monthly"}
+    }
+    res = requests.post(url, json=payload, headers=headers)
+    data = res.json()
+    # Rediriger l'utilisateur vers checkout_url
+    print("URL de paiement :", data.get("checkout_url"))
+    return data.get("checkout_url")</code></pre>
+
+                    <!-- PHP -->
+                    <pre class="code-snippet-block hidden text-indigo-300" id="codeSnippet-php"><code>&lt;?php
+$payload = [
+    'amount' => 5000,
+    'currency' => 'XOF',
+    'title' => 'Abonnement SaaS Pro (1 Mois)',
+    'customer_name' => 'Jean Dupont',
+    'customer_email' => 'jean@exemple.com',
+    'customer_phone' => '+22890000000',
+    'redirect_url' => 'https://votresite.com/merci',
+    'metadata' => ['user_id' => 'usr_9482', 'plan' => 'pro_monthly']
+];
+
+$ch = curl_init('https://api.vandiaspay.com/api/v1/checkout-sessions');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Authorization: Bearer VOTRE_CLE_SECRETE_sk_live',
+    'Content-Type: application/json'
+]);
+
+$response = json_decode(curl_exec($ch), true);
+curl_close($ch);
+
+// Rediriger le client vers le checkout VandiasPay
+header('Location: ' . $response['checkout_url']);
+exit;</code></pre>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Étape 2 : Réponse API & Redirection -->
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-full bg-[#0052FF] text-white flex items-center justify-center font-bold text-xs">2</span>
+                  <h4 class="text-sm font-bold text-[#111827]">Réponse API & Redirection vers le Checkout</h4>
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs text-slate-800">
+                  <pre><code>{
+  "success": true,
+  "id": "sess_a84bf921c38e4201",
+  "checkout_url": "https://api.vandiaspay.com/checkout.html?session=sess_a84bf921c38e4201",
+  "amount": 5000,
+  "fee": 125,
+  "net": 4875,
+  "currency": "XOF",
+  "status": "PENDING"
+}</code></pre>
+                </div>
+                <p class="text-xs text-slate-500">
+                  Redirigez simplement votre utilisateur vers <code class="font-mono text-[#0052FF]">checkout_url</code>. Il pourra payer instantanément par Wave, Orange Money, MTN, Moov ou Carte.
+                </p>
+              </div>
+
+              <!-- Étape 3 : Webhook & Vérification de signature HMAC -->
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-6 h-6 rounded-full bg-[#0052FF] text-white flex items-center justify-center font-bold text-xs">3</span>
+                  <h4 class="text-sm font-bold text-[#111827]">Valider le Webhook instantané (HMAC-SHA256)</h4>
+                </div>
+                <p class="text-xs text-slate-500">
+                  Dès que le paiement est validé, VandiasPay notifie votre serveur via un appel POST avec l'en-tête <code class="font-mono text-[#0052FF]">X-Vandias-Signature</code>.
+                </p>
+                <div class="rounded-xl border border-slate-200 bg-slate-900 text-slate-200 p-4 font-mono text-xs overflow-x-auto">
+                  <span class="text-slate-400">// Exemple de vérification Node.js / Express</span>
+                  <pre class="text-emerald-400 mt-2"><code>const crypto = require('crypto');
+
+app.post('/webhooks/vandiaspay', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['x-vandias-signature'];
+  const webhookSecret = process.env.VANDIAS_WEBHOOK_SECRET;
+
+  const expectedSignature = crypto
+    .createHmac('sha256', webhookSecret)
+    .update(req.body)
+    .digest('hex');
+
+  if (signature !== expectedSignature) {
+    return res.status(401).send('Signature invalide');
+  }
+
+  const event = JSON.parse(req.body.toString());
+  if (event.event === 'payment.success') {
+    const { amount, currency, metadata } = event.data;
+    console.log(`Paiement reçu pour l'utilisateur ${metadata.user_id} !`);
+    // Activer l'abonnement SaaS dans votre base de données...
+  }
+
+  res.json({ received: true });
+});</code></pre>
+                </div>
+              </div>
+
+              <!-- Étape 4 : Testeur interactif en direct (Playground) -->
+              <div class="rounded-2xl border-2 border-dashed border-[#0052FF]/30 bg-blue-50/40 p-5 space-y-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="text-sm font-extrabold text-[#111827] flex items-center gap-2">
+                      <span>🧪 Console de Test API en direct</span>
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#0052FF] text-white">Live</span>
+                    </h4>
+                    <p class="text-xs text-slate-600 mt-0.5">Testez immédiatement la création d'une session sans quitter votre tableau de bord.</p>
+                  </div>
+                </div>
+
+                <form id="formApiPlaygroundTest" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Montant (XOF)</label>
+                    <input type="number" id="testApiAmount" required value="2500" min="100" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-[#0052FF]">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Titre de l'encaissement</label>
+                    <input type="text" id="testApiTitle" required value="Test Abonnement SaaS" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-[#0052FF]">
+                  </div>
+                  <div class="flex items-end">
+                    <button type="submit" id="btnRunApiPlayground" class="w-full py-2 px-4 rounded-xl bg-[#0052FF] hover:bg-[#0040D0] text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                      <span>⚡ Créer la session</span>
+                    </button>
+                  </div>
+                </form>
+
+                <!-- Résultat du test -->
+                <div id="testApiResultContainer" class="hidden rounded-xl border border-slate-200 bg-white p-3 space-y-2 text-xs">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-emerald-600 flex items-center gap-1">✓ Session créée avec succès</span>
+                    <a id="testApiCheckoutLink" href="#" target="_blank" class="font-bold text-[#0052FF] hover:underline flex items-center gap-1">
+                      <span>Ouvrir la page de paiement ↗</span>
+                    </a>
+                  </div>
+                  <pre id="testApiResponseJson" class="p-2.5 rounded-lg bg-slate-900 text-emerald-400 font-mono text-[11px] overflow-x-auto select-all max-h-36"></pre>
+                </div>
               </div>
 
             </div>

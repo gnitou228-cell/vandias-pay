@@ -16,8 +16,55 @@ window.fetch = function (resource, init) {
   if (typeof resource === 'string' && resource.startsWith('/api/')) {
     resource = API_BASE_URL + resource;
   }
-  return _nativeFetch.call(this, resource, init);
 };
+
+// Helpers globaux d'URL de paiement disponibles immédiatement
+window.formatCheckoutLink = function formatCheckoutLink(rawUrl, slugOrId) {
+  const slug = slugOrId || '';
+  if (rawUrl) {
+    try {
+      const u = new URL(rawUrl);
+      if (u.port === '10000' || (u.hostname === 'localhost' && window.location.hostname !== 'localhost')) {
+        return `${window.location.origin}/checkout.html?link=${encodeURIComponent(slug || u.searchParams.get('link') || '')}`;
+      }
+      return rawUrl;
+    } catch (e) {
+      if (rawUrl.startsWith('/')) {
+        return `${window.location.origin}${rawUrl}`;
+      }
+    }
+  }
+  return `${window.location.origin}/checkout.html?link=${encodeURIComponent(slug)}`;
+};
+
+window.formatSessionLink = function formatSessionLink(rawUrl, sessionId) {
+  if (rawUrl) {
+    try {
+      const u = new URL(rawUrl);
+      if (u.port === '10000' || (u.hostname === 'localhost' && window.location.hostname !== 'localhost')) {
+        return `${window.location.origin}/checkout.html?session=${encodeURIComponent(sessionId || u.searchParams.get('session') || '')}`;
+      }
+      return rawUrl;
+    } catch (e) {
+      if (rawUrl.startsWith('/')) {
+        return `${window.location.origin}${rawUrl}`;
+      }
+    }
+  }
+  return `${window.location.origin}/checkout.html?session=${encodeURIComponent(sessionId)}`;
+};
+
+var formatCheckoutLink = window.formatCheckoutLink;
+var formatSessionLink = window.formatSessionLink;
+
+function safeGetCheckoutUrl(url, slug) {
+  try {
+    if (typeof window.formatCheckoutLink === 'function') {
+      return window.formatCheckoutLink(url, slug);
+    }
+  } catch (e) {}
+  return `${window.location.origin}/checkout.html?link=${encodeURIComponent(slug || '')}`;
+}
 
 // État de l'application Dashboard
 const VPState = {
@@ -4891,7 +4938,7 @@ function initFullPaymentLinkCreation() {
         renderOverviewDashboardKPIs();
         resetCreatePaymentLinkForm();
 
-        const fullUrl = formatCheckoutLink(data.payment_link.url, data.payment_link.slug);
+        const fullUrl = safeGetCheckoutUrl(data.payment_link.url, data.payment_link.slug);
         const prodNameEl = document.getElementById('successLinkProductName');
         const badgeEl = document.getElementById('successLinkAmountBadge');
         const urlInput = document.getElementById('successLinkUrlInput');
@@ -4986,7 +5033,7 @@ function initActionModals() {
           closeModal('modalCreateLink');
           createForm.reset();
 
-          const fullUrl = formatCheckoutLink(data.payment_link.url, data.payment_link.slug);
+          const fullUrl = safeGetCheckoutUrl(data.payment_link.url, data.payment_link.slug);
           const prodNameEl = document.getElementById('successLinkProductName');
           const badgeEl = document.getElementById('successLinkAmountBadge');
           const urlInput = document.getElementById('successLinkUrlInput');

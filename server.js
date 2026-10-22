@@ -326,6 +326,66 @@ class AggregatorGatewayAdapter {
 }
 
 /**
+ * Mapping officiel et exhaustif des codes réseaux SasPay (https://api.saspay.me/api/v1/networks/)
+ */
+function mapSasPayNetworkCode(operatorId, method, country) {
+  const opLow = (operatorId || '').toLowerCase().trim();
+  const mLow = (method || '').toLowerCase().trim();
+  const cLow = (country || 'tg').toLowerCase().trim();
+
+  // Togo (TG)
+  if (cLow === 'tg') {
+    if (opLow.includes('togocel') || opLow.includes('tmoney') || mLow.includes('tmoney')) return 'togocel';
+    if (opLow.includes('moov') || opLow.includes('flooz') || mLow.includes('moov')) return 'moov_tg';
+    if (opLow.includes('mixx') || mLow.includes('mixx')) return 'mixx_tg';
+    return 'togocel';
+  }
+
+  // Sénégal (SN)
+  if (cLow === 'sn') {
+    if (opLow.includes('wave') || mLow.includes('wave')) return 'wave_sn';
+    if (opLow.includes('orange') || mLow.includes('orange')) return 'orange_sn';
+    if (opLow.includes('free') || mLow.includes('free')) return 'freemoney_sn';
+    return 'wave_sn';
+  }
+
+  // Côte d'Ivoire (CI)
+  if (cLow === 'ci') {
+    if (opLow.includes('wave') || mLow.includes('wave')) return 'wave_ci';
+    if (opLow.includes('orange') || mLow.includes('orange')) return 'orange_ci';
+    if (opLow.includes('mtn') || mLow.includes('mtn')) return 'mtn_ci';
+    if (opLow.includes('moov') || mLow.includes('moov')) return 'moov_ci';
+    if (opLow.includes('djamo') || mLow.includes('djamo')) return 'djamo_ci';
+    return 'wave_ci';
+  }
+
+  // Bénin (BJ)
+  if (cLow === 'bj') {
+    if (opLow.includes('mtn') || mLow.includes('mtn')) return 'mtn_bj';
+    if (opLow.includes('moov') || mLow.includes('moov')) return 'moov_bj';
+    if (opLow.includes('celtiis') || mLow.includes('celtiis')) return 'celtiis_bj';
+    return 'mtn_bj';
+  }
+
+  // Burkina Faso (BF)
+  if (cLow === 'bf') {
+    if (opLow.includes('orange') || mLow.includes('orange')) return 'orange_bf';
+    if (opLow.includes('moov') || mLow.includes('moov')) return 'moov_bf';
+    return 'orange_bf';
+  }
+
+  // Cameroun (CM)
+  if (cLow === 'cm') {
+    if (opLow.includes('mtn') || mLow.includes('mtn')) return 'mtn_cm';
+    if (opLow.includes('orange') || mLow.includes('orange')) return 'orange_cm';
+    return 'mtn_cm';
+  }
+
+  if (opLow && opLow.includes('_')) return opLow;
+  return `${mLow || 'wave'}_${cLow}`;
+}
+
+/**
  * Adaptateur SasPay Gateway (https://app.saspay.me)
  * Passerelle Fintech Tout-en-un pour l'Afrique Francophone et International
  * Supporte Wave, Orange Money, MTN MoMo, Moov Africa et Cartes Bancaires
@@ -369,12 +429,8 @@ class SasPayGatewayAdapter {
       let cleanPhone = (phone || '').replace(/\s+/g, '');
       if (cleanPhone.startsWith('00')) cleanPhone = '+' + cleanPhone.slice(2);
 
-      let networkCode = operatorId;
-      if (!networkCode) {
-        const cLow = (country || 'tg').toLowerCase();
-        const mLow = (method || 'wave').toLowerCase();
-        networkCode = `${mLow}_${cLow}`;
-      }
+      // Mapping officiel et exhaustif des codes réseaux SasPay
+      const networkCode = mapSasPayNetworkCode(operatorId, method, country);
 
       console.log(`⚡ [SASPAY SOFTPAY LIVE] PUSH direct vers ${cleanPhone} | Réseau: ${networkCode} | Montant: ${amount} ${currency} | OTP: ${otpCode || 'None'}`);
 
@@ -398,7 +454,7 @@ class SasPayGatewayAdapter {
       const rawStatus = (respData.status || '').toUpperCase();
       const isInstantSuccess = ['SUCCESS', 'PAID', 'COMPLETED'].includes(rawStatus);
 
-      console.log(`⚡ [SASPAY LIVE SUCCESS] Push/Débit mobile réussi ! ID: ${opRef} | Statut: ${rawStatus || 'PENDING'}`);
+      console.log(`⚡ [SASPAY LIVE SUCCESS] Push mobile envoyé ! ID SasPay: ${opRef} | Statut: ${rawStatus || 'PENDING'}`);
 
       return {
         success: true,
@@ -409,32 +465,37 @@ class SasPayGatewayAdapter {
           otpCode ? 'Débit Orange Money en cours avec votre code d\'autorisation OTP.' : 'Veuillez valider le débit sur votre téléphone mobile.'
         ],
         mode: 'live',
-        message: respData.message || (isInstantSuccess ? 'Paiement confirmé et débité avec succès !' : 'Demande de débit mobile envoyée avec succès.')
+        message: respData.message || (isInstantSuccess ? 'Paiement confirmé et débité avec succès !' : 'Demande de débit mobile envoyée. Confirmez sur votre téléphone.')
       };
     } catch (err) {
-      console.warn('⚠️ [SASPAY SOFTPAY FALLBACK]', err.message);
-      const opRef = `VP-${Date.now().toString().slice(-6)}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+      console.warn('⚠️ [SASPAY SOFTPAY ERROR]', err.message);
+      // En mode réel, on remonte l'erreur exacte pour informer l'utilisateur
       return {
-        success: true,
-        provider: 'SASPAY',
-        operator_reference: opRef,
-        status: 'PENDING',
-        mode: 'live-fallback',
-        instructions: ['Composez votre code USSD opérateur pour valider la transaction.'],
-        message: 'Demande de paiement transmise à l\'opérateur.'
+        success: false,
+        error: err.message || 'Impossible d\'initier la demande de paiement mobile.',
+        status: 'FAILED',
+        mode: 'live'
       };
     }
   }
 
-  async checkSessionStatus(sessionId) {
-    if (!sessionId || !this.isLive) return null;
+  async checkSessionStatus(transactionIdOrRef) {
+    if (!transactionIdOrRef || !this.isLive) return null;
     try {
-      const res = await this._request(`/checkout-sessions/${sessionId}/status/`, 'GET');
+      // Endpoint officiel SasPay pour consulter l'état d'une transaction SoftPay
+      const res = await this._request(`/transactions/${transactionIdOrRef}/`, 'GET');
       const data = res.data || res;
+      const status = (data.status || '').toUpperCase();
+      const isPaid = ['PAID', 'SUCCESS', 'COMPLETED'].includes(status);
+      const isFailed = ['FAILED', 'REJECTED', 'CANCELLED', 'EXPIRED'].includes(status);
+      const failReason = data.status_logs?.[0]?.reason || data.error_message || 'Transaction non confirmée ou refusée sur le mobile';
+
       return {
-        status: (data.status || '').toUpperCase(),
-        isPaid: ['PAID', 'SUCCESS', 'COMPLETED'].includes((data.status || '').toUpperCase()),
-        transactionReference: data.transaction_reference || data.transaction_id,
+        status,
+        isPaid,
+        isFailed,
+        failReason,
+        transactionReference: data.reference || data.id,
         raw: data
       };
     } catch (err) {
@@ -711,25 +772,41 @@ async function handlePaymentSuccess(transaction, merchant, link = null) {
   const grossAmount = parseFloat(transaction.amount_gross || 0);
   const platformFee = parseFloat(transaction.fee_platform || 0);
 
-  // 1. Crédit du solde marchand
+  const country = transaction.country || merchant.country_code || 'TG';
+
+  // 1. Crédit du solde marchand global
   merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + netAmount).toFixed(2));
   console.log(`💰 [SOLDE CRÉDITÉ CONFIRMÉ] Marchand "${merchant.business_name}": +${netAmount} FCFA -> Solde: ${merchant.balance_fcfa} FCFA`);
 
-  // 2. Grand Livre (Ledger Movement - Double Entry)
+  // 2. Crédit automatique du portefeuille pays / réseau (Wallet)
+  const wallets = await dbGetWallets(merchant.id);
+  const targetWallet = wallets.find(w => w.country === country);
+  if (targetWallet) {
+    targetWallet.available_amount = parseFloat((parseFloat(targetWallet.available_amount || 0) + netAmount).toFixed(2));
+    targetWallet.updated_at = new Date().toISOString();
+    console.log(`💳 [WALLET CRÉDITÉ] Portefeuille ${country} (${targetWallet.currency}): +${netAmount} -> Disponible: ${targetWallet.available_amount}`);
+    if (supabase) {
+      try {
+        await supabase.from('wallets').update({ available_amount: targetWallet.available_amount, updated_at: targetWallet.updated_at }).eq('id', targetWallet.id);
+      } catch (e) {}
+    }
+  }
+
+  // 3. Grand Livre (Ledger Movement - Double Entry)
   const ledgerMov = {
     id: 'mov_tx_' + crypto.randomBytes(4).toString('hex'),
     merchant_id: merchant.id,
     type: 'COLLECTION',
     direction: 'CREDIT',
-    country: transaction.country || merchant.country_code || 'TG',
+    country: country,
     currency: transaction.currency || 'XOF',
     amount: netAmount,
-    description: `Encaissement validé #${transaction.id} via ${transaction.payment_method || 'Mobile Money'}`,
+    description: `Encaissement validé #${transaction.id} via ${transaction.payment_method || 'Mobile Money'} (${country})`,
     created_at: new Date().toISOString()
   };
   if (memoryDb.ledger_movements) memoryDb.ledger_movements.unshift(ledgerMov);
 
-  // 3. Persistance Supabase
+  // 4. Persistance Supabase
   if (supabase) {
     try {
       await supabase.from('merchants').update({ balance_fcfa: merchant.balance_fcfa }).eq('id', merchant.id);
@@ -5233,11 +5310,12 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
     } = req.body;
     const methodUpper = (payment_method || 'WAVE').toUpperCase();
 
-    // 1. Recherche de la transaction ou création depuis un lien de paiement
-    let transaction = memoryDb.transactions.find(t => t.id === param);
+    // 1. Recherche de la transaction existante (par ID direct ou body.transaction_id)
+    const targetTxId = req.body.transaction_id || param;
+    let transaction = memoryDb.transactions.find(t => t.id === targetTxId || t.id === param);
     if (!transaction && supabase) {
       try {
-        const { data } = await supabase.from('transactions').select('*').eq('id', param).maybeSingle();
+        const { data } = await supabase.from('transactions').select('*').or(`id.eq.${targetTxId},id.eq.${param}`).maybeSingle();
         if (data) transaction = data;
       } catch {}
     }
@@ -5245,6 +5323,127 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
     let merchant = null;
     let link = null;
 
+    // Si action === 'check' et qu'aucune transaction n'a été créée, ne pas créer de transaction fictive
+    if (action === 'check') {
+      if (!transaction) {
+        return res.json({
+          success: false,
+          status: 'PENDING',
+          message: "Transaction en attente d'initialisation..."
+        });
+      }
+
+      merchant = await dbFindMerchantById(transaction.merchant_id);
+
+      if (transaction.status === 'SUCCESS') {
+        return res.json({
+          success: true,
+          status: 'SUCCESS',
+          message: 'Paiement confirmé et débit validé avec succès !',
+          receipt: {
+            id: transaction.id,
+            amount: transaction.amount_gross,
+            fee: transaction.fee_platform,
+            net: transaction.amount_net,
+            currency: transaction.currency,
+            method: transaction.payment_method,
+            customer_name: transaction.customer_name,
+            customer_phone: transaction.customer_phone,
+            customer_email: transaction.customer_email,
+            operator_reference: transaction.operator_reference,
+            merchant_name: merchant ? merchant.business_name : 'Marchand VandiasPay',
+            date: transaction.updated_at || transaction.created_at
+          }
+        });
+      }
+
+      if (transaction.status === 'FAILED') {
+        return res.json({
+          success: false,
+          status: 'FAILED',
+          error: transaction.failure_reason || 'Le paiement a été rejeté ou a expiré sur votre mobile.'
+        });
+      }
+
+      let isGatewayConfirmed = false;
+      let isGatewayFailed = false;
+      let failMotive = '';
+
+      if (gatewayManager.saspay.isLive && transaction.operator_reference) {
+        try {
+          const statusCheck = await gatewayManager.saspay.checkSessionStatus(transaction.operator_reference);
+          if (statusCheck) {
+            if (statusCheck.isPaid) {
+              isGatewayConfirmed = true;
+              transaction.operator_reference = statusCheck.transactionReference || transaction.operator_reference;
+            } else if (statusCheck.isFailed) {
+              isGatewayFailed = true;
+              failMotive = statusCheck.failReason || 'Transaction refusée ou non confirmée sur le mobile';
+            }
+          }
+        } catch (e) {
+          console.warn('SasPay check status warning:', e.message);
+        }
+      }
+
+      if (isGatewayFailed) {
+        transaction.status = 'FAILED';
+        transaction.failure_reason = failMotive;
+        transaction.updated_at = new Date().toISOString();
+        if (supabase) {
+          try { await supabase.from('transactions').update({ status: 'FAILED' }).eq('id', transaction.id); } catch(e){}
+        }
+        return res.json({
+          success: false,
+          status: 'FAILED',
+          error: failMotive
+        });
+      }
+
+      // En mode réel (Live) : AUCUNE VALIDATION FICTIVE SANS VRAIE CONFIRMATION
+      if (!isLivePayment && force_sandbox) {
+        isGatewayConfirmed = true;
+      }
+
+      if (isGatewayConfirmed) {
+        transaction.status = 'SUCCESS';
+        transaction.updated_at = new Date().toISOString();
+
+        if (merchant) {
+          await handlePaymentSuccess(transaction, merchant, link);
+        }
+
+        return res.json({
+          success: true,
+          status: 'SUCCESS',
+          message: 'Paiement confirmé et débit validé avec succès !',
+          receipt: {
+            id: transaction.id,
+            amount: transaction.amount_gross,
+            fee: transaction.fee_platform,
+            net: transaction.amount_net,
+            currency: transaction.currency,
+            method: transaction.payment_method,
+            customer_name: transaction.customer_name,
+            customer_phone: transaction.customer_phone,
+            customer_email: transaction.customer_email,
+            operator_reference: transaction.operator_reference,
+            merchant_name: merchant ? merchant.business_name : 'Marchand VandiasPay',
+            date: new Date().toISOString()
+          }
+        });
+      } else {
+        return res.json({
+          success: false,
+          status: 'PENDING',
+          message: "L'opération est en attente de validation sur votre téléphone. Veuillez vérifier votre écran mobile et saisir votre code PIN secret."
+        });
+      }
+    }
+
+    // ========================================================
+    // CAS B : INITIATION DU PAIEMENT (action === 'initiate')
+    // ========================================================
     if (!transaction) {
       link = memoryDb.payment_links.find(l => l.slug === param);
       if (!link && supabase) {
@@ -5282,7 +5481,7 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
         country: country_code || 'TG',
         operator_id: operator_id || null,
         customer_name: customer_name || 'Client VandiasPay',
-        customer_phone: customer_phone || '+221770000000',
+        customer_phone: customer_phone || '+22890000000',
         customer_email: customer_email || 'client@email.com',
         payment_method: methodUpper,
         status: 'PENDING',
@@ -5297,91 +5496,7 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
 
     merchant = await dbFindMerchantById(transaction.merchant_id);
 
-    // ========================================================
-    // CAS A : VÉRIFICATION DU STATUT RÉEL (action === 'check')
-    // Déclenché par le bouton "J'ai validé sur mon téléphone" ou le polling
-    // ========================================================
-    if (action === 'check') {
-      if (transaction.status === 'SUCCESS') {
-        return res.json({
-          success: true,
-          status: 'SUCCESS',
-          message: 'Paiement déjà validé avec succès !',
-          receipt: {
-            id: transaction.id,
-            amount: transaction.amount_gross,
-            fee: transaction.fee_platform,
-            net: transaction.amount_net,
-            currency: transaction.currency,
-            method: transaction.payment_method,
-            customer_name: transaction.customer_name,
-            customer_phone: transaction.customer_phone,
-            customer_email: transaction.customer_email,
-            operator_reference: transaction.operator_reference,
-            merchant_name: merchant ? merchant.business_name : 'Marchand VandiasPay',
-            date: transaction.updated_at || transaction.created_at
-          }
-        });
-      }
-
-      let isGatewayConfirmed = false;
-      if (gatewayManager.saspay.isLive && transaction.operator_reference) {
-        try {
-          const statusCheck = await gatewayManager.saspay.checkSessionStatus(transaction.operator_reference);
-          if (statusCheck && statusCheck.isPaid) {
-            isGatewayConfirmed = true;
-            transaction.operator_reference = statusCheck.transactionReference || transaction.operator_reference;
-          }
-        } catch (e) {
-          console.warn('SasPay check status warning:', e.message);
-        }
-      }
-
-      // En mode sandbox uniquement (ou si explicitement forcé en test sandbox)
-      if (!isGatewayConfirmed && (!isLivePayment || force_sandbox)) {
-        isGatewayConfirmed = true;
-      }
-
-      if (isGatewayConfirmed) {
-        transaction.status = 'SUCCESS';
-        transaction.updated_at = new Date().toISOString();
-
-        if (merchant) {
-          await handlePaymentSuccess(transaction, merchant, link);
-        }
-
-        return res.json({
-          success: true,
-          status: 'SUCCESS',
-          message: 'Paiement confirmé et débit validé avec succès !',
-          receipt: {
-            id: transaction.id,
-            amount: transaction.amount_gross,
-            fee: transaction.fee_platform,
-            net: transaction.amount_net,
-            currency: transaction.currency,
-            method: transaction.payment_method,
-            customer_name: transaction.customer_name,
-            customer_phone: transaction.customer_phone,
-            customer_email: transaction.customer_email,
-            operator_reference: transaction.operator_reference,
-            merchant_name: merchant ? merchant.business_name : 'Marchand VandiasPay',
-            date: new Date().toISOString()
-          }
-        });
-      } else {
-        return res.json({
-          success: false,
-          status: 'PENDING',
-          message: "L'opération n'a pas encore été validée sur votre téléphone. Veuillez vérifier votre écran mobile et saisir votre code PIN secret."
-        });
-      }
-    }
-
-    // ========================================================
-    // CAS B : INITIATION DU PAIEMENT (action === 'initiate')
-    // PUSH Mobile Money ou Débit immédiat par OTP
-    // ========================================================
+    // Déclenchement de l'envoi réel du Push Mobile Money ou OTP
     const gatewayResult = await gatewayManager.processPayment({
       method: methodUpper,
       operatorId: operator_id,
@@ -5401,6 +5516,17 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
     transaction.customer_email = customer_email || transaction.customer_email;
     transaction.operator_reference = gatewayResult.operator_reference || `VP-${methodUpper.slice(0, 3)}-${Date.now().toString().slice(-6)}`;
     transaction.updated_at = new Date().toISOString();
+
+    if (!gatewayResult.success) {
+      transaction.status = 'FAILED';
+      transaction.failure_reason = gatewayResult.error || 'Échec d\'initiation du paiement';
+      return res.status(400).json({
+        success: false,
+        error: gatewayResult.error || 'Impossible d\'initier la demande de paiement auprès de votre opérateur.',
+        status: 'FAILED',
+        transaction_id: transaction.id
+      });
+    }
 
     if (gatewayResult.status === 'SUCCESS') {
       transaction.status = 'SUCCESS';

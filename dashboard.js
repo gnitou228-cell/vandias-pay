@@ -866,6 +866,10 @@ async function loadMerchantDashboard() {
       closeModal('modalAuth');
       renderAllDashboardElements();
     }
+    const cachedLinks = localStorage.getItem('vandias_payment_links');
+    if (cachedLinks && (!VPState.paymentLinks || VPState.paymentLinks.length === 0)) {
+      VPState.paymentLinks = JSON.parse(cachedLinks);
+    }
   } catch (e) {
     console.warn('[Dashboard] Restauration cache marchand:', e);
   }
@@ -939,7 +943,10 @@ async function loadMerchantDashboard() {
     });
     if (linksRes.ok) {
       const linksData = await linksRes.json();
-      VPState.paymentLinks = linksData.links || [];
+      if (Array.isArray(linksData.links)) {
+        VPState.paymentLinks = linksData.links;
+        localStorage.setItem('vandias_payment_links', JSON.stringify(VPState.paymentLinks));
+      }
     }
 
     // 4. Tarification réseau
@@ -947,6 +954,13 @@ async function loadMerchantDashboard() {
 
     // Mise à jour de l'interface complète
     renderAllDashboardElements();
+
+    // Restaurer l'onglet actif après chargement complet des données
+    const currentHash = (window.location.hash || '').replace('#', '').trim();
+    const savedTab = currentHash || localStorage.getItem('vandias_active_tab');
+    if (savedTab && savedTab !== 'overview' && document.getElementById(`section-${savedTab}`)) {
+      switchTab(savedTab);
+    }
 
     // Déclenchement de la synchronisation temps réel et chargement des notifications
     initMerchantRealtimeSync();
@@ -1647,6 +1661,7 @@ async function renderPaymentLinksList() {
       (VPState.paymentLinks || []).forEach(l => linkMap.set(l.id || l.slug, l));
       data.links.forEach(l => linkMap.set(l.id || l.slug, l));
       VPState.paymentLinks = Array.from(linkMap.values());
+      localStorage.setItem('vandias_payment_links', JSON.stringify(VPState.paymentLinks));
     }
   } catch (e) {
     console.warn('Fallback local paymentLinks:', e.message);
@@ -5279,6 +5294,16 @@ async function selectAndOpenApp(appId) {
    ======================================================== */
 
 function switchTab(tabKey) {
+  if (!tabKey) return;
+
+  // Persistance dans localStorage et URL hash pour survivre à F5 / actualisation
+  try {
+    localStorage.setItem('vandias_active_tab', tabKey);
+    if (window.location.hash !== '#' + tabKey) {
+      window.history.replaceState(null, '', '#' + tabKey);
+    }
+  } catch (e) {}
+
   const navItems = document.querySelectorAll('.nav-item');
   const sections = document.querySelectorAll('.dashboard-section');
 
@@ -5361,6 +5386,23 @@ function initSidebarTabs() {
       const tab = item.getAttribute('data-tab');
       switchTab(tab);
     });
+  });
+
+  // Restaurer l'onglet actif immédiatement dès le démarrage
+  const currentHash = (window.location.hash || '').replace('#', '').trim();
+  const savedTab = currentHash || localStorage.getItem('vandias_active_tab');
+  if (savedTab && savedTab !== 'overview') {
+    const targetSec = document.getElementById(`section-${savedTab}`);
+    if (targetSec) {
+      switchTab(savedTab);
+    }
+  }
+
+  window.addEventListener('hashchange', () => {
+    const hash = (window.location.hash || '').replace('#', '').trim();
+    if (hash && document.getElementById(`section-${hash}`)) {
+      switchTab(hash);
+    }
   });
 }
 
@@ -5608,6 +5650,7 @@ function initFullPaymentLinkCreation() {
           VPState.paymentLinks = [];
         }
         VPState.paymentLinks.unshift(data.payment_link);
+        localStorage.setItem('vandias_payment_links', JSON.stringify(VPState.paymentLinks));
 
         renderPaymentLinksList();
         renderOverviewDashboardKPIs();

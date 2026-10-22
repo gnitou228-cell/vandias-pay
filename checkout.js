@@ -1713,6 +1713,9 @@ function initPaymentSubmission() {
       const data = await res.json();
 
       if (data && data.success) {
+        if (data.transaction_id) {
+          CheckoutState.transactionId = data.transaction_id;
+        }
         if (data.status === 'SUCCESS' && data.receipt) {
           CheckoutState.lastReceipt = data.receipt;
           triggerPaymentSuccess(data.receipt);
@@ -1807,12 +1810,18 @@ async function checkPaymentStatusSilently() {
     const res = await fetch(`/api/v1/pay/${encodeURIComponent(targetId)}/process`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'check' })
+      body: JSON.stringify({
+        action: 'check',
+        transaction_id: CheckoutState.transactionId || null
+      })
     });
     const data = await res.json();
     if (data && data.success && data.status === 'SUCCESS' && data.receipt) {
       CheckoutState.lastReceipt = data.receipt;
       triggerPaymentSuccess(data.receipt);
+    } else if (data && data.status === 'FAILED') {
+      if (CheckoutState.countdownInterval) clearInterval(CheckoutState.countdownInterval);
+      triggerPaymentFailed(data.error || "Transaction non confirmée ou refusée sur votre mobile.");
     }
   } catch {}
 }
@@ -1910,13 +1919,22 @@ function initScreenTransitions() {
         const res = await fetch(`/api/v1/pay/${encodeURIComponent(targetId)}/process`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'check' })
+          body: JSON.stringify({
+            action: 'check',
+            transaction_id: CheckoutState.transactionId || null
+          })
         });
         const data = await res.json();
 
         if (data && data.success && data.status === 'SUCCESS' && data.receipt) {
           CheckoutState.lastReceipt = data.receipt;
           triggerPaymentSuccess(data.receipt);
+          return;
+        }
+
+        if (data && data.status === 'FAILED') {
+          if (CheckoutState.countdownInterval) clearInterval(CheckoutState.countdownInterval);
+          triggerPaymentFailed(data.error || "Transaction rejetée ou non confirmée sur votre mobile.");
           return;
         }
 

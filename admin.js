@@ -498,10 +498,36 @@ function initAdminNavigation() {
       if (tab) switchAdminTab(tab);
     });
   });
+
+  // Restaurer l'onglet actif après rechargement F5
+  const currentHash = (window.location.hash || '').replace('#', '').trim();
+  const savedTab = currentHash || localStorage.getItem('vandias_admin_active_tab');
+  if (savedTab && savedTab !== 'overview') {
+    const targetSec = document.getElementById(`admin-sec-${savedTab}`);
+    if (targetSec) {
+      switchAdminTab(savedTab);
+    }
+  }
+
+  window.addEventListener('hashchange', () => {
+    const hash = (window.location.hash || '').replace('#', '').trim();
+    if (hash && document.getElementById(`admin-sec-${hash}`)) {
+      switchAdminTab(hash);
+    }
+  });
 }
 
 window.switchAdminTab = function (tabKey) {
+  if (!tabKey) return;
   AdminState.activeTab = tabKey;
+
+  // Persistance dans localStorage et URL hash
+  try {
+    localStorage.setItem('vandias_admin_active_tab', tabKey);
+    if (window.location.hash !== '#' + tabKey) {
+      window.history.replaceState(null, '', '#' + tabKey);
+    }
+  } catch (e) {}
 
   // Update sidebar active classes
   const navButtons = document.querySelectorAll('#adminSidebarNav .nav-admin-item');

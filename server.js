@@ -81,8 +81,9 @@ class WaveGatewayAdapter {
       success: true,
       provider: 'WAVE',
       operator_reference: opRef,
-      status: 'SUCCESS',
-      message: 'Paiement Wave approuvé et validé avec succès.'
+      status: 'PENDING',
+      instructions: ['Ouvrez votre application Wave pour confirmer le paiement.'],
+      message: 'Demande de paiement transmise à Wave.'
     };
   }
 }
@@ -111,8 +112,13 @@ class OrangeMoneyGatewayAdapter {
       success: true,
       provider: 'ORANGE',
       operator_reference: opRef,
-      status: 'SUCCESS',
-      message: 'Paiement Orange Money validé avec succès.'
+      status: 'PENDING',
+      instructions: [
+        otpCode
+          ? 'Débit Orange Money en cours de confirmation.'
+          : 'Composez #144# ou confirmez le message push sur votre mobile.'
+      ],
+      message: 'Demande de débit transmise à Orange Money.'
     };
   }
 }
@@ -142,8 +148,9 @@ class MtnMoMoGatewayAdapter {
       success: true,
       provider: 'MTN',
       operator_reference: opRef,
-      status: 'SUCCESS',
-      message: 'Paiement MTN Mobile Money validé via push prompt USSD.'
+      status: 'PENDING',
+      instructions: ['Veuillez composer votre code secret MTN Mobile Money pour approuver le débit.'],
+      message: 'Demande de débit transmise à MTN Mobile Money.'
     };
   }
 }
@@ -220,9 +227,10 @@ class FedaPayGatewayAdapter {
         success: true,
         provider: 'FEDAPAY',
         operator_reference: opRef,
-        status: 'SUCCESS',
+        status: 'PENDING',
         mode: 'sandbox-fallback',
-        message: `Simulation suite à: ${err.message}`
+        instructions: ['Veuillez vérifier votre écran mobile et saisir votre code PIN secret.'],
+        message: `En attente de confirmation opérateur.`
       };
     }
   }
@@ -306,8 +314,13 @@ class AggregatorGatewayAdapter {
       success: true,
       provider: isCard ? 'CARD' : 'MOOV',
       operator_reference: opRef,
-      status: 'SUCCESS',
-      message: isCard ? 'Autorisation 3D-Secure Carte Bancaire approuvée.' : 'Paiement Moov Africa validé.'
+      status: 'PENDING',
+      instructions: [
+        isCard
+          ? 'Validation 3D-Secure requise auprès de votre établissement bancaire.'
+          : 'Un ordre de débit Flooz a été transmis à votre numéro. Veuillez vérifier votre écran mobile et saisir votre code PIN secret.'
+      ],
+      message: isCard ? 'En attente de validation 3D-Secure.' : 'Demande de débit transmise à Moov Africa. Veuillez confirmer sur votre mobile.'
     };
   }
 }

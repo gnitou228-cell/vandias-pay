@@ -821,13 +821,39 @@ async function preloadDataFromSupabase() {
       console.log(`📦 [PERSISTANCE] ${memoryDb.payment_links.length} liens de paiement synchronisés et sécurisés depuis Supabase.`);
     }
 
-    const { data: txs, error: tErr } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(100);
+    const { data: txs, error: tErr } = await supabase.from('transactions').select('*').order('created_at', { ascending: false }).limit(200);
     if (!tErr && txs && txs.length > 0) {
       const txMap = new Map();
       (memoryDb.transactions || []).forEach(t => txMap.set(t.id, t));
       txs.forEach(t => txMap.set(t.id, t));
       memoryDb.transactions = Array.from(txMap.values());
       console.log(`📦 [PERSISTANCE] ${memoryDb.transactions.length} transactions synchronisées depuis Supabase.`);
+    }
+
+    const { data: merchants, error: mErr } = await supabase.from('merchants').select('*');
+    if (!mErr && merchants && merchants.length > 0) {
+      const mMap = new Map();
+      (memoryDb.merchants || []).forEach(m => mMap.set(m.id, m));
+      merchants.forEach(m => {
+        const mem = mMap.get(m.id);
+        mMap.set(m.id, { ...(mem || {}), ...m, balance_fcfa: parseFloat(m.balance_fcfa || 0) });
+      });
+      memoryDb.merchants = Array.from(mMap.values());
+      console.log(`📦 [PERSISTANCE] ${memoryDb.merchants.length} comptes marchands et soldes réels synchronisés depuis Supabase.`);
+    }
+
+    const { data: wallets, error: wErr } = await supabase.from('wallets').select('*');
+    if (!wErr && wallets && wallets.length > 0) {
+      const wMap = new Map();
+      (memoryDb.wallets || []).forEach(w => wMap.set((w.merchant_id || '') + '_' + (w.country || ''), w));
+      wallets.forEach(w => {
+        wMap.set((w.merchant_id || '') + '_' + (w.country || ''), {
+          ...w,
+          available_amount: parseFloat(w.available_amount || 0)
+        });
+      });
+      memoryDb.wallets = Array.from(wMap.values());
+      console.log(`📦 [PERSISTANCE] ${memoryDb.wallets.length} portefeuilles de devises synchronisés depuis Supabase.`);
     }
   } catch (err) {
     console.warn('⚠️ [PERSISTANCE] Avertissement synchronisation initiale:', err.message);
@@ -928,15 +954,43 @@ async function handlePaymentSuccess(transaction, merchant, link = null) {
 
   // 2. Crédit automatique du portefeuille pays / réseau (Wallet)
   const wallets = await dbGetWallets(merchant.id);
-  const targetWallet = wallets.find(w => w.country === country);
-  if (targetWallet) {
-    targetWallet.available_amount = parseFloat((parseFloat(targetWallet.available_amount || 0) + netAmount).toFixed(2));
-    targetWallet.updated_at = new Date().toISOString();
-    console.log(`💳 [WALLET CRÉDITÉ] Portefeuille ${country} (${targetWallet.currency}): +${netAmount} -> Disponible: ${targetWallet.available_amount}`);
-    if (supabase) {
-      try {
-        await supabase.from('wallets').update({ available_amount: targetWallet.available_amount, updated_at: targetWallet.updated_at }).eq('id', targetWallet.id);
-      } catch (e) {}
+  let targetWallet = wallets.find(w => w.country === country);
+  if (!targetWallet) {
+    targetWallet = {
+      id: `w_${country.toLowerCase()}_${merchant.id.slice(0, 8)}`,
+      merchant_id: merchant.id,
+      country: country,
+      currency: transaction.currency || 'XOF',
+      available_amount: 0,
+      pending_amount: 0,
+      frozen_amount: 0,
+      is_frozen: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    if (memoryDb.wallets) memoryDb.wallets.push(targetWallet);
+  }
+
+  targetWallet.available_amount = parseFloat((parseFloat(targetWallet.available_amount || 0) + netAmount).toFixed(2));
+  targetWallet.updated_at = new Date().toISOString();
+  console.log(`💳 [WALLET CRÉDITÉ] Portefeuille ${country} (${targetWallet.currency}): +${netAmount} -> Disponible: ${targetWallet.available_amount}`);
+
+  // Synchro memoryDb.wallets
+  if (memoryDb.wallets) {
+    const memWIdx = memoryDb.wallets.findIndex(w => w.merchant_id === merchant.id && w.country === country);
+    if (memWIdx >= 0) memoryDb.wallets[memWIdx] = targetWallet;
+    else memoryDb.wallets.push(targetWallet);
+  }
+
+  // Synchro memoryDb.transactions
+  if (memoryDb.transactions) {
+    const memTxIdx = memoryDb.transactions.findIndex(t => t.id === transaction.id);
+    if (memTxIdx >= 0) {
+      memoryDb.transactions[memTxIdx].status = 'SUCCESS';
+      memoryDb.transactions[memTxIdx].amount_gross = grossAmount;
+      memoryDb.transactions[memTxIdx].fee_platform = platformFee;
+      memoryDb.transactions[memTxIdx].amount_net = netAmount;
+      memoryDb.transactions[memTxIdx].updated_at = new Date().toISOString();
     }
   }
 
@@ -958,7 +1012,9 @@ async function handlePaymentSuccess(transaction, merchant, link = null) {
   if (supabase) {
     try {
       await supabase.from('merchants').update({ balance_fcfa: merchant.balance_fcfa }).eq('id', merchant.id);
-      await supabase.from('transactions').upsert([transaction]);
+      await supabase.from('wallets').upsert([targetWallet]);
+      const dbRow = prepareSupabaseTransactionRow(transaction);
+      await supabase.from('transactions').upsert([dbRow]);
       await supabase.from('ledger_movements').insert([ledgerMov]);
       if (link && link.id) {
         await supabase.from('payment_links').update({ sales_count: link.sales_count }).eq('id', link.id);
@@ -967,6 +1023,19 @@ async function handlePaymentSuccess(transaction, merchant, link = null) {
       console.warn('⚠️ Supabase sync warning handlePaymentSuccess:', err.message);
     }
   }
+
+  // 5. Diffusion temps réel (SSE) à l'admin et au marchand
+  broadcastEvent('payment.succeeded', {
+    transaction_id: transaction.id,
+    merchant_id: merchant.id,
+    merchant_name: merchant.business_name,
+    amount_gross: grossAmount,
+    fee_platform: platformFee,
+    amount_net: netAmount,
+    currency: transaction.currency || 'XOF',
+    payment_method: transaction.payment_method || 'MOBILE',
+    country: country
+  });
 
   // 4. Webhook marchand externe
   if (merchant.webhook_url) {
@@ -1163,16 +1232,20 @@ async function dbFindMerchantByEmail(email) {
         .maybeSingle();
       if (!error && data) {
         if (!memMerchant) return data;
-        return {
-          ...data,
+        const merged = {
           ...memMerchant,
-          email_verified: memMerchant.email_verified !== undefined ? memMerchant.email_verified : (data.email_verified !== undefined ? data.email_verified : true),
-          email_verification_code: memMerchant.email_verification_code !== undefined ? memMerchant.email_verification_code : data.email_verification_code,
-          onboarding_completed: memMerchant.onboarding_completed !== undefined ? memMerchant.onboarding_completed : (data.onboarding_completed || false),
-          kyc_status: memMerchant.kyc_status || data.kyc_status || 'PENDING',
-          kyc_type: memMerchant.kyc_type || data.kyc_type || 'PARTICULIER',
-          active_app_id: memMerchant.active_app_id || data.active_app_id || null
+          ...data,
+          email_verified: data.email_verified !== undefined ? data.email_verified : (memMerchant.email_verified !== undefined ? memMerchant.email_verified : true),
+          email_verification_code: data.email_verification_code !== undefined ? data.email_verification_code : memMerchant.email_verification_code,
+          onboarding_completed: data.onboarding_completed !== undefined ? data.onboarding_completed : (memMerchant.onboarding_completed || false),
+          kyc_status: data.kyc_status || memMerchant.kyc_status || 'PENDING',
+          kyc_type: data.kyc_type || memMerchant.kyc_type || 'PARTICULIER',
+          active_app_id: data.active_app_id || memMerchant.active_app_id || null,
+          balance_fcfa: data.balance_fcfa !== undefined ? parseFloat(data.balance_fcfa) : (memMerchant.balance_fcfa || 0),
+          country_code: data.country_code || memMerchant.country_code || 'TG'
         };
+        memMerchant.balance_fcfa = merged.balance_fcfa;
+        return merged;
       }
     } catch (e) {
       console.warn('Supabase findMerchantByEmail fallback:', e.message);
@@ -1192,16 +1265,20 @@ async function dbFindMerchantById(id) {
         .maybeSingle();
       if (!error && data) {
         if (!memMerchant) return data;
-        return {
-          ...data,
+        const merged = {
           ...memMerchant,
-          email_verified: memMerchant.email_verified !== undefined ? memMerchant.email_verified : (data.email_verified !== undefined ? data.email_verified : true),
-          email_verification_code: memMerchant.email_verification_code !== undefined ? memMerchant.email_verification_code : data.email_verification_code,
-          onboarding_completed: memMerchant.onboarding_completed !== undefined ? memMerchant.onboarding_completed : (data.onboarding_completed || false),
-          kyc_status: memMerchant.kyc_status || data.kyc_status || 'PENDING',
-          kyc_type: memMerchant.kyc_type || data.kyc_type || 'PARTICULIER',
-          active_app_id: memMerchant.active_app_id || data.active_app_id || null
+          ...data,
+          email_verified: data.email_verified !== undefined ? data.email_verified : (memMerchant.email_verified !== undefined ? memMerchant.email_verified : true),
+          email_verification_code: data.email_verification_code !== undefined ? data.email_verification_code : memMerchant.email_verification_code,
+          onboarding_completed: data.onboarding_completed !== undefined ? data.onboarding_completed : (memMerchant.onboarding_completed || false),
+          kyc_status: data.kyc_status || memMerchant.kyc_status || 'PENDING',
+          kyc_type: data.kyc_type || memMerchant.kyc_type || 'PARTICULIER',
+          active_app_id: data.active_app_id || memMerchant.active_app_id || null,
+          balance_fcfa: data.balance_fcfa !== undefined ? parseFloat(data.balance_fcfa) : (memMerchant.balance_fcfa || 0),
+          country_code: data.country_code || memMerchant.country_code || 'TG'
         };
+        memMerchant.balance_fcfa = merged.balance_fcfa;
+        return merged;
       }
     } catch (e) {
       console.warn('Supabase findMerchantById fallback:', e.message);
@@ -4248,72 +4325,71 @@ app.get('/api/v1/pricing/my-rates', (req, res) => {
 app.get('/api/v1/merchant/wallets', requireMerchantAuth, async (req, res) => {
   try {
     const merchantId = req.merchant.id;
-
-    const mCountry = (req.merchant.country || '').toUpperCase();
+    const mCountry = (req.merchant.country_code || req.merchant.country || 'TG').toUpperCase();
     const mBal = parseFloat(req.merchant.balance_fcfa || 0);
 
-    const default25Countries = [
-      { country: 'TG', currency: 'XOF', available: mCountry === 'TG' ? mBal : 0, pending: 0, frozen: 0 },
-      { country: 'XC', currency: 'USD', available: 0, pending: 0, frozen: 0 },
-      { country: 'ZM', currency: 'ZMW', available: 0, pending: 0, frozen: 0 },
-      { country: 'US_INTL', currency: 'USD', available: 0, pending: 0, frozen: 0 },
-      { country: 'US', currency: 'USD', available: 0, pending: 0, frozen: 0 },
-      { country: 'UG', currency: 'UGX', available: 0, pending: 0, frozen: 0 },
-      { country: 'TZ', currency: 'TZS', available: 0, pending: 0, frozen: 0 },
-      { country: 'SN', currency: 'XOF', available: (mCountry === 'SN' || !mCountry) ? mBal : 0, pending: 0, frozen: 0 },
-      { country: 'RW', currency: 'RWF', available: 0, pending: 0, frozen: 0 },
-      { country: 'NG', currency: 'NGN', available: 0, pending: 0, frozen: 0 },
-      { country: 'NE', currency: 'XOF', available: mCountry === 'NE' ? mBal : 0, pending: 0, frozen: 0 },
-      { country: 'MZ', currency: 'MZN', available: 0, pending: 0, frozen: 0 },
-      { country: 'MW', currency: 'MWK', available: 0, pending: 0, frozen: 0 },
-      { country: 'ML', currency: 'XOF', available: mCountry === 'ML' ? mBal : 0, pending: 0, frozen: 0 },
-      { country: 'KE', currency: 'KES', available: 0, pending: 0, frozen: 0 },
-      { country: 'IN', currency: 'INR', available: 0, pending: 0, frozen: 0 },
-      { country: 'GN', currency: 'GNF', available: 0, pending: 0, frozen: 0 },
-      { country: 'GH', currency: 'GHS', available: 0, pending: 0, frozen: 0 },
-      { country: 'GA', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
-      { country: 'CM', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
-      { country: 'CI', currency: 'XOF', available: mCountry === 'CI' ? mBal : 0, pending: 0, frozen: 0 },
-      { country: 'CG', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
-      { country: 'CD', currency: 'CDF', available: 0, pending: 0, frozen: 0 },
-      { country: 'BJ', currency: 'XOF', available: mCountry === 'BJ' ? mBal : 0, pending: 0, frozen: 0 },
-      { country: 'BF', currency: 'XOF', available: mCountry === 'BF' ? mBal : 0, pending: 0, frozen: 0 }
-    ];
-
-    // S'assurer que les 25 wallets existent pour ce marchand
-    default25Countries.forEach(dc => {
-      const existing = memoryDb.wallets.find(w => w.merchant_id === merchantId && w.country === dc.country);
-      if (!existing) {
-        memoryDb.wallets.push({
-          id: `w_${dc.country.toLowerCase()}_${merchantId.slice(0, 8)}`,
-          merchant_id: merchantId,
-          country: dc.country,
-          currency: dc.currency,
-          available_amount: dc.available,
-          pending_amount: dc.pending,
-          frozen_amount: dc.frozen,
-          is_frozen: false,
-          updated_at: new Date().toISOString()
-        });
-      } else {
-        // Mettre à jour si jamais l'ancien mock 80 était enregistré
-        if (existing.country === 'TG' && existing.available_amount === 80) {
-          existing.available_amount = mCountry === 'TG' ? mBal : 0;
-        }
-      }
-    });
-
-    let list = memoryDb.wallets.filter(w => w.merchant_id === merchantId);
-
-    // Ordre canonique exact observé sur SasPay Dashboard
     const SASPAY_CANONICAL_ORDER = [
       'TG', 'XC', 'ZM', 'US_INTL', 'US', 'UG', 'TZ', 'SN', 'RW',
       'NG', 'NE', 'MZ', 'MW', 'ML', 'KE', 'IN', 'GN', 'GH', 'GA',
       'CM', 'CI', 'CG', 'CD', 'BJ', 'BF'
     ];
 
+    const defaultCurrencies = {
+      TG: 'XOF', XC: 'USD', ZM: 'ZMW', US_INTL: 'USD', US: 'USD', UG: 'UGX',
+      TZ: 'TZS', SN: 'XOF', RW: 'RWF', NG: 'NGN', NE: 'XOF', MZ: 'MZN',
+      MW: 'MWK', ML: 'XOF', KE: 'KES', IN: 'INR', GN: 'GNF', GH: 'GHS',
+      GA: 'XAF', CM: 'XAF', CI: 'XOF', CG: 'XAF', CD: 'CDF', BJ: 'XOF', BF: 'XOF'
+    };
+
+    const existingWallets = await dbGetWallets(merchantId);
+    const walletMap = new Map();
+    existingWallets.forEach(w => {
+      if (w.country) walletMap.set(w.country.toUpperCase(), w);
+    });
+
+    const totalInExisting = Array.from(walletMap.values()).reduce((sum, w) => sum + parseFloat(w.available_amount || 0), 0);
+
+    const finalWallets = SASPAY_CANONICAL_ORDER.map(code => {
+      const existing = walletMap.get(code);
+      if (existing) {
+        return {
+          id: existing.id || `w_${code.toLowerCase()}_${merchantId.slice(0, 8)}`,
+          merchant_id: merchantId,
+          country: code,
+          currency: existing.currency || defaultCurrencies[code] || 'XOF',
+          available_amount: parseFloat(existing.available_amount || 0),
+          pending_amount: parseFloat(existing.pending_amount || 0),
+          frozen_amount: parseFloat(existing.frozen_amount || 0),
+          is_frozen: existing.is_frozen === true,
+          updated_at: existing.updated_at || new Date().toISOString()
+        };
+      }
+
+      let initialAvailable = 0;
+      if (code === mCountry && totalInExisting === 0 && mBal > 0) {
+        initialAvailable = mBal;
+      }
+
+      const newWallet = {
+        id: `w_${code.toLowerCase()}_${merchantId.slice(0, 8)}`,
+        merchant_id: merchantId,
+        country: code,
+        currency: defaultCurrencies[code] || 'XOF',
+        available_amount: initialAvailable,
+        pending_amount: 0,
+        frozen_amount: 0,
+        is_frozen: false,
+        updated_at: new Date().toISOString()
+      };
+
+      if (memoryDb.wallets) {
+        memoryDb.wallets.push(newWallet);
+      }
+      return newWallet;
+    });
+
     // Tri conforme SasPay : solde positif en tête, puis séquence canonique SasPay
-    list.sort((a, b) => {
+    finalWallets.sort((a, b) => {
       const balA = parseFloat(a.available_amount || 0);
       const balB = parseFloat(b.available_amount || 0);
       if (balB > 0 && balA <= 0) return 1;
@@ -4326,7 +4402,7 @@ app.get('/api/v1/merchant/wallets', requireMerchantAuth, async (req, res) => {
 
     res.json({
       success: true,
-      wallets: list
+      wallets: finalWallets
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -5328,24 +5404,7 @@ app.get('/api/v1/pay/:id', async (req, res) => {
             transaction.updated_at = new Date().toISOString();
 
             if (merchant) {
-              const netAmount = parseFloat(transaction.amount_net || 0);
-              merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + netAmount).toFixed(2));
-              if (supabase) {
-                try {
-                  await supabase.from('merchants').update({ balance_fcfa: merchant.balance_fcfa }).eq('id', merchant.id);
-                  await supabase.from('transactions').upsert([transaction]);
-                } catch {}
-              }
-              if (merchant.webhook_url) {
-                dispatchWebhook(merchant.webhook_url, merchant.webhook_secret, 'payment.success', {
-                  transaction_id: transaction.id,
-                  status: 'SUCCESS',
-                  amount_gross: transaction.amount_gross,
-                  fee: transaction.fee_platform,
-                  amount_net: transaction.amount_net,
-                  currency: transaction.currency
-                }, merchant.id).catch(() => {});
-              }
+              await handlePaymentSuccess(transaction, merchant);
             }
           }
         } catch (e) {
@@ -5976,10 +6035,10 @@ async function dbGetAllMerchants() {
     }
   }
   const map = new Map();
-  list.forEach(m => map.set(m.id, m));
-  (memoryDb.merchants || []).forEach(m => {
+  (memoryDb.merchants || []).forEach(m => map.set(m.id, m));
+  list.forEach(m => {
     const existing = map.get(m.id);
-    map.set(m.id, { ...(existing || {}), ...m });
+    map.set(m.id, { ...(existing || {}), ...m, balance_fcfa: parseFloat(m.balance_fcfa !== undefined ? m.balance_fcfa : (existing?.balance_fcfa || 0)) });
   });
   return Array.from(map.values()).map(m => adminStore.applyMerchantOverride(m));
 }
@@ -6001,9 +6060,29 @@ async function dbGetAllTransactions() {
     }
   }
   const map = new Map();
-  list.forEach(t => map.set(t.id, t));
   (memoryDb.transactions || []).forEach(t => map.set(t.id, t));
-  return Array.from(map.values()).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  list.forEach(t => {
+    const existing = map.get(t.id);
+    if (!existing || t.status === 'SUCCESS' || new Date(t.updated_at || t.created_at) >= new Date(existing.updated_at || existing.created_at)) {
+      map.set(t.id, { ...(existing || {}), ...t });
+    }
+  });
+
+  return Array.from(map.values()).map(t => {
+    const gross = parseFloat(t.amount_gross || t.gross_amount || t.amount || 0);
+    const fee = parseFloat(t.fee_platform || t.fee_amount || (gross * 0.025).toFixed(2));
+    const net = parseFloat(t.amount_net || t.net_amount || (gross - fee).toFixed(2));
+    return {
+      ...t,
+      amount: gross,
+      gross_amount: gross,
+      amount_gross: gross,
+      fee_platform: fee,
+      fee_amount: fee,
+      amount_net: net,
+      net_amount: net
+    };
+  }).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 }
 
 /**
@@ -6023,8 +6102,11 @@ async function dbGetAllPayouts() {
     }
   }
   const map = new Map();
-  list.forEach(p => map.set(p.id, p));
   (memoryDb.payouts || []).forEach(p => map.set(p.id, p));
+  list.forEach(p => {
+    const existing = map.get(p.id);
+    map.set(p.id, { ...(existing || {}), ...p });
+  });
   return Array.from(map.values()).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 }
 
@@ -6045,8 +6127,11 @@ async function dbGetAllPaymentLinks() {
     }
   }
   const map = new Map();
-  list.forEach(l => map.set(l.id || l.slug, l));
   (memoryDb.payment_links || []).forEach(l => map.set(l.id || l.slug, l));
+  list.forEach(l => {
+    const existing = map.get(l.id || l.slug);
+    map.set(l.id || l.slug, { ...(existing || {}), ...l });
+  });
   return Array.from(map.values())
     .map(l => adminStore.applyLinkOverride(l))
     .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
@@ -6070,8 +6155,12 @@ async function dbGetWallets(merchantId) {
   }
   const memoryList = (memoryDb.wallets || []).filter(w => w.merchant_id === merchantId);
   const map = new Map();
-  list.forEach(w => map.set(w.country || w.id, w));
   memoryList.forEach(w => map.set(w.country || w.id, w));
+  list.forEach(w => {
+    const key = w.country || w.id;
+    const existing = map.get(key);
+    map.set(key, { ...(existing || {}), ...w, available_amount: parseFloat(w.available_amount || 0) });
+  });
   return Array.from(map.values());
 }
 
@@ -6783,45 +6872,7 @@ app.post('/api/v1/admin/transactions/:id/validate', requireAdminAuth, async (req
 
     const merchant = await dbFindMerchantById(transaction.merchant_id);
     if (merchant) {
-      const netAmount = parseFloat(transaction.amount_net || transaction.amount_gross || 0);
-      merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + netAmount).toFixed(2));
-      await dbUpdateMerchant(merchant.id, { balance_fcfa: merchant.balance_fcfa });
-      adminStore.setMerchantOverride(merchant.id, { balance_fcfa: merchant.balance_fcfa });
-
-      const movement = {
-        id: 'mov_tx_' + crypto.randomBytes(4).toString('hex'),
-        merchant_id: merchant.id,
-        type: 'COLLECTION',
-        direction: 'CREDIT',
-        country: transaction.country || 'TG',
-        currency: transaction.currency || 'XOF',
-        amount: netAmount,
-        description: `Validation administrative transaction #${transaction.id} (${note || 'Approuvée manuellement'})`,
-        created_at: new Date().toISOString()
-      };
-      memoryDb.ledger_movements.unshift(movement);
-
-      if (supabase) {
-        try {
-          await supabase.from('merchants').update({ balance_fcfa: merchant.balance_fcfa }).eq('id', merchant.id);
-          await supabase.from('transactions').upsert([transaction]);
-          await supabase.from('ledger_movements').insert([movement]);
-        } catch (e) {}
-      }
-
-      if (merchant.webhook_url) {
-        dispatchWebhook(merchant.webhook_url, merchant.webhook_secret, 'payment.success', {
-          transaction_id: transaction.id,
-          status: 'SUCCESS',
-          amount: transaction.amount_gross,
-          fee: transaction.fee_platform,
-          net: transaction.amount_net,
-          currency: transaction.currency || 'XOF',
-          payment_method: transaction.payment_method || 'MANUAL',
-          operator_reference: transaction.operator_reference,
-          timestamp: Math.floor(Date.now() / 1000)
-        }, merchant.id).catch(() => {});
-      }
+      await handlePaymentSuccess(transaction, merchant);
     }
 
     adminStore.addAudit({

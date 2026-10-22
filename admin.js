@@ -678,7 +678,7 @@ function renderOverviewRecentTransactions(transactions) {
           <div class="text-[10px] text-slate-400 font-mono">${tx.id ? tx.id.slice(0, 10) : '-'}...</div>
         </td>
         <td class="py-3 px-3 font-bold font-mono text-slate-900">
-          ${formatFCFA(tx.amount || tx.gross_amount)}
+          ${formatFCFA(tx.amount_gross || tx.gross_amount || tx.amount || 0)}
         </td>
         <td class="py-3 px-3">
           <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700">
@@ -1391,9 +1391,9 @@ function renderTransactionsTable(transactions) {
       ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200">En attente ⏳</span>`
       : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">Échoué ✕</span>`;
 
-    const gross = Number(tx.gross_amount || tx.amount || 0);
-    const fee = Number(tx.fee_amount || Math.round(gross * 0.025));
-    const net = Number(tx.net_amount || (gross - fee));
+    const gross = Number(tx.amount_gross || tx.gross_amount || tx.amount || 0);
+    const fee = Number(tx.fee_platform || tx.fee_amount || Math.round(gross * 0.025));
+    const net = Number(tx.amount_net || tx.net_amount || (gross - fee));
 
     return `
       <tr class="hover:bg-slate-50 transition-colors">

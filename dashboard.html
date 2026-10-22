@@ -2379,10 +2379,10 @@
 
       <!-- Switcher Connexion / Inscription (Pill tabs) -->
       <div class="flex p-1 bg-[#F3F4F6] rounded-2xl mb-6">
-        <button id="authTabLogin" type="button" class="flex-1 py-2 text-sm font-semibold rounded-xl transition-all text-slate-500 hover:text-slate-800">
+        <button id="authTabLogin" type="button" class="flex-1 py-2 text-sm font-semibold rounded-xl transition-all bg-white text-slate-900 shadow-sm">
           Connexion
         </button>
-        <button id="authTabRegister" type="button" class="flex-1 py-2 text-sm font-semibold rounded-xl transition-all bg-white text-slate-900 shadow-sm">
+        <button id="authTabRegister" type="button" class="flex-1 py-2 text-sm font-semibold rounded-xl transition-all text-slate-500 hover:text-slate-800">
           Inscription
         </button>
       </div>
@@ -2391,8 +2391,8 @@
       <div class="flex items-center gap-3.5 mb-5">
         <img src="logo.png" alt="VandiasPay Logo" class="w-12 h-12 object-contain rounded-2xl shadow-sm border border-slate-100 p-1 bg-white flex-shrink-0">
         <div class="text-left">
-          <h2 class="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight" id="authModalTitle">Crée ton compte</h2>
-          <p class="text-xs sm:text-sm text-slate-500 mt-0.5 font-normal" id="authModalSubtitle">Commence à encaisser avec VandiasPay en quelques minutes.</p>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight" id="authModalTitle">Connecte-toi à ton compte</h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5 font-normal" id="authModalSubtitle">Ravi de te revoir sur VandiasPay.</p>
         </div>
       </div>
 
@@ -2403,8 +2403,8 @@
         <div class="flex-grow border-t border-slate-200"></div>
       </div>
 
-      <!-- Formulaire Inscription (Affiché par défaut conformément à la capture) -->
-      <form id="authRegisterForm" class="space-y-4">
+      <!-- Formulaire Inscription (Masqué par défaut lorsque Connexion est sélectionné) -->
+      <form id="authRegisterForm" class="space-y-4 hidden">
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Nom complet</label>
           <input type="text" id="regFullName" required placeholder="Ex: Jean Dupont" autocomplete="name" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
@@ -2672,11 +2672,16 @@
         </div>
       </form>
 
-      <!-- Formulaire Connexion (Masqué par défaut lorsque Inscription est sélectionné) -->
-      <form id="authLoginForm" class="space-y-4 hidden">
+      <!-- Formulaire Connexion (Affiché par défaut) -->
+      <form id="authLoginForm" class="space-y-4">
+        <!-- Bouton de connexion rapide 1-Clic pour le compte marchand principal -->
+        <button type="button" id="btnQuickLoginUser" class="w-full py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0052FF] font-bold text-xs flex items-center justify-center gap-2 border border-blue-200 transition-all cursor-pointer shadow-xs">
+          <span>⚡ Connexion 1-Clic (gnitessowedeou@gmail.com)</span>
+        </button>
+
         <div>
           <label class="block text-sm font-medium text-slate-800 mb-1.5">Adresse e-mail</label>
-          <input type="email" id="loginEmail" required placeholder="nom@exemple.com" autocomplete="username" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
+          <input type="email" id="loginEmail" required value="gnitessowedeou@gmail.com" placeholder="nom@exemple.com" autocomplete="username" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all">
         </div>
 
         <div>
@@ -2685,7 +2690,7 @@
             <button type="button" onclick="showToast('Information', 'Pour réinitialiser votre mot de passe, contactez support@vandiaspay.com')" class="text-xs font-medium text-[#0052FF] hover:underline">Mot de passe oublié ?</button>
           </div>
           <div class="relative">
-            <input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl pl-4 pr-11 py-3 text-sm text-slate-900 outline-none transition-all">
+            <input type="password" id="loginPassword" required value="9342Well@" placeholder="••••••••" autocomplete="current-password" class="w-full bg-[#FAFAFD] sm:bg-white border border-slate-200 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 rounded-xl pl-4 pr-11 py-3 text-sm text-slate-900 outline-none transition-all">
             <button type="button" class="btn-toggle-pwd absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg" data-target="loginPassword" aria-label="Afficher ou masquer le mot de passe" tabindex="-1">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </button>
@@ -3382,6 +3387,6 @@
     </div>
   </div>
 
-  <script src="dashboard.js?v=20261022_final"></script>
+  <script src="dashboard.js?v=20261022_login_fix"></script>
 </body>
 </html>

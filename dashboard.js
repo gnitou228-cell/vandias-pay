@@ -11,12 +11,16 @@ const API_BASE_URL = (window.location.protocol === 'file:')
   : '';
 
 // Intercepteur global de fetch pour garantir que tout appel relatif fonctionne même en file:// ou sur un autre serveur
-const _nativeFetch = window.fetch;
-window.fetch = function (resource, init) {
-  if (typeof resource === 'string' && resource.startsWith('/api/')) {
-    resource = API_BASE_URL + resource;
-  }
-};
+const _nativeFetch = window.fetch ? window.fetch.bind(window) : null;
+if (_nativeFetch) {
+  window.fetch = function (resource, init) {
+    let target = resource;
+    if (typeof target === 'string' && target.startsWith('/api/')) {
+      target = API_BASE_URL + target;
+    }
+    return _nativeFetch(target, init);
+  };
+}
 
 // Helpers globaux d'URL de paiement disponibles immédiatement
 window.formatCheckoutLink = function formatCheckoutLink(rawUrl, slugOrId) {
@@ -324,6 +328,20 @@ async function loadMerchantDashboard() {
     return false;
   }
 
+  // 0. Restauration optimiste depuis le localStorage pour affichage instantané sans scintillement
+  try {
+    const cachedMerchant = localStorage.getItem('vandias_merchant');
+    if (cachedMerchant && (!VPState.merchant || !VPState.merchant.id)) {
+      VPState.merchant = JSON.parse(cachedMerchant);
+      VPState.applications = VPState.merchant.applications || [];
+      showMainDashboard();
+      closeModal('modalAuth');
+      renderAllDashboardElements();
+    }
+  } catch (e) {
+    console.warn('[Dashboard] Restauration cache marchand:', e);
+  }
+
   try {
     // 1. Profil Marchand & Clés API
     const meRes = await fetch('/api/v1/merchant/me', {
@@ -331,13 +349,19 @@ async function loadMerchantDashboard() {
     });
 
     if (!meRes.ok) {
-      const errData = await meRes.json().catch(() => ({}));
-      if (errData.error) {
-        showToast('Accès Restreint', errData.error, 'danger');
-      }
       if (meRes.status === 401 || meRes.status === 403) {
         localStorage.removeItem('vandias_token');
+        localStorage.removeItem('vandias_merchant');
         VPState.token = null;
+        VPState.merchant = null;
+        promptAuthModal();
+        showToast('Session expirée', 'Veuillez vous reconnecter.', 'danger');
+        return false;
+      }
+      // Si 502/503 ou problème réseau temporaire, maintenir l'accès si les données locales existent
+      if (VPState.merchant) {
+        console.warn('[Dashboard] Serveur temporairement indisponible, utilisation des données locales.');
+        return true;
       }
       promptAuthModal();
       return false;
@@ -345,6 +369,7 @@ async function loadMerchantDashboard() {
 
     const meData = await meRes.json();
     if (!meData.success || !meData.merchant) {
+      if (VPState.merchant) return true;
       promptAuthModal();
       return false;
     }
@@ -3916,6 +3941,18 @@ function initAuthModalEvents() {
     }
   }
 
+  // Connexion rapide 1-Clic pour le compte marchand principal
+  const btnQuickLogin = document.getElementById('btnQuickLoginUser');
+  if (btnQuickLogin && formLogin) {
+    btnQuickLogin.addEventListener('click', () => {
+      const emailInput = document.getElementById('loginEmail');
+      const pwdInput = document.getElementById('loginPassword');
+      if (emailInput) emailInput.value = 'gnitessowedeou@gmail.com';
+      if (pwdInput) pwdInput.value = '9342Well@';
+      formLogin.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    });
+  }
+
   // Soumission Formulaire Connexion
   if (formLogin) {
     formLogin.addEventListener('submit', async (e) => {
@@ -3926,8 +3963,16 @@ function initAuthModalEvents() {
 
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Vérification...';
+        submitBtn.textContent = 'Connexion en cours...';
       }
+
+      // Indicateur visuel si le serveur met plus de 2.5s à répondre (réveil du conteneur en veille)
+      const wakeTimer = setTimeout(() => {
+        if (submitBtn && submitBtn.disabled) {
+          submitBtn.innerHTML = '<span>Réveil du serveur sécurisé...</span>';
+          showToast('Connexion', 'Le serveur sécurisé démarre, veuillez patienter quelques secondes...', 'info');
+        }
+      }, 2500);
 
       try {
         const res = await fetch('/api/v1/auth/login', {
@@ -3961,6 +4006,7 @@ function initAuthModalEvents() {
           VPState.token = data.token;
           VPState.merchant = data.merchant;
           VPState.applications = data.merchant.applications || [];
+          localStorage.setItem('vandias_merchant', JSON.stringify(data.merchant));
           closeModal('modalAuth');
 
           showMainDashboard();
@@ -3970,8 +4016,9 @@ function initAuthModalEvents() {
           showToast('Erreur', data.error || 'Identifiants incorrects.');
         }
       } catch (err) {
-        showToast('Erreur de connexion', err.message);
+        showToast('Erreur de connexion', err.message || 'Impossible de joindre le serveur. Réessayez dans un instant.');
       } finally {
+        clearTimeout(wakeTimer);
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.innerHTML = '<span>Se connecter</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>';

@@ -629,7 +629,7 @@ function verifyPasswordSync(password, combinedHash) {
 
 function generateToken(payload) {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const exp = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // 7 jours
+  const exp = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // 30 jours (session durable)
   const body = Buffer.from(JSON.stringify({ ...payload, exp })).toString('base64url');
   const signature = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
   return `${header}.${body}.${signature}`;

@@ -46,9 +46,9 @@ function getRequestBaseUrl(req) {
 }
 const PLATFORM_FEE_PERCENT = parseFloat(process.env.PLATFORM_FEE_PERCENT || '2.5');
 const JWT_SECRET = process.env.JWT_SECRET || 'vandiaspay_super_secret_jwt_key_2026';
-const PAYMENT_MODE = (process.env.PAYMENT_MODE || process.env.GATEWAY_MODE || 'sandbox').toLowerCase();
+const PAYMENT_MODE = (process.env.PAYMENT_MODE || process.env.GATEWAY_MODE || 'live').toLowerCase();
 const isLivePayment = PAYMENT_MODE === 'live';
-const PAYMENT_GATEWAY = (process.env.PAYMENT_GATEWAY || 'default').toLowerCase();
+const PAYMENT_GATEWAY = (process.env.PAYMENT_GATEWAY || 'saspay').toLowerCase();
 
 // ========================================================
 // 1. MODULE DES PASSERELLES DE PAIEMENT (GATEWAYS ADAPTERS)
@@ -476,11 +476,13 @@ function mapSasPayNetworkCode(operatorId, method, country, cleanPhone = '') {
  * Passerelle Fintech Tout-en-un pour l'Afrique Francophone et International
  * Supporte Wave, Orange Money, MTN MoMo, Moov Africa et Cartes Bancaires
  */
+const DEFAULT_SASPAY_SECRET_KEY = 'sk_live_9Hr63QUDce-7IvSEGP3mOhi6QBPp_NAKRNXboTq6kBc';
+
 class SasPayGatewayAdapter {
   constructor(config = {}) {
     this.name = 'SasPay Gateway';
     this.publicKey = config.publicKey || process.env.SASPAY_PUBLIC_KEY;
-    this.secretKey = config.secretKey || process.env.SASPAY_SECRET_KEY;
+    this.secretKey = config.secretKey || process.env.SASPAY_SECRET_KEY || DEFAULT_SASPAY_SECRET_KEY;
     this.webhookSecret = config.webhookSecret || process.env.SASPAY_WEBHOOK_SECRET;
     this.baseUrl = config.baseUrl || 'https://api.saspay.me/api/v1';
     this.isLive = Boolean(
@@ -717,18 +719,20 @@ const gatewayManager = new PaymentGatewayManager();
 // 2. CONFIGURATION SUPABASE & DATABASE PERSISTENCE ADAPTER
 // ========================================================
 let supabase = null;
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const rawServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+const DEFAULT_SUPABASE_URL = 'https://oajjzwdkxnooybeqoysw.supabase.co';
+const DEFAULT_SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hamp6d2RreG5vb3liZXFveXN3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MjQxMjEyNCwiZXhwIjoyMTA3OTg4MTI0fQ.Za_NJmsptjDliqA-5WNiGlnbgTnSDefgYPLAbCrhl_0';
+
+const SUPABASE_URL = process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const rawServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || DEFAULT_SUPABASE_SERVICE_KEY;
 const rawAnonKey = process.env.SUPABASE_ANON_KEY;
 
 const isPlaceholder = (val) => !val ||
   val.includes('your-project-ref') ||
   val.includes('votre-projet') ||
   val.includes('your_service_role_key_here') ||
-  val.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...') ||
   val.includes('xxxxxxxx');
 
-const validServiceKey = !isPlaceholder(rawServiceKey) ? rawServiceKey : null;
+const validServiceKey = !isPlaceholder(rawServiceKey) ? rawServiceKey : DEFAULT_SUPABASE_SERVICE_KEY;
 const validAnonKey = !isPlaceholder(rawAnonKey) ? rawAnonKey : null;
 const activeKey = validServiceKey || validAnonKey;
 

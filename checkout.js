@@ -1837,7 +1837,9 @@ function startPendingValidation(apiResponse = null) {
   if (opNameEl) opNameEl.textContent = op.name;
   if (promptDescEl) {
     const hintText = (typeof op.hint === 'function') ? op.hint(CheckoutState.amount) : op.hint;
-    promptDescEl.innerHTML = `${hintText || 'Une demande de confirmation a été envoyée sur votre mobile.'}<br><span class="text-slate-500 font-normal">Numéro cible :</span> <strong class="text-[#0F172A] font-mono">${displayPhone}</strong>`;
+    const sasRef = apiResponse && apiResponse.operator_reference ? apiResponse.operator_reference : '';
+    const refBadge = sasRef ? `<div class="mt-2.5 text-[11px] font-mono text-emerald-700 bg-emerald-50 py-1.5 px-3 rounded-xl border border-emerald-200 inline-flex items-center gap-1.5 shadow-xs"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Réf. SasPay Direct : <strong>${sasRef}</strong></div>` : '';
+    promptDescEl.innerHTML = `${hintText || 'Une demande de confirmation USSD a été transmise à votre opérateur.'}<br><span class="text-slate-500 font-normal">Numéro cible :</span> <strong class="text-[#0F172A] font-mono">${displayPhone}</strong><br>${refBadge}`;
   }
 
   // Lancement du compte à rebours de 58 secondes

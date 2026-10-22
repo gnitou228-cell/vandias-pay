@@ -307,12 +307,11 @@ async function loadMerchantDashboard() {
     VPState.applications = meData.merchant.applications || [];
     localStorage.setItem('vandias_merchant', JSON.stringify(meData.merchant));
 
-    // VÉRIFICATION STRICTE DU PARCOURS D'ONBOARDING :
-    // Si l'onboarding n'est pas terminé OU si le marchand n'a pas encore créé d'application
+    // VÉRIFICATION DU PARCOURS D'ONBOARDING :
     const hasApps = VPState.applications && VPState.applications.length > 0;
     const isCompleted = meData.merchant.onboarding_completed === true;
 
-    if (!isCompleted || !hasApps) {
+    if (!isCompleted && !hasApps) {
       hideMainDashboard();
       closeModal('modalAuth');
       showOnboardingFlow(meData.merchant);
@@ -3874,33 +3873,19 @@ function initAuthModalEvents() {
           return;
         }
 
-        if (data.is_admin) {
-          localStorage.setItem('vandias_admin_token', data.token);
-          if (data.admin) localStorage.setItem('vandias_admin_user', JSON.stringify(data.admin));
-          closeModal('modalAuth');
-          showToast('Super Administrateur Reconnu', 'Redirection immédiate vers la Console d\'Administration...');
-          setTimeout(() => {
-            window.location.href = data.redirect || '/admin.html';
-          }, 500);
-          return;
-        }
-
         if (data.success && data.token) {
           localStorage.setItem('vandias_token', data.token);
+          if (data.is_admin) {
+            localStorage.setItem('vandias_admin_token', data.token);
+          }
           VPState.token = data.token;
           VPState.merchant = data.merchant;
           VPState.applications = data.merchant.applications || [];
           closeModal('modalAuth');
 
-          // Si l'onboarding n'est pas terminé ou aucune app, lancer le portail Onboarding
-          const hasApps = VPState.applications && VPState.applications.length > 0;
-          if (data.merchant.onboarding_completed === false || !hasApps) {
-            showOnboardingFlow(data.merchant);
-          } else {
-            showMainDashboard();
-            showToast('Connexion réussie !', `Bienvenue, ${data.merchant.business_name || data.merchant.full_name || 'Marchand'}.`);
-            await loadMerchantDashboard();
-          }
+          showMainDashboard();
+          showToast('Connexion réussie !', `Bienvenue, ${data.merchant.business_name || data.merchant.full_name || 'Marchand'}.`);
+          await loadMerchantDashboard();
         } else {
           showToast('Erreur', data.error || 'Identifiants incorrects.');
         }
@@ -3918,8 +3903,8 @@ function initAuthModalEvents() {
   // Bouton Connexion Démo Rapide
   if (btnQuickDemo) {
     btnQuickDemo.addEventListener('click', async () => {
-      document.getElementById('loginEmail').value = 'demo@vandiaspay.com';
-      document.getElementById('loginPassword').value = 'vandias2026';
+      document.getElementById('loginEmail').value = 'gnitessowedeou@gmail.com';
+      document.getElementById('loginPassword').value = '9342Well@';
       formLogin.dispatchEvent(new Event('submit'));
     });
   }

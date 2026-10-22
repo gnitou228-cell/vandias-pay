@@ -557,6 +557,7 @@ const memoryDb = {
       kyc_status: 'PENDING',
       kyc_type: 'PARTICULIER',
       monthly_limit: 1000000,
+      active_app_id: 'app_7aac0e22_live',
       is_admin: true,
       role: 'SUPER_ADMIN',
       default_currency: 'XOF',
@@ -564,8 +565,43 @@ const memoryDb = {
       created_at: '2026-10-21T00:00:00.000Z'
     }
   ],
-  applications: [],
-  api_keys: [],
+  applications: [
+    {
+      id: 'app_7aac0e22_live',
+      merchant_id: '7aac0e22-00ea-4355-a3ec-8b4fe3f0e960',
+      name: 'VandiasPay Principal',
+      website_url: 'https://vandiaspay.com',
+      category: 'Commerce & Services',
+      is_active: true,
+      created_at: '2026-10-21T00:00:00.000Z'
+    }
+  ],
+  api_keys: [
+    {
+      id: 'key_7aac_live',
+      merchant_id: '7aac0e22-00ea-4355-a3ec-8b4fe3f0e960',
+      key_type: 'live',
+      name: 'Clé Production Live',
+      public_key: 'pk_live_vdp_89bac9c49944d131192ec533',
+      secret_key: 'sk_live_vdp_c3dadb875749aa0a1b630c25bcb955b1',
+      scope: 'FULL',
+      status: 'ACTIVE',
+      is_active: true,
+      created_at: '2026-10-21T00:00:00.000Z'
+    },
+    {
+      id: 'key_7aac_test',
+      merchant_id: '7aac0e22-00ea-4355-a3ec-8b4fe3f0e960',
+      key_type: 'test',
+      name: 'Clé Sandbox Test',
+      public_key: 'pk_test_vdp_af6cc78bb10674eb27f4322f',
+      secret_key: 'sk_test_vdp_a31dfeab444cbaf28b4a5235a67b71c2',
+      scope: 'FULL',
+      status: 'ACTIVE',
+      is_active: true,
+      created_at: '2026-10-21T00:00:00.000Z'
+    }
+  ],
   payment_links: [],
   transactions: [],
   payouts: [],
@@ -6663,22 +6699,29 @@ app.use('/api/*', (req, res) => {
 });
 
 // Démarrage du serveur
-const server = app.listen(PORT, () => {
-  console.log('====================================================');
-  console.log(`🚀 VandiasPay API Backend démarré sur le port ${PORT}`);
-  console.log(`🌐 Base URL : ${APP_URL}`);
-  console.log(`📚 API Status : ${APP_URL}/api/v1/status`);
-  console.log(`🛍️ Landing Page : ${APP_URL}/index.html`);
-  console.log(`📊 Dashboard : ${APP_URL}/dashboard.html`);
-  console.log(`💳 Checkout : ${APP_URL}/checkout.html`);
-  console.log('----------------------------------------------------');
-  console.log(`🔒 SUPABASE_URL : ${SUPABASE_URL}`);
-  console.log(`🔑 SUPABASE_SERVICE_ROLE_KEY : ${validServiceKey ? 'Active (Admin Privileges)' : 'Non configurée'}`);
-  console.log(`🛡️ JWT_SECRET : ${process.env.JWT_SECRET ? 'Défini (.env)' : 'Défaut sécurisé'}`);
-  console.log(`⚡ PAYMENT_GATEWAY : ${PAYMENT_GATEWAY.toUpperCase()} (${PAYMENT_GATEWAY === 'saspay' ? 'Connecteur SasPay Actif' : 'Multi-passerelles'})`);
-  console.log(`💳 PAYMENT_MODE : ${PAYMENT_MODE.toUpperCase()} (${isLivePayment ? 'Mode réel' : 'Mode Sandbox - Simulation 3s sans argent réel'})`);
-  console.log(`🏷️ PLATFORM_FEE_PERCENT : ${PLATFORM_FEE_PERCENT}%`);
-  console.log('====================================================');
-});
+let server;
+if (require.main === module && !process.env.VERCEL) {
+  server = app.listen(PORT, () => {
+    console.log('====================================================');
+    console.log(`🚀 VandiasPay API Backend démarré sur le port ${PORT}`);
+    console.log(`🌐 Base URL : ${APP_URL}`);
+    console.log(`📚 API Status : ${APP_URL}/api/v1/status`);
+    console.log(`🛍️ Landing Page : ${APP_URL}/index.html`);
+    console.log(`📊 Dashboard : ${APP_URL}/dashboard.html`);
+    console.log(`💳 Checkout : ${APP_URL}/checkout.html`);
+    console.log('----------------------------------------------------');
+    console.log(`🔒 SUPABASE_URL : ${SUPABASE_URL}`);
+    console.log(`🔑 SUPABASE_SERVICE_ROLE_KEY : ${validServiceKey ? 'Active (Admin Privileges)' : 'Non configurée'}`);
+    console.log(`🛡️ JWT_SECRET : ${process.env.JWT_SECRET ? 'Défini (.env)' : 'Défaut sécurisé'}`);
+    console.log(`⚡ PAYMENT_GATEWAY : ${PAYMENT_GATEWAY.toUpperCase()} (${PAYMENT_GATEWAY === 'saspay' ? 'Connecteur SasPay Actif' : 'Multi-passerelles'})`);
+    console.log(`💳 PAYMENT_MODE : ${PAYMENT_MODE.toUpperCase()} (${isLivePayment ? 'Mode réel' : 'Mode Sandbox - Simulation 3s sans argent réel'})`);
+    console.log(`🏷️ PLATFORM_FEE_PERCENT : ${PLATFORM_FEE_PERCENT}%`);
+    console.log('====================================================');
+  });
+}
 
-module.exports = { app, server };
+module.exports = app;
+module.exports.app = app;
+if (server) {
+  module.exports.server = server;
+}

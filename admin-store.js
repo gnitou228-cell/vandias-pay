@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '.vandias-data');
+const DATA_DIR = process.env.VERCEL ? path.join(require('os').tmpdir(), '.vandias-data') : path.join(__dirname, '.vandias-data');
 const STORE_FILE = path.join(DATA_DIR, 'admin-store.json');
 const MAX_AUDIT = 1000;
 

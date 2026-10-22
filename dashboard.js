@@ -1050,10 +1050,45 @@ async function renderPaymentLinksList() {
     const amountVal = parseFloat(lnk.amount_fcfa || lnk.amount || 0);
     const amountFormatted = amountVal.toLocaleString('fr-FR');
     const amountStr = isFixed ? `${amountFormatted} ${currencyStr}` : `Montant libre (${currencyStr})`;
+function formatCheckoutLink(rawUrl, slugOrId) {
+  const slug = slugOrId || '';
+  if (rawUrl) {
+    try {
+      const u = new URL(rawUrl);
+      if (u.port === '10000' || (u.hostname === 'localhost' && window.location.hostname !== 'localhost')) {
+        return `${window.location.origin}/checkout.html?link=${encodeURIComponent(slug || u.searchParams.get('link') || '')}`;
+      }
+      return rawUrl;
+    } catch (e) {
+      if (rawUrl.startsWith('/')) {
+        return `${window.location.origin}${rawUrl}`;
+      }
+    }
+  }
+  return `${window.location.origin}/checkout.html?link=${encodeURIComponent(slug)}`;
+}
+
+function formatSessionLink(rawUrl, sessionId) {
+  if (rawUrl) {
+    try {
+      const u = new URL(rawUrl);
+      if (u.port === '10000' || (u.hostname === 'localhost' && window.location.hostname !== 'localhost')) {
+        return `${window.location.origin}/checkout.html?session=${encodeURIComponent(sessionId || u.searchParams.get('session') || '')}`;
+      }
+      return rawUrl;
+    } catch (e) {
+      if (rawUrl.startsWith('/')) {
+        return `${window.location.origin}${rawUrl}`;
+      }
+    }
+  }
+  return `${window.location.origin}/checkout.html?session=${encodeURIComponent(sessionId)}`;
+}
+
     const uses = lnk.sales_count ?? 0;
     const usesStr = lnk.max_uses ? `${uses} / ${lnk.max_uses}` : `${uses}`;
     const desc = lnk.description || 'Sans description';
-    const linkUrl = lnk.url || `${window.location.origin}/checkout.html?link=${lnk.slug || lnk.id}`;
+    const linkUrl = formatCheckoutLink(lnk.url, lnk.slug || lnk.id);
 
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-[#F8F9FD] transition-colors';
@@ -1235,7 +1270,7 @@ async function renderCheckoutSessionsList() {
       const currencyStr = s.currency || 'XOF';
       const clientName = s.customer_name || 'Client';
       const clientEmail = s.customer_email || 'client@vandiaspay.com';
-      const sessionUrl = s.checkout_url || `${window.location.origin}/checkout.html?session=${encodeURIComponent(s.id)}`;
+      const sessionUrl = formatSessionLink(s.checkout_url, s.id);
 
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-[#F8F9FD] transition-colors';
@@ -4857,7 +4892,7 @@ function initFullPaymentLinkCreation() {
         renderOverviewDashboardKPIs();
         resetCreatePaymentLinkForm();
 
-        const fullUrl = data.payment_link.url || `${window.location.origin}/checkout.html?link=${data.payment_link.slug}`;
+        const fullUrl = formatCheckoutLink(data.payment_link.url, data.payment_link.slug);
         const prodNameEl = document.getElementById('successLinkProductName');
         const badgeEl = document.getElementById('successLinkAmountBadge');
         const urlInput = document.getElementById('successLinkUrlInput');
@@ -4952,7 +4987,7 @@ function initActionModals() {
           closeModal('modalCreateLink');
           createForm.reset();
 
-          const fullUrl = data.payment_link.url || `${window.location.origin}/checkout.html?link=${data.payment_link.slug}`;
+          const fullUrl = formatCheckoutLink(data.payment_link.url, data.payment_link.slug);
           const prodNameEl = document.getElementById('successLinkProductName');
           const badgeEl = document.getElementById('successLinkAmountBadge');
           const urlInput = document.getElementById('successLinkUrlInput');

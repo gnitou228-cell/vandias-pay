@@ -23,7 +23,27 @@ const ADMIN_FULL_NAME = process.env.ADMIN_FULL_NAME || 'ESSOWEDEOU GNITOU';
 // Initialisation de l'application Express
 const app = express();
 const PORT = process.env.PORT || 3000;
-const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
+const APP_URL = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+
+function getRequestBaseUrl(req) {
+  if (process.env.APP_URL && !process.env.APP_URL.includes('localhost:10000')) {
+    return process.env.APP_URL.replace(/\/$/, '');
+  }
+  if (req) {
+    const proto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+    const host = req.get('x-forwarded-host') || req.get('host');
+    if (host && !host.includes('localhost:10000') && !host.includes('127.0.0.1:10000')) {
+      return `${proto}://${host}`;
+    }
+  }
+  if (process.env.RENDER_EXTERNAL_URL) {
+    return process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '');
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`.replace(/\/$/, '');
+  }
+  return `http://localhost:${PORT === 10000 ? 3000 : PORT}`;
+}
 const PLATFORM_FEE_PERCENT = parseFloat(process.env.PLATFORM_FEE_PERCENT || '2.5');
 const JWT_SECRET = process.env.JWT_SECRET || 'vandiaspay_super_secret_jwt_key_2026';
 const PAYMENT_MODE = (process.env.PAYMENT_MODE || process.env.GATEWAY_MODE || 'sandbox').toLowerCase();
@@ -1540,9 +1560,10 @@ app.get('/api/v1/merchant/me', requireMerchantAuth, async (req, res) => {
 app.get('/api/v1/merchant/links', requireMerchantAuth, async (req, res) => {
   try {
     const links = await dbGetPaymentLinks(req.merchant.id);
+    const baseUrl = getRequestBaseUrl(req);
     const enriched = links.map(l => ({
       ...l,
-      url: `${APP_URL}/checkout.html?link=${l.slug}`
+      url: `${baseUrl}/checkout.html?link=${l.slug}`
     }));
     res.json({
       success: true,
@@ -1585,7 +1606,9 @@ app.post('/api/v1/merchant/links', requireMerchantAuth, async (req, res) => {
       });
     }
 
-    if (isFixed && (!amount_fcfa || isNaN(amount_fcfa) || parseFloat(amount_fcfa) <= 0)) {
+    const rawAmount = amount_fcfa !== undefined ? amount_fcfa : req.body.amount;
+    const amountVal = isFixed ? parseFloat(rawAmount || 0) : null;
+    if (isFixed && (!amountVal || isNaN(amountVal) || amountVal <= 0)) {
       return res.status(400).json({
         success: false,
         error: 'Veuillez saisir un montant valide supérieur à 0 pour un montant fixe.'
@@ -1608,7 +1631,7 @@ app.post('/api/v1/merchant/links', requireMerchantAuth, async (req, res) => {
       slug,
       title: title.trim(),
       description: description ? description.trim() : null,
-      amount_fcfa: isFixed ? parseFloat(amount_fcfa) : 0,
+      amount_fcfa: isFixed ? amountVal : 0,
       currency: (currency || 'XOF').toUpperCase(),
       redirect_url: redirect_url || null,
       is_fixed_amount: isFixed,
@@ -1653,12 +1676,13 @@ app.post('/api/v1/merchant/links', requireMerchantAuth, async (req, res) => {
       }
     }
 
+    const baseUrl = getRequestBaseUrl(req);
     res.status(201).json({
       success: true,
       message: 'Lien de paiement créé avec succès !',
       payment_link: {
         ...newLink,
-        url: `${APP_URL}/checkout.html?link=${newLink.slug}`
+        url: `${baseUrl}/checkout.html?link=${newLink.slug}`
       }
     });
   } catch (error) {
@@ -1806,6 +1830,7 @@ app.get('/api/v1/merchant/checkout-sessions', requireMerchantAuth, async (req, r
 
     let allSessions = [...memoryDb.checkout_sessions.filter(s => s.merchant_id === req.merchant.id)];
 
+    const baseUrl = getRequestBaseUrl(req);
     // Dériver aussi depuis transactions démarrées avec un id de session
     const sessionTx = memoryDb.transactions.filter(t => t.merchant_id === req.merchant.id && (t.id.startsWith('sess_') || t.id.startsWith('PN_')));
     sessionTx.forEach(t => {
@@ -1820,7 +1845,7 @@ app.get('/api/v1/merchant/checkout-sessions', requireMerchantAuth, async (req, r
           currency: t.currency || 'XOF',
           status: t.status === 'SUCCESS' ? 'PAID' : (t.status === 'FAILED' ? 'EXPIRED' : 'PENDING'),
           created_at: t.created_at,
-          checkout_url: `${APP_URL}/checkout.html?session=${t.id}`
+          checkout_url: `${baseUrl}/checkout.html?session=${t.id}`
         });
       }
     });
@@ -1886,7 +1911,7 @@ app.post('/api/v1/merchant/checkout-sessions', requireMerchantAuth, async (req, 
       title: title || 'Paiement sécurisé en ligne',
       status: 'PENDING',
       created_at: new Date().toISOString(),
-      checkout_url: `${APP_URL}/checkout.html?session=${sessionId}`
+      checkout_url: `${getRequestBaseUrl(req)}/checkout.html?session=${sessionId}`
     };
 
     memoryDb.checkout_sessions.unshift(newSession);
@@ -4713,7 +4738,7 @@ app.post('/api/v1/checkout-sessions', requireApiKeyAuth, async (req, res) => {
     res.status(201).json({
       success: true,
       id: transactionId,
-      checkout_url: `${APP_URL}/checkout.html?session=${transactionId}`,
+      checkout_url: `${getRequestBaseUrl(req)}/checkout.html?session=${transactionId}`,
       amount: parsedAmount,
       fee,
       net,
@@ -6427,13 +6452,14 @@ app.get('/api/v1/admin/links', requireAdminAuth, async (req, res) => {
 
     const merchantMap = new Map(merchants.map(m => [m.id, m]));
 
+    const baseUrl = getRequestBaseUrl(req);
     const enriched = links.map(l => {
       const m = merchantMap.get(l.merchant_id);
       return {
         ...l,
         merchant_name: m ? m.business_name : 'Marchand',
         merchant_email: m ? m.email : null,
-        url: `${APP_URL}/checkout.html?link=${l.slug}`
+        url: `${baseUrl}/checkout.html?link=${l.slug}`
       };
     });
 

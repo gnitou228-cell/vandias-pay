@@ -210,6 +210,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   initCustomersSection();
   initDisputesSection();
 
+  // Initialisation barre de recherche globale & cloche de notifications
+  initGlobalSearch();
+  initNotificationsDropdown();
+
   // Chargement des annonces globales & paramètres publics
   checkPlatformAnnouncement();
 
@@ -233,20 +237,22 @@ async function checkPlatformAnnouncement() {
     const ann = (data && data.announcement) || (data && data.config && data.config.announcement);
     if (!ann) return;
 
-    if (ann.active && ann.message) {
-      displayPlatformAnnouncement(ann);
-    }
+    displayPlatformAnnouncement(ann);
   } catch (err) {
     console.warn('[Platform Announcement] Non disponible:', err);
   }
 }
 
 function displayPlatformAnnouncement(ann) {
-  const existing = document.getElementById('platformAnnouncementBanner');
-  if (existing) existing.remove();
+  const banner = document.getElementById('platformAnnouncementBanner');
+  const icon = document.getElementById('platformAnnouncementIcon');
+  const msg = document.getElementById('platformAnnouncementMessage');
+  if (!banner || !icon || !msg) return;
 
-  const mainContent = document.getElementById('dashboardMainContent');
-  if (!mainContent) return;
+  if (!ann || !ann.active || !ann.message) {
+    banner.classList.add('hidden');
+    return;
+  }
 
   const bgStyles = {
     info: 'bg-blue-50 border-blue-200 text-blue-900',
@@ -262,18 +268,535 @@ function displayPlatformAnnouncement(ann) {
     danger: '🚨'
   };
 
-  const banner = document.createElement('div');
-  banner.id = 'platformAnnouncementBanner';
-  banner.className = `p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold shadow-xs mb-4 ${bgStyles[ann.type] || bgStyles.info}`;
-  banner.innerHTML = `
-    <div class="flex items-center gap-2.5">
-      <span class="text-base">${icons[ann.type] || '📢'}</span>
-      <span>${ann.message}</span>
-    </div>
-    <button onclick="this.parentElement.remove()" class="opacity-60 hover:opacity-100 text-xs font-bold px-2 py-1 rounded-lg hover:bg-black/5">✕</button>
-  `;
+  banner.className = `rounded-2xl p-4 shadow-sm border flex items-start gap-3 transition-all duration-300 ${bgStyles[ann.type] || bgStyles.info}`;
+  icon.textContent = icons[ann.type] || '📢';
+  msg.textContent = ann.message;
+  banner.classList.remove('hidden');
+}
 
-  mainContent.insertBefore(banner, mainContent.firstChild);
+/**
+ * Gestion visuelle et fonctionnelle de la suspension marchand
+ */
+function applySuspensionUI(isSuspended, reason = null) {
+  const banner = document.getElementById('merchantSuspensionBanner');
+  const reasonEl = document.getElementById('merchantSuspensionReason');
+  const btnPayout = document.getElementById('btnOpenPayoutModal');
+  const btnLink = document.getElementById('btnOpenCreateLinkModal');
+
+  if (isSuspended) {
+    if (banner) banner.classList.remove('hidden');
+    if (reasonEl) reasonEl.textContent = `Motif : ${reason || 'Non-respect des conditions d’utilisation.'}`;
+    if (btnPayout) {
+      btnPayout.disabled = true;
+      btnPayout.classList.add('opacity-50', 'cursor-not-allowed');
+      btnPayout.title = 'Votre compte est suspendu par l’administration.';
+    }
+    if (btnLink) {
+      btnLink.disabled = true;
+      btnLink.classList.add('opacity-50', 'cursor-not-allowed');
+      btnLink.title = 'Votre compte est suspendu par l’administration.';
+    }
+  } else {
+    if (banner) banner.classList.add('hidden');
+    if (btnPayout) {
+      btnPayout.disabled = false;
+      btnPayout.classList.remove('opacity-50', 'cursor-not-allowed');
+      btnPayout.removeAttribute('title');
+    }
+    if (btnLink) {
+      btnLink.disabled = false;
+      btnLink.classList.remove('opacity-50', 'cursor-not-allowed');
+      btnLink.removeAttribute('title');
+    }
+  }
+}
+
+/**
+ * Actualise tous les éléments d'affichage du solde marchand avec animation
+ */
+function updateMerchantBalancesUI() {
+  const bal = parseFloat((VPState.merchant && VPState.merchant.balance_fcfa) || 0);
+  const formatted = formatFCFA(bal);
+
+  const targets = [
+    document.getElementById('walletAvailableBalance'),
+    document.getElementById('overviewAvailableBalance'),
+    document.getElementById('headerWalletBalance'),
+    document.getElementById('sidebarMerchantBalance'),
+    document.getElementById('xofWalletBalance')
+  ];
+
+  targets.forEach(el => {
+    if (el) {
+      el.textContent = formatted;
+      el.classList.add('text-emerald-600', 'scale-105', 'transition-all');
+      setTimeout(() => {
+        el.classList.remove('text-emerald-600', 'scale-105');
+      }, 1500);
+    }
+  });
+}
+
+/**
+ * Joue un doux carillon audio lors d'un encaissement réussi
+ */
+function playChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch (e) {}
+}
+
+/**
+ * ========================================================
+ * MOTEUR TEMPS RÉEL MARCHAND (SERVER-SENT EVENTS — SSE)
+ * ========================================================
+ */
+let merchantSseInstance = null;
+let merchantSseRetryTimer = null;
+
+function initMerchantRealtimeSync() {
+  if (!VPState.token) return;
+  if (merchantSseInstance) {
+    try { merchantSseInstance.close(); } catch (e) {}
+    merchantSseInstance = null;
+  }
+
+  const sseUrl = `/api/v1/events/stream?token=${encodeURIComponent(VPState.token)}`;
+  try {
+    merchantSseInstance = new EventSource(sseUrl);
+
+    merchantSseInstance.addEventListener('open', () => {
+      console.log('⚡ [Merchant SSE] Connexion temps réel marchand active.');
+    });
+
+    // 1. Paiement reçu en direct
+    merchantSseInstance.addEventListener('payment.succeeded', (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        const data = event.payload || event;
+        const netAmt = parseFloat(data.amount_net || 0);
+
+        playChime();
+
+        showToast(
+          '🎉 Paiement Reçu en Direct !',
+          `+${formatFCFA(netAmt)} reçus via ${data.payment_method || 'Mobile Money'} (${data.customer_name || data.customer_phone || 'Client'})`,
+          'success'
+        );
+
+        if (VPState.merchant) {
+          VPState.merchant.balance_fcfa = parseFloat(data.new_merchant_balance || (parseFloat(VPState.merchant.balance_fcfa || 0) + netAmt));
+          localStorage.setItem('vandias_merchant', JSON.stringify(VPState.merchant));
+        }
+
+        updateMerchantBalancesUI();
+
+        const newTx = {
+          id: data.transaction_id || ('tx_' + Date.now().toString(36)),
+          amount_gross: data.amount_gross,
+          fee_platform: data.fee_platform,
+          amount_net: netAmt,
+          currency: data.currency || 'XOF',
+          payment_method: data.payment_method,
+          customer_name: data.customer_name,
+          customer_phone: data.customer_phone,
+          status: 'SUCCESS',
+          created_at: data.timestamp || new Date().toISOString()
+        };
+
+        if (Array.isArray(VPState.transactions)) {
+          VPState.transactions.unshift(newTx);
+          if (typeof renderTransactionsTable === 'function') {
+            renderTransactionsTable(VPState.transactions);
+          }
+        }
+
+        addNotificationItem({
+          title: `Encaissement de ${formatFCFA(netAmt)}`,
+          message: `Paiement via ${data.payment_method} de ${data.customer_name || 'un client'}.`,
+          type: 'success',
+          created_at: newTx.created_at
+        });
+      } catch (err) {
+        console.error('[Merchant SSE] Erreur payment.succeeded:', err);
+      }
+    });
+
+    // 2. Retrait approuvé par l'Admin
+    merchantSseInstance.addEventListener('payout.approved', (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        const data = event.payload || event;
+        const amt = parseFloat(data.amount || 0);
+
+        showToast(
+          '✅ Retrait Validé & Transféré',
+          `Votre demande de virement de ${formatFCFA(amt)} vers ${data.channel || 'Mobile Money'} a été approuvée par l’administration !`,
+          'success'
+        );
+
+        if (typeof fetchPayoutsHistory === 'function') {
+          fetchPayoutsHistory();
+        }
+
+        addNotificationItem({
+          title: `Retrait de ${formatFCFA(amt)} validé`,
+          message: `Le virement a été exécuté avec succès (Réf: ${data.reference || '-'}).`,
+          type: 'success',
+          created_at: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('[Merchant SSE] Erreur payout.approved:', err);
+      }
+    });
+
+    // 3. Retrait rejeté par l'Admin (Recrédit immédiat)
+    merchantSseInstance.addEventListener('payout.rejected', (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        const data = event.payload || event;
+        const amt = parseFloat(data.amount || 0);
+        const reason = data.reason || 'Rejeté par la conformité.';
+
+        showToast(
+          '⚠️ Retrait Refusé & Recrédité',
+          `Motif : "${reason}". Le montant de ${formatFCFA(amt)} a été recrédité sur votre solde disponible.`,
+          'warning'
+        );
+
+        if (VPState.merchant) {
+          if (data.restored_balance !== undefined && data.restored_balance !== null) {
+            VPState.merchant.balance_fcfa = parseFloat(data.restored_balance);
+          } else {
+            VPState.merchant.balance_fcfa = parseFloat((parseFloat(VPState.merchant.balance_fcfa || 0) + amt).toFixed(2));
+          }
+          localStorage.setItem('vandias_merchant', JSON.stringify(VPState.merchant));
+        }
+
+        updateMerchantBalancesUI();
+
+        if (typeof fetchPayoutsHistory === 'function') {
+          fetchPayoutsHistory();
+        }
+
+        addNotificationItem({
+          title: `Retrait de ${formatFCFA(amt)} refusé`,
+          message: `Motif : ${reason}. Solde intégralement recrédité.`,
+          type: 'danger',
+          created_at: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('[Merchant SSE] Erreur payout.rejected:', err);
+      }
+    });
+
+    // 4. Suspension par l'Admin
+    merchantSseInstance.addEventListener('merchant.suspended', (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        const data = event.payload || event;
+        applySuspensionUI(true, data.reason);
+        showToast('Compte Suspendu', data.reason || 'Votre compte a été suspendu par l’administration.', 'danger');
+      } catch (err) {
+        console.error('[Merchant SSE] Erreur merchant.suspended:', err);
+      }
+    });
+
+    // 5. Réactivation par l'Admin
+    merchantSseInstance.addEventListener('merchant.reactivated', () => {
+      try {
+        applySuspensionUI(false);
+        showToast('Compte Réactivé', 'Votre compte est pleinement opérationnel. Vous pouvez à nouveau créer des liens et retirer.', 'success');
+      } catch (err) {}
+    });
+
+    // 6. Mise à jour statut KYC
+    merchantSseInstance.addEventListener('merchant.kyc_updated', (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        const data = event.payload || event;
+        if (VPState.merchant) {
+          VPState.merchant.kyc_status = data.kyc_status;
+          VPState.merchant.kyc_type = data.kyc_type;
+          VPState.merchant.monthly_limit = data.monthly_limit;
+          localStorage.setItem('vandias_merchant', JSON.stringify(VPState.merchant));
+        }
+        if (typeof renderKycStatusElements === 'function') {
+          renderKycStatusElements();
+        }
+        showToast('Conformité KYC', `Votre statut KYC est désormais : ${data.kyc_status}.`, 'info');
+      } catch (err) {}
+    });
+
+    // 7. Paramètres et annonces globales
+    merchantSseInstance.addEventListener('settings.updated', (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        const data = event.payload || event;
+        if (data.settings && data.settings.announcement) {
+          displayPlatformAnnouncement(data.settings.announcement);
+        }
+      } catch (err) {}
+    });
+
+    merchantSseInstance.addEventListener('announcement.published', (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        const data = event.payload || event;
+        if (data.announcement) {
+          displayPlatformAnnouncement(data.announcement);
+        }
+      } catch (err) {}
+    });
+
+    merchantSseInstance.onerror = () => {
+      try { merchantSseInstance.close(); } catch (e) {}
+      merchantSseInstance = null;
+      clearTimeout(merchantSseRetryTimer);
+      merchantSseRetryTimer = setTimeout(initMerchantRealtimeSync, 3000);
+    };
+  } catch (err) {
+    console.warn('[Merchant SSE] Connexion non établie:', err.message);
+  }
+}
+
+/**
+ * ========================================================
+ * RECHERCHE GLOBALE MULTI-CATÉGORIES (TRANSACTIONS, LIENS, CLIENTS)
+ * ========================================================
+ */
+function initGlobalSearch() {
+  const searchInput = document.getElementById('globalDashboardSearch');
+  const dropdown = document.getElementById('globalSearchResultsDropdown');
+  if (!searchInput || !dropdown) return;
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+    }
+  });
+
+  searchInput.addEventListener('input', (e) => {
+    const q = (e.target.value || '').trim().toLowerCase();
+    if (!q || q.length < 1) {
+      dropdown.classList.add('hidden');
+      dropdown.innerHTML = '';
+      return;
+    }
+
+    const txResults = (VPState.transactions || []).filter(t =>
+      (t.id && t.id.toLowerCase().includes(q)) ||
+      (t.customer_name && t.customer_name.toLowerCase().includes(q)) ||
+      (t.customer_phone && String(t.customer_phone).includes(q)) ||
+      (t.operator_reference && t.operator_reference.toLowerCase().includes(q))
+    ).slice(0, 3);
+
+    const linkResults = (VPState.paymentLinks || []).filter(l =>
+      (l.title && l.title.toLowerCase().includes(q)) ||
+      (l.slug && l.slug.toLowerCase().includes(q))
+    ).slice(0, 3);
+
+    const custResults = (VPState.customers || []).filter(c =>
+      (c.name && c.name.toLowerCase().includes(q)) ||
+      (c.email && c.email.toLowerCase().includes(q)) ||
+      (c.phone && String(c.phone).includes(q))
+    ).slice(0, 3);
+
+    const totalResults = txResults.length + linkResults.length + custResults.length;
+    if (totalResults === 0) {
+      dropdown.innerHTML = `<div class="p-3 text-center text-slate-400">Aucun résultat trouvé pour "${q}"</div>`;
+      dropdown.classList.remove('hidden');
+      return;
+    }
+
+    let html = '';
+    if (txResults.length > 0) {
+      html += `<div class="px-2.5 py-1 text-[10px] font-extrabold uppercase text-slate-400">Transactions</div>`;
+      html += txResults.map(t => `
+        <div onclick="switchTab('transactions'); document.getElementById('globalSearchResultsDropdown').classList.add('hidden')" class="p-2 rounded-xl hover:bg-slate-50 cursor-pointer flex items-center justify-between">
+          <div>
+            <div class="font-bold text-[#111827]">${t.customer_name || t.customer_phone || t.id}</div>
+            <div class="text-[10px] text-slate-400">${t.payment_method || 'Mobile Money'} • Réf: ${t.operator_reference || t.id}</div>
+          </div>
+          <span class="font-extrabold font-mono text-[#0052FF]">${formatFCFA(t.amount_net || t.amount_gross)}</span>
+        </div>
+      `).join('');
+    }
+
+    if (linkResults.length > 0) {
+      html += `<div class="px-2.5 py-1 text-[10px] font-extrabold uppercase text-slate-400 border-t border-slate-100 mt-1">Liens de Paiement</div>`;
+      html += linkResults.map(l => `
+        <div onclick="switchTab('payment-links'); document.getElementById('globalSearchResultsDropdown').classList.add('hidden')" class="p-2 rounded-xl hover:bg-slate-50 cursor-pointer flex items-center justify-between">
+          <div>
+            <div class="font-bold text-[#111827]">${l.title}</div>
+            <div class="text-[10px] text-slate-400">Slug: /pay/${l.slug}</div>
+          </div>
+          <span class="font-extrabold font-mono text-emerald-600">${l.amount_fcfa ? formatFCFA(l.amount_fcfa) : 'Libre'}</span>
+        </div>
+      `).join('');
+    }
+
+    if (custResults.length > 0) {
+      html += `<div class="px-2.5 py-1 text-[10px] font-extrabold uppercase text-slate-400 border-t border-slate-100 mt-1">Clients</div>`;
+      html += custResults.map(c => `
+        <div onclick="switchTab('customers'); document.getElementById('globalSearchResultsDropdown').classList.add('hidden')" class="p-2 rounded-xl hover:bg-slate-50 cursor-pointer flex items-center justify-between">
+          <div>
+            <div class="font-bold text-[#111827]">${c.name}</div>
+            <div class="text-[10px] text-slate-400">${c.email || c.phone}</div>
+          </div>
+          <span class="text-[10px] font-bold text-slate-500">${c.purchases || 0} achat(s)</span>
+        </div>
+      `).join('');
+    }
+
+    dropdown.innerHTML = html;
+    dropdown.classList.remove('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.add('hidden');
+    }
+  });
+}
+
+/**
+ * ========================================================
+ * CLOCHE DE NOTIFICATIONS INTERACTIVE & HISTORIQUE
+ * ========================================================
+ */
+const merchantNotificationsList = [];
+
+function initNotificationsDropdown() {
+  const btn = document.getElementById('notificationBellBtn');
+  const menu = document.getElementById('notificationsDropdownMenu');
+  if (!btn || !menu) return;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!btn.contains(e.target) && !menu.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
+  });
+}
+
+async function loadMerchantNotifications() {
+  if (!VPState.token) return;
+  try {
+    const res = await fetch('/api/v1/merchant/notifications', {
+      headers: { 'Authorization': `Bearer ${VPState.token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.success && Array.isArray(data.notifications)) {
+      merchantNotificationsList.length = 0;
+      data.notifications.forEach(n => {
+        merchantNotificationsList.push({
+          title: n.event_type === 'payment.succeeded' ? 'Paiement reçu' : (n.event_type === 'payout.approved' ? 'Retrait validé' : (n.event_type === 'payout.rejected' ? 'Retrait rejeté' : (n.payload?.title || n.event_type))),
+          message: n.payload?.message || (n.payload?.amount ? `${formatFCFA(n.payload.amount)} via ${n.payload.channel || n.payload.payment_method || ''}` : ''),
+          type: n.event_type === 'payout.rejected' ? 'danger' : 'info',
+          is_read: n.is_read,
+          created_at: n.created_at
+        });
+      });
+      renderNotificationsUI(data.unread_count || 0);
+    }
+  } catch (e) {}
+}
+
+function addNotificationItem(item) {
+  merchantNotificationsList.unshift({
+    ...item,
+    is_read: false
+  });
+  const unreadCount = merchantNotificationsList.filter(n => !n.is_read).length;
+  renderNotificationsUI(unreadCount);
+}
+
+function renderNotificationsUI(unreadCount) {
+  const badge = document.getElementById('notificationBadgeCount');
+  const pill = document.getElementById('notificationUnreadPill');
+  const container = document.getElementById('notificationsListContainer');
+
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  if (pill) {
+    pill.textContent = `${unreadCount} non lue(s)`;
+  }
+
+  if (container) {
+    if (merchantNotificationsList.length === 0) {
+      container.innerHTML = `<div class="text-center py-6 text-slate-400">Aucune notification pour le moment.</div>`;
+      return;
+    }
+
+    container.innerHTML = merchantNotificationsList.slice(0, 15).map(n => {
+      const typeIcons = { success: '✓', danger: '✕', warning: '⚠️', info: '🔔' };
+      const typeColors = {
+        success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        danger: 'bg-rose-50 text-rose-700 border-rose-200',
+        warning: 'bg-amber-50 text-amber-700 border-amber-200',
+        info: 'bg-blue-50 text-blue-700 border-blue-200'
+      };
+      const timeAgo = formatTimeAgo(n.created_at);
+      return `
+        <div class="p-2.5 rounded-2xl border ${typeColors[n.type] || typeColors.info} flex items-start gap-2.5 ${!n.is_read ? 'ring-1 ring-blue-400/40' : 'opacity-80'}">
+          <span class="text-xs font-bold mt-0.5 shrink-0">${typeIcons[n.type] || '🔔'}</span>
+          <div class="flex-1">
+            <div class="font-bold tracking-tight">${n.title}</div>
+            <div class="text-[11px] opacity-90 mt-0.5">${n.message}</div>
+            <div class="text-[9px] opacity-60 mt-1">${timeAgo}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+window.markAllNotificationsAsRead = async function () {
+  merchantNotificationsList.forEach(n => n.is_read = true);
+  renderNotificationsUI(0);
+  if (VPState.token) {
+    try {
+      await fetch('/api/v1/merchant/notifications/read-all', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${VPState.token}` }
+      });
+    } catch (e) {}
+  }
+};
+
+function formatTimeAgo(isoString) {
+  if (!isoString) return '';
+  const diffSec = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+  if (diffSec < 60) return "À l'instant";
+  if (diffSec < 3600) return `Il y a ${Math.floor(diffSec / 60)} min`;
+  if (diffSec < 86400) return `Il y a ${Math.floor(diffSec / 3600)} h`;
+  return new Date(isoString).toLocaleDateString('fr-FR');
 }
 
 /* ========================================================
@@ -315,6 +838,11 @@ window.handleSignOut = function() {
   VPState.token = null;
   VPState.merchant = null;
   VPState.applications = [];
+  if (merchantSseInstance) {
+    try { merchantSseInstance.close(); } catch (e) {}
+    merchantSseInstance = null;
+  }
+  clearTimeout(merchantSseRetryTimer);
   hideMainDashboard();
   const onboardingContainer = document.getElementById('onboardingFlowContainer');
   if (onboardingContainer) onboardingContainer.classList.add('hidden');
@@ -419,6 +947,11 @@ async function loadMerchantDashboard() {
 
     // Mise à jour de l'interface complète
     renderAllDashboardElements();
+
+    // Déclenchement de la synchronisation temps réel et chargement des notifications
+    initMerchantRealtimeSync();
+    loadMerchantNotifications();
+
     return true;
   } catch (err) {
     console.error('Erreur de chargement du dashboard:', err);
@@ -430,6 +963,10 @@ function renderAllDashboardElements() {
   if (!VPState.merchant) return;
 
   const m = VPState.merchant;
+
+  // Contrôle de la suspension administrative (Bannière & Verrouillage)
+  applySuspensionUI(m.is_suspended === true || m.status === 'SUSPENDED', m.suspension_reason);
+
   const initial = (m.business_name || 'V').charAt(0).toUpperCase();
   const balanceFCFA = parseFloat(m.balance_fcfa || 0);
 

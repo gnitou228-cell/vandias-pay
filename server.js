@@ -565,6 +565,9 @@ if (SUPABASE_URL && activeKey && !isPlaceholder(SUPABASE_URL)) {
     });
     const keyType = validServiceKey ? 'Service Role Key (Admin)' : 'Publishable / Anon Key';
     console.log(`✅ Connecté avec succès à Supabase Cloud (${SUPABASE_URL}) [${keyType}] !`);
+    if (adminStore && typeof adminStore.setSupabaseClient === 'function') {
+      adminStore.setSupabaseClient(supabase);
+    }
   } catch (err) {
     console.warn('⚠️ Erreur initialisation Supabase SDK:', err.message);
   }
@@ -619,8 +622,166 @@ const memoryDb = {
   wallet_transfers: [],
   ip_whitelist: [],
   webhooks: [],
-  webhook_logs: []
+  webhook_logs: [],
+  events: []
 };
+
+// ========================================================
+// 2.b MOTEUR TEMPS RÉEL (SERVER-SENT EVENTS — SSE)
+// Synchronisation instantanée Super Admin ⇄ Marchands
+// ========================================================
+const sseClients = new Set();
+
+// Keepalive Ping toutes les 15 secondes pour maintenir les connexions ouvertes
+setInterval(() => {
+  for (const client of sseClients) {
+    try {
+      client.res.write(': ping\n\n');
+    } catch (err) {
+      sseClients.delete(client);
+    }
+  }
+}, 15000);
+
+/**
+ * Diffusion d'événement en temps réel
+ * @param {string} eventType - Type d'événement ('payment.succeeded', 'payout.requested', etc.)
+ * @param {object} payload - Données transmises
+ * @param {string} target - 'all' | 'admin' | 'merchant:<merchantId>'
+ */
+function broadcastEvent(eventType, payload = {}, target = 'all') {
+  const eventId = 'evt_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex');
+  const eventData = {
+    id: eventId,
+    event_type: eventType,
+    payload,
+    target,
+    timestamp: new Date().toISOString()
+  };
+
+  const sseChunk = `id: ${eventId}\nevent: ${eventType}\ndata: ${JSON.stringify(eventData)}\n\n`;
+
+  for (const client of sseClients) {
+    try {
+      if (client.role === 'ADMIN') {
+        // L'admin reçoit TOUT pour une supervision absolue en direct
+        client.res.write(sseChunk);
+      } else if (client.role === 'MERCHANT') {
+        // Le marchand reçoit les annonces globales ('all') et son propre flux 'merchant:<id>'
+        if (target === 'all' || target === `merchant:${client.merchantId}`) {
+          client.res.write(sseChunk);
+        }
+      }
+    } catch (err) {
+      sseClients.delete(client);
+    }
+  }
+
+  // Persistance mémoire
+  if (!memoryDb.events) memoryDb.events = [];
+  memoryDb.events.unshift({
+    id: eventId,
+    target,
+    event_type: eventType,
+    payload,
+    is_read: false,
+    created_at: eventData.timestamp
+  });
+  if (memoryDb.events.length > 500) memoryDb.events.length = 500;
+
+  // Persistance Supabase (table events)
+  if (supabase) {
+    supabase.from('events').insert([{
+      target,
+      event_type: eventType,
+      payload,
+      is_read: false
+    }]).then(() => {}, () => {});
+  }
+}
+
+/**
+ * Helper centralisé: Traitement d'un paiement réussi
+ * Met à jour le solde marchand, inscrit le mouvement comptable dans le grand livre,
+ * déclenche le webhook marchand et diffuse l'événement temps réel à l'admin et au marchand.
+ */
+async function handlePaymentSuccess(transaction, merchant, link = null) {
+  if (!transaction || !merchant) return;
+  const netAmount = parseFloat(transaction.amount_net || 0);
+  const grossAmount = parseFloat(transaction.amount_gross || 0);
+  const platformFee = parseFloat(transaction.fee_platform || 0);
+
+  // 1. Crédit du solde marchand
+  merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + netAmount).toFixed(2));
+  console.log(`💰 [SOLDE CRÉDITÉ CONFIRMÉ] Marchand "${merchant.business_name}": +${netAmount} FCFA -> Solde: ${merchant.balance_fcfa} FCFA`);
+
+  // 2. Grand Livre (Ledger Movement - Double Entry)
+  const ledgerMov = {
+    id: 'mov_tx_' + crypto.randomBytes(4).toString('hex'),
+    merchant_id: merchant.id,
+    type: 'COLLECTION',
+    direction: 'CREDIT',
+    country: transaction.country || merchant.country_code || 'TG',
+    currency: transaction.currency || 'XOF',
+    amount: netAmount,
+    description: `Encaissement validé #${transaction.id} via ${transaction.payment_method || 'Mobile Money'}`,
+    created_at: new Date().toISOString()
+  };
+  if (memoryDb.ledger_movements) memoryDb.ledger_movements.unshift(ledgerMov);
+
+  // 3. Persistance Supabase
+  if (supabase) {
+    try {
+      await supabase.from('merchants').update({ balance_fcfa: merchant.balance_fcfa }).eq('id', merchant.id);
+      await supabase.from('transactions').upsert([transaction]);
+      await supabase.from('ledger_movements').insert([ledgerMov]);
+      if (link && link.id) {
+        await supabase.from('payment_links').update({ sales_count: link.sales_count }).eq('id', link.id);
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase sync warning handlePaymentSuccess:', err.message);
+    }
+  }
+
+  // 4. Webhook marchand externe
+  if (merchant.webhook_url) {
+    dispatchWebhook(merchant.webhook_url, merchant.webhook_secret, 'payment.success', {
+      transaction_id: transaction.id,
+      status: 'SUCCESS',
+      amount_gross: grossAmount,
+      fee: platformFee,
+      amount_net: netAmount,
+      currency: transaction.currency || 'XOF',
+      payment_method: transaction.payment_method,
+      customer: {
+        phone: transaction.customer_phone,
+        name: transaction.customer_name,
+        email: transaction.customer_email
+      },
+      mode: transaction.mode,
+      operator_ref: transaction.operator_reference,
+      timestamp: Math.floor(Date.now() / 1000)
+    }, merchant.id).catch(() => {});
+  }
+
+  // 5. Diffusion Temps Réel SSE (reçu immédiatement par le marchand ET l'administrateur)
+  broadcastEvent('payment.succeeded', {
+    transaction_id: transaction.id,
+    merchant_id: merchant.id,
+    merchant_name: merchant.business_name || merchant.full_name,
+    merchant_email: merchant.email,
+    amount_gross: grossAmount,
+    fee_platform: platformFee,
+    amount_net: netAmount,
+    currency: transaction.currency || 'XOF',
+    payment_method: transaction.payment_method,
+    customer_name: transaction.customer_name,
+    customer_phone: transaction.customer_phone,
+    customer_email: transaction.customer_email,
+    new_merchant_balance: merchant.balance_fcfa,
+    timestamp: transaction.updated_at || new Date().toISOString()
+  }, `merchant:${merchant.id}`);
+}
 
 // ========================================================
 // 3. FONCTIONS DE SÉCURITÉ, HASH & SIGNATURES HMAC
@@ -975,7 +1136,8 @@ async function requireMerchantAuth(req, res, next) {
     return res.status(403).json({
       success: false,
       error: 'Votre compte est temporairement suspendu par l’administration de VandiasPay.',
-      reason: override.suspension_reason || 'Veuillez contacter le support à support@vandiaspay.com.'
+      reason: override.suspension_reason || 'Veuillez contacter le support à support@vandiaspay.com.',
+      suspension_reason: override.suspension_reason || 'Veuillez contacter le support à support@vandiaspay.com.'
     });
   }
 
@@ -1049,6 +1211,137 @@ async function requireApiKeyAuth(req, res, next) {
   req.mode = keyRecord.key_type; // 'live' ou 'test'
   next();
 }
+
+// ========================================================
+// 5.b ROUTES DU FLUX TEMPS RÉEL (SERVER-SENT EVENTS — SSE)
+// ========================================================
+
+/**
+ * GET /api/v1/events/stream
+ * Flux temps réel Server-Sent Events (SSE)
+ * Reçoit le token JWT via paramètre d'URL (?token=...) ou en header Authorization Bearer.
+ */
+app.get('/api/v1/events/stream', async (req, res) => {
+  try {
+    const rawToken = req.query.token || (req.headers['authorization'] ? req.headers['authorization'].replace('Bearer ', '').trim() : null);
+    if (!rawToken) {
+      return res.status(401).json({ success: false, error: 'Token requis pour le flux temps réel.' });
+    }
+
+    const decoded = verifyToken(rawToken);
+    if (!decoded) {
+      return res.status(401).json({ success: false, error: 'Token invalide ou expiré.' });
+    }
+
+    const adminEmail = (process.env.ADMIN_EMAIL || 'gnitessowedeou@gmail.com').toLowerCase();
+    const tokenEmail = (decoded.email || '').toLowerCase();
+    const isAdmin = decoded.role === 'SUPER_ADMIN' || decoded.is_admin === true || tokenEmail === adminEmail;
+    const merchantId = decoded.merchant_id || decoded.id;
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'X-Accel-Buffering': 'no'
+    });
+    res.flushHeaders?.();
+
+    const clientId = 'sse_' + Date.now().toString(36) + '_' + crypto.randomBytes(3).toString('hex');
+    const clientRecord = {
+      id: clientId,
+      res,
+      role: isAdmin ? 'ADMIN' : 'MERCHANT',
+      merchantId: merchantId || null,
+      email: tokenEmail
+    };
+
+    sseClients.add(clientRecord);
+
+    // Événement initial de connexion établie
+    res.write(`event: connected\ndata: ${JSON.stringify({
+      status: 'connected',
+      client_id: clientId,
+      role: clientRecord.role,
+      merchant_id: clientRecord.merchantId,
+      connected_at: new Date().toISOString()
+    })}\n\n`);
+
+    req.on('close', () => {
+      sseClients.delete(clientRecord);
+    });
+  } catch (err) {
+    console.error('Erreur SSE endpoint:', err);
+    try {
+      res.status(500).end();
+    } catch (e) {}
+  }
+});
+
+/**
+ * GET /api/v1/merchant/notifications
+ * Récupère les notifications récentes (pour la cloche interactive)
+ */
+app.get('/api/v1/merchant/notifications', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    let list = [];
+
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('events')
+          .select('*')
+          .or(`target.eq.all,target.eq.merchant:${merchantId}`)
+          .order('created_at', { ascending: false })
+          .limit(30);
+        if (!error && Array.isArray(data)) list = data;
+      } catch (e) {}
+    }
+
+    if (!list.length && memoryDb.events) {
+      list = memoryDb.events.filter(e => e.target === 'all' || e.target === `merchant:${merchantId}`).slice(0, 30);
+    }
+
+    const unreadCount = list.filter(e => !e.is_read).length;
+
+    res.json({
+      success: true,
+      notifications: list,
+      unread_count: unreadCount
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/v1/merchant/notifications/read-all
+ * Marquer toutes les notifications comme lues
+ */
+app.post('/api/v1/merchant/notifications/read-all', requireMerchantAuth, async (req, res) => {
+  try {
+    const merchantId = req.merchant.id;
+    if (supabase) {
+      try {
+        await supabase
+          .from('events')
+          .update({ is_read: true })
+          .or(`target.eq.all,target.eq.merchant:${merchantId}`);
+      } catch (e) {}
+    }
+    if (memoryDb.events) {
+      memoryDb.events.forEach(e => {
+        if (e.target === 'all' || e.target === `merchant:${merchantId}`) {
+          e.is_read = true;
+        }
+      });
+    }
+    res.json({ success: true, message: 'Toutes les notifications ont été marquées comme lues.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // ========================================================
 // 6. ROUTES D'AUTHENTIFICATION & MARCHAND (DASHBOARD)
@@ -2223,6 +2516,30 @@ app.post('/api/v1/merchant/payouts', requireMerchantAuth, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Montant de retrait invalide.' });
     }
 
+    const platformSettings = adminStore.getSettings();
+    if (platformSettings.payouts_enabled === false) {
+      return res.status(400).json({
+        success: false,
+        error: 'Les retraits sont temporairement suspendus sur la plateforme par l’administration.'
+      });
+    }
+
+    const minPayout = platformSettings.min_payout_amount || 500;
+    if (parsedAmount < minPayout) {
+      return res.status(400).json({
+        success: false,
+        error: `Le montant minimum de retrait est de ${minPayout.toLocaleString('fr-FR')} FCFA.`
+      });
+    }
+
+    const currentBalance = parseFloat(req.merchant.balance_fcfa || 0);
+    if (currentBalance < parsedAmount) {
+      return res.status(400).json({
+        success: false,
+        error: `Solde disponible insuffisant (${currentBalance.toLocaleString('fr-FR')} FCFA disponible).`
+      });
+    }
+
     // Récupérer la méthode de retrait si fournie
     let method = null;
     const methodId = payout_method || payout_method_id;
@@ -2230,32 +2547,18 @@ app.post('/api/v1/merchant/payouts', requireMerchantAuth, async (req, res) => {
       method = memoryDb.payout_methods.find(m => m.id === methodId && m.merchant_id === req.merchant.id);
     }
 
-    // Détermination de la devise et canal
+    // Détermination du canal et des informations bénéficiaire
     let selectedChannel = channel || (method?.type === 'BANK_TRANSFER' ? 'BANK' : (method?.network?.split('_')[0] || 'WAVE'));
     let selectedPhone = recipient_phone || method?.phone_number || req.merchant.phone || '+221 77 842 19 04';
-    let selectedName = recipient_name || method?.account_holder_name || req.merchant.business_name || 'VANDIA IA';
+    let selectedName = recipient_name || method?.account_holder_name || req.merchant.business_name || 'Marchand';
     let selectedCurrency = 'XOF';
 
-    // Déduction depuis le wallet pays s'il existe
-    if (country && memoryDb.wallets) {
-      const w = memoryDb.wallets.find(wallet => wallet.merchant_id === req.merchant.id && wallet.country.toUpperCase() === country.toUpperCase());
-      if (w) {
-        selectedCurrency = w.currency;
-        if (w.available_amount >= parsedAmount) {
-          w.available_amount -= parsedAmount;
-        } else {
-          // Déduire du solde global si wallet insuffisant
-          req.merchant.balance_fcfa = Math.max(0, (req.merchant.balance_fcfa || 0) - parsedAmount);
-        }
-      } else {
-        req.merchant.balance_fcfa = Math.max(0, (req.merchant.balance_fcfa || 0) - parsedAmount);
-      }
-    } else {
-      req.merchant.balance_fcfa = Math.max(0, (req.merchant.balance_fcfa || 0) - parsedAmount);
-    }
+    // Réservation / Déduction du montant du solde disponible
+    req.merchant.balance_fcfa = parseFloat((currentBalance - parsedAmount).toFixed(2));
+    adminStore.setMerchantOverride(req.merchant.id, { balance_fcfa: req.merchant.balance_fcfa });
 
-    // Référence 32 hex chars exacte conforme à SasPay
-    const reference = crypto.randomBytes(16).toString('hex');
+    // Référence unique conforme
+    const reference = 'PO-' + crypto.randomBytes(8).toString('hex').toUpperCase();
 
     const newPayout = {
       id: 'po_' + crypto.randomUUID().slice(0, 12),
@@ -2266,42 +2569,28 @@ app.post('/api/v1/merchant/payouts', requireMerchantAuth, async (req, res) => {
       fee: 0.00,
       currency: selectedCurrency,
       channel: selectedChannel,
-      country: country || 'SN',
+      country: country || req.merchant.country_code || 'TG',
       recipient_phone: selectedPhone,
       recipient_name: selectedName,
-      status: 'SUCCESS', // Statut Réussi
+      status: 'PENDING', // En attente de validation par le Super Admin
       created_at: new Date().toISOString()
     };
 
     if (!memoryDb.payouts) memoryDb.payouts = [];
     memoryDb.payouts.unshift(newPayout);
 
-    // Enregistrer également dans le grand livre (ledger)
-    if (memoryDb.ledger_movements) {
-      memoryDb.ledger_movements.unshift({
-        id: 'mov_' + crypto.randomUUID().slice(0, 8),
-        merchant_id: req.merchant.id,
-        type: 'PAYOUT',
-        direction: 'DEBIT',
-        country: country || 'SN',
-        currency: selectedCurrency,
-        amount: parsedAmount,
-        description: `Retrait vers ${selectedChannel} (${selectedPhone})`,
-        created_at: new Date().toISOString()
-      });
-    }
-
-    // Synchronisation Supabase si connecté
+    // Synchronisation Supabase (mise à jour solde marchand + insertion payout PENDING)
     if (supabase) {
       try {
+        await supabase.from('merchants').update({ balance_fcfa: req.merchant.balance_fcfa }).eq('id', req.merchant.id);
         await supabase.from('payouts').insert([{
           merchant_id: req.merchant.id,
           amount: parsedAmount,
           fee: 0.00,
-          channel: selectedChannel === 'BANK' ? 'BANK' : (['WAVE','ORANGE','MTN'].includes(selectedChannel) ? selectedChannel : 'WAVE'),
+          channel: selectedChannel === 'BANK' ? 'BANK' : (['WAVE','ORANGE','MTN','MOOV'].includes(selectedChannel) ? selectedChannel : 'WAVE'),
           recipient_phone: selectedPhone,
           recipient_name: selectedName,
-          status: 'COMPLETED',
+          status: 'PENDING',
           reference
         }]);
       } catch (err) {
@@ -2309,9 +2598,24 @@ app.post('/api/v1/merchant/payouts', requireMerchantAuth, async (req, res) => {
       }
     }
 
+    // Diffusion SSE temps réel vers l'administrateur
+    broadcastEvent('payout.requested', {
+      payout_id: newPayout.id,
+      reference: newPayout.reference,
+      merchant_id: req.merchant.id,
+      merchant_name: req.merchant.business_name || req.merchant.full_name,
+      merchant_email: req.merchant.email,
+      amount: parsedAmount,
+      currency: selectedCurrency,
+      channel: selectedChannel,
+      recipient_phone: selectedPhone,
+      recipient_name: selectedName,
+      timestamp: newPayout.created_at
+    }, 'admin');
+
     res.status(201).json({
       success: true,
-      message: `Retrait de ${parsedAmount.toLocaleString('fr-FR')} ${selectedCurrency} effectué avec succès !`,
+      message: `Demande de retrait de ${parsedAmount.toLocaleString('fr-FR')} ${selectedCurrency} transmise avec succès à l’administration.`,
       payout: newPayout,
       new_balance: req.merchant.balance_fcfa
     });
@@ -5043,38 +5347,7 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
         transaction.updated_at = new Date().toISOString();
 
         if (merchant) {
-          const netAmount = parseFloat(transaction.amount_net || 0);
-          merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + netAmount).toFixed(2));
-          console.log(`💰 [SOLDE CRÉDITÉ CONFIRMÉ] Marchand "${merchant.business_name}": +${netAmount} FCFA -> Solde: ${merchant.balance_fcfa} FCFA`);
-
-          if (supabase) {
-            try {
-              await supabase.from('merchants').update({ balance_fcfa: merchant.balance_fcfa }).eq('id', merchant.id);
-              await supabase.from('transactions').upsert([transaction]);
-            } catch (err) {
-              console.warn('Supabase sync warning:', err.message);
-            }
-          }
-
-          if (merchant.webhook_url) {
-            dispatchWebhook(merchant.webhook_url, merchant.webhook_secret, 'payment.success', {
-              transaction_id: transaction.id,
-              status: 'SUCCESS',
-              amount_gross: transaction.amount_gross,
-              fee: transaction.fee_platform,
-              amount_net: transaction.amount_net,
-              currency: transaction.currency,
-              payment_method: transaction.payment_method,
-              customer: {
-                phone: transaction.customer_phone,
-                name: transaction.customer_name,
-                email: transaction.customer_email
-              },
-              mode: transaction.mode,
-              operator_ref: transaction.operator_reference,
-              timestamp: Math.floor(Date.now() / 1000)
-            }, merchant.id).catch(() => {});
-          }
+          await handlePaymentSuccess(transaction, merchant, link);
         }
 
         return res.json({
@@ -5132,43 +5405,9 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
     if (gatewayResult.status === 'SUCCESS') {
       transaction.status = 'SUCCESS';
 
-      // Crédit solde marchand
+      // Crédit solde marchand et diffusion temps réel
       if (merchant) {
-        const netAmount = parseFloat(transaction.amount_net || 0);
-        merchant.balance_fcfa = parseFloat((parseFloat(merchant.balance_fcfa || 0) + netAmount).toFixed(2));
-        console.log(`💰 [SOLDE CRÉDITÉ IMMÉDIAT] Marchand "${merchant.business_name}": +${netAmount} FCFA -> Solde: ${merchant.balance_fcfa} FCFA`);
-
-        if (supabase) {
-          try {
-            await supabase.from('merchants').update({ balance_fcfa: merchant.balance_fcfa }).eq('id', merchant.id);
-            await supabase.from('transactions').upsert([transaction]);
-            if (link) {
-              await supabase.from('payment_links').update({ sales_count: link.sales_count }).eq('id', link.id);
-            }
-          } catch (err) {
-            console.warn('Supabase sync warning:', err.message);
-          }
-        }
-
-        if (merchant.webhook_url) {
-          dispatchWebhook(merchant.webhook_url, merchant.webhook_secret, 'payment.success', {
-            transaction_id: transaction.id,
-            status: 'SUCCESS',
-            amount_gross: transaction.amount_gross,
-            fee: transaction.fee_platform,
-            amount_net: transaction.amount_net,
-            currency: transaction.currency,
-            payment_method: transaction.payment_method,
-            customer: {
-              phone: transaction.customer_phone,
-              name: transaction.customer_name,
-              email: transaction.customer_email
-            },
-            mode: transaction.mode,
-            operator_ref: transaction.operator_reference,
-            timestamp: Math.floor(Date.now() / 1000)
-          }, merchant.id).catch(() => {});
-        }
+        await handlePaymentSuccess(transaction, merchant, link);
       }
 
       return res.json({
@@ -5827,7 +6066,9 @@ app.get('/api/v1/admin/merchants/:id', requireAdminAuth, async (req, res) => {
 app.post('/api/v1/admin/merchants/:id/balance', requireAdminAuth, async (req, res) => {
   try {
     const merchantId = req.params.id;
-    const { amount, type, reason, country = 'TG', currency = 'XOF' } = req.body;
+    const type = (req.body.type || req.body.action || '').toUpperCase();
+    const reason = req.body.reason || req.body.motive || '';
+    const { amount, country = 'TG', currency = 'XOF' } = req.body;
 
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
@@ -5926,10 +6167,11 @@ app.post('/api/v1/admin/merchants/:id/balance', requireAdminAuth, async (req, re
  * 7. Suspendre ou Réactiver un Marchand
  * POST /api/v1/admin/merchants/:id/status
  */
-app.post('/api/v1/admin/merchants/:id/status', requireAdminAuth, async (req, res) => {
+async function handleMerchantStatusChange(req, res, forceStatus = null) {
   try {
     const merchantId = req.params.id;
-    const { status, reason } = req.body;
+    const status = forceStatus || req.body.status;
+    const reason = req.body.reason || req.body.motive || '';
 
     if (!['ACTIVE', 'SUSPENDED'].includes(status)) {
       return res.status(400).json({ success: false, error: 'Statut invalide. Doit être ACTIVE ou SUSPENDED.' });
@@ -5961,15 +6203,34 @@ app.post('/api/v1/admin/merchants/:id/status', requireAdminAuth, async (req, res
       details: { status, reason }
     });
 
+    // Diffusion temps réel SSE vers le marchand et tous les admins
+    if (status === 'SUSPENDED') {
+      broadcastEvent('merchant.suspended', {
+        merchant_id: merchantId,
+        reason: reason || 'Non-respect des conditions d’utilisation.',
+        suspended_at: new Date().toISOString()
+      }, `merchant:${merchantId}`);
+    } else {
+      broadcastEvent('merchant.reactivated', {
+        merchant_id: merchantId,
+        reactivated_at: new Date().toISOString()
+      }, `merchant:${merchantId}`);
+    }
+
     res.json({
       success: true,
       message: `Le compte marchand a été ${status === 'SUSPENDED' ? 'suspendu' : 'réactivé'} avec succès.`,
-      status
+      status,
+      merchant: { id: merchantId, status, suspension_reason: status === 'SUSPENDED' ? (reason || 'Non-respect des conditions d’utilisation.') : null }
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
-});
+}
+
+app.post('/api/v1/admin/merchants/:id/status', requireAdminAuth, (req, res) => handleMerchantStatusChange(req, res));
+app.post('/api/v1/admin/merchants/:id/suspend', requireAdminAuth, (req, res) => handleMerchantStatusChange(req, res, 'SUSPENDED'));
+app.post('/api/v1/admin/merchants/:id/reactivate', requireAdminAuth, (req, res) => handleMerchantStatusChange(req, res, 'ACTIVE'));
 
 /**
  * 8. Validation ou Rejet du KYC Marchand
@@ -6030,6 +6291,16 @@ app.post('/api/v1/admin/merchants/:id/kyc', requireAdminAuth, async (req, res) =
         note
       }
     });
+
+    // Diffusion temps réel SSE vers le marchand
+    broadcastEvent('merchant.kyc_updated', {
+      merchant_id: merchantId,
+      kyc_status,
+      kyc_type: effectiveType,
+      monthly_limit: effectiveLimit,
+      note,
+      updated_at: new Date().toISOString()
+    }, `merchant:${merchantId}`);
 
     res.json({
       success: true,
@@ -6342,10 +6613,26 @@ app.post('/api/v1/admin/payouts/:id/approve', requireAdminAuth, async (req, res)
     payout.status = 'SUCCESS';
     payout.reference = operator_reference || payout.reference || `PO-OP-${Date.now()}`;
     payout.processed_at = new Date().toISOString();
+    payout.decided_by = req.admin.email;
+    payout.decided_at = new Date().toISOString();
+
+    const debitMov = {
+      id: 'mov_po_' + crypto.randomBytes(4).toString('hex'),
+      merchant_id: payout.merchant_id,
+      type: 'PAYOUT',
+      direction: 'DEBIT',
+      country: payout.country || 'TG',
+      currency: payout.currency || 'XOF',
+      amount: parseFloat(payout.amount),
+      description: `Retrait validé #${payout.id} vers ${payout.channel} (${payout.recipient_phone})`,
+      created_at: new Date().toISOString()
+    };
+    if (memoryDb.ledger_movements) memoryDb.ledger_movements.unshift(debitMov);
 
     if (supabase) {
       try {
         await supabase.from('payouts').upsert([payout]);
+        await supabase.from('ledger_movements').insert([debitMov]);
       } catch (e) {}
     }
 
@@ -6361,6 +6648,17 @@ app.post('/api/v1/admin/payouts/:id/approve', requireAdminAuth, async (req, res)
         operator_reference: payout.reference
       }
     });
+
+    // Diffusion temps réel SSE vers le marchand
+    broadcastEvent('payout.approved', {
+      payout_id: payout.id,
+      reference: payout.reference,
+      merchant_id: payout.merchant_id,
+      amount: payout.amount,
+      currency: payout.currency || 'XOF',
+      channel: payout.channel,
+      processed_at: payout.processed_at
+    }, `merchant:${payout.merchant_id}`);
 
     res.json({
       success: true,
@@ -6379,7 +6677,7 @@ app.post('/api/v1/admin/payouts/:id/approve', requireAdminAuth, async (req, res)
 app.post('/api/v1/admin/payouts/:id/reject', requireAdminAuth, async (req, res) => {
   try {
     const payoutId = req.params.id;
-    const { reason } = req.body;
+    const reason = req.body.reason || req.body.motive || '';
 
     let payout = memoryDb.payouts.find(p => p.id === payoutId);
     if (!payout && supabase) {
@@ -6397,9 +6695,13 @@ app.post('/api/v1/admin/payouts/:id/reject', requireAdminAuth, async (req, res) 
       return res.status(400).json({ success: false, error: 'Ce retrait est déjà rejeté.' });
     }
 
+    const rejectionReason = reason || 'Rejeté par la conformité financière.';
     payout.status = 'REJECTED';
-    payout.rejection_reason = reason || 'Rejeté par la conformité financière.';
+    payout.rejection_reason = rejectionReason;
+    payout.motive = rejectionReason;
     payout.processed_at = new Date().toISOString();
+    payout.decided_by = req.admin.email;
+    payout.decided_at = new Date().toISOString();
 
     const merchant = await dbFindMerchantById(payout.merchant_id);
     if (merchant) {
@@ -6419,7 +6721,7 @@ app.post('/api/v1/admin/payouts/:id/reject', requireAdminAuth, async (req, res) 
         description: `Restitution retrait rejeté #${payout.id} : ${payout.rejection_reason}`,
         created_at: new Date().toISOString()
       };
-      memoryDb.ledger_movements.unshift(movement);
+      if (memoryDb.ledger_movements) memoryDb.ledger_movements.unshift(movement);
 
       if (supabase) {
         try {
@@ -6442,10 +6744,97 @@ app.post('/api/v1/admin/payouts/:id/reject', requireAdminAuth, async (req, res) 
       }
     });
 
+    // Diffusion temps réel SSE vers le marchand
+    broadcastEvent('payout.rejected', {
+      payout_id: payout.id,
+      reference: payout.reference,
+      merchant_id: payout.merchant_id,
+      amount: payout.amount,
+      currency: payout.currency || 'XOF',
+      reason: payout.rejection_reason,
+      restored_balance: merchant ? merchant.balance_fcfa : null,
+      processed_at: payout.processed_at
+    }, `merchant:${payout.merchant_id}`);
+
     res.json({
       success: true,
       message: `Retrait rejeté et montant de ${parseFloat(payout.amount).toLocaleString('fr-FR')} ${payout.currency || 'XOF'} recrédité immédiatement sur le solde du marchand.`,
       payout
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * 15.b Réconciliation du Grand Livre (Ledger Reconciliation & Integrity)
+ * GET /api/v1/admin/reconciliation
+ * Vérifie l'équilibre parfait entre les soldes marchands et les mouvements comptables
+ */
+app.get('/api/v1/admin/reconciliation', requireAdminAuth, async (req, res) => {
+  try {
+    const [merchants, transactions, payouts] = await Promise.all([
+      dbGetAllMerchants(),
+      dbGetAllTransactions(),
+      dbGetAllPayouts()
+    ]);
+
+    let movements = [];
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('ledger_movements')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data)) movements = data;
+      } catch (e) {}
+    }
+    if (!movements.length && memoryDb.ledger_movements) {
+      movements = memoryDb.ledger_movements;
+    }
+
+    const totalMerchantsBalance = merchants.reduce((sum, m) => sum + parseFloat(m.balance_fcfa || 0), 0);
+
+    let totalCredits = 0;
+    let totalDebits = 0;
+
+    for (const mov of movements) {
+      const amt = parseFloat(mov.amount || 0);
+      if (mov.direction === 'CREDIT') {
+        totalCredits += amt;
+      } else if (mov.direction === 'DEBIT') {
+        totalDebits += amt;
+      }
+    }
+
+    const theoreticalLedgerBalance = totalCredits - totalDebits;
+    const delta = Math.abs(totalMerchantsBalance - theoreticalLedgerBalance);
+    const isReconciled = delta < 1.0;
+
+    res.json({
+      success: true,
+      reconciled: isReconciled,
+      is_balanced: isReconciled,
+      status: isReconciled ? 'BALANCED' : 'DISCREPANCY_DETECTED',
+      total_merchant_wallets: parseFloat(totalMerchantsBalance.toFixed(2)),
+      total_ledger_net: parseFloat(theoreticalLedgerBalance.toFixed(2)),
+      diff: parseFloat(delta.toFixed(2)),
+      summary: {
+        total_merchants_balance: parseFloat(totalMerchantsBalance.toFixed(2)),
+        theoretical_ledger_balance: parseFloat(theoreticalLedgerBalance.toFixed(2)),
+        delta: parseFloat(delta.toFixed(2)),
+        status: isReconciled ? 'BALANCED' : 'DISCREPANCY_DETECTED',
+        status_label: isReconciled ? 'Équilibré (Intégrité 100% vérifiée)' : 'Écart détecté à auditer'
+      },
+      details: {
+        merchants_count: merchants.length,
+        movements_count: movements.length,
+        total_credits: parseFloat(totalCredits.toFixed(2)),
+        total_debits: parseFloat(totalDebits.toFixed(2)),
+        successful_transactions_count: transactions.filter(t => t.status === 'SUCCESS').length,
+        payouts_completed_count: payouts.filter(p => p.status === 'SUCCESS' || p.status === 'COMPLETED').length
+      },
+      audit_timestamp: new Date().toISOString()
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -6549,6 +6938,19 @@ app.post('/api/v1/admin/settings', requireAdminAuth, (req, res) => {
       details: req.body
     });
 
+    // Diffusion temps réel vers tous les marchands et admins connectés
+    broadcastEvent('settings.updated', {
+      settings: adminStore.publicConfig(),
+      updated_at: new Date().toISOString()
+    }, 'all');
+
+    if (req.body.announcement !== undefined) {
+      broadcastEvent('announcement.published', {
+        announcement: updated.announcement,
+        updated_at: new Date().toISOString()
+      }, 'all');
+    }
+
     res.json({
       success: true,
       message: 'Paramètres globaux de la plateforme mis à jour avec succès.',
@@ -6561,9 +6963,9 @@ app.post('/api/v1/admin/settings', requireAdminAuth, (req, res) => {
 
 /**
  * 19. Journal d'Audit Admin
- * GET /api/v1/admin/audit
+ * GET /api/v1/admin/audit & GET /api/v1/admin/audit-logs
  */
-app.get('/api/v1/admin/audit', requireAdminAuth, (req, res) => {
+app.get(['/api/v1/admin/audit', '/api/v1/admin/audit-logs'], requireAdminAuth, (req, res) => {
   const limit = parseInt(req.query.limit, 10) || 200;
   const logs = adminStore.getAudit({ limit });
   res.json({

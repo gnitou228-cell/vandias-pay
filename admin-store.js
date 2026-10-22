@@ -65,6 +65,63 @@ function save() {
   }, 150);
 }
 
+let supabaseClient = null;
+
+function setSupabaseClient(client) {
+  supabaseClient = client;
+  if (supabaseClient) {
+    syncFromSupabase();
+  }
+}
+
+async function syncFromSupabase() {
+  if (!supabaseClient) return;
+  try {
+    const { data: settingsData } = await supabaseClient
+      .from('platform_settings')
+      .select('*')
+      .eq('id', 'global')
+      .maybeSingle();
+
+    if (settingsData) {
+      store.settings = { ...store.settings, ...settingsData };
+      save();
+    }
+  } catch (err) {
+    // Table non encore migrée ou inaccessible, fallback mémoire conservé
+  }
+
+  try {
+    const { data: auditData } = await supabaseClient
+      .from('audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (Array.isArray(auditData) && auditData.length > 0) {
+      // Fusionner avec déduplication par id
+      const existingIds = new Set(store.audit_logs.map(a => a.id));
+      for (const a of auditData) {
+        if (!existingIds.has(a.id)) {
+          store.audit_logs.push({
+            id: a.id,
+            admin: a.admin_email || a.admin_id || 'system',
+            action: a.action,
+            target_type: a.target_type,
+            target_id: a.target_id,
+            details: a.details,
+            created_at: a.created_at
+          });
+        }
+      }
+      store.audit_logs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      if (store.audit_logs.length > MAX_AUDIT) store.audit_logs.length = MAX_AUDIT;
+    }
+  } catch (err) {
+    // Fallback mémoire
+  }
+}
+
 load();
 
 // ---------- Paramètres plateforme ----------
@@ -113,6 +170,24 @@ function updateSettings(patch = {}) {
   if (patch.support_email !== undefined) s.support_email = String(patch.support_email).slice(0, 200);
   if (patch.support_whatsapp !== undefined) s.support_whatsapp = String(patch.support_whatsapp).slice(0, 50);
   save();
+  if (supabaseClient) {
+    supabaseClient.from('platform_settings').upsert([{
+      id: 'global',
+      platform_fee_percent: s.platform_fee_percent,
+      maintenance_mode: s.maintenance_mode,
+      maintenance_message: s.maintenance_message,
+      announcement: s.announcement,
+      signups_enabled: s.signups_enabled,
+      payouts_enabled: s.payouts_enabled,
+      min_payout_amount: s.min_payout_amount,
+      max_transaction_amount: s.max_transaction_amount,
+      disabled_payment_methods: s.disabled_payment_methods,
+      disabled_countries: s.disabled_countries,
+      support_email: s.support_email,
+      support_whatsapp: s.support_whatsapp,
+      updated_at: new Date().toISOString()
+    }]).then(() => {}, () => {});
+  }
   return getSettings();
 }
 
@@ -174,6 +249,18 @@ function setMerchantOverride(id, patch = {}) {
   cur.updated_at = new Date().toISOString();
   store.merchant_overrides[id] = cur;
   save();
+  if (supabaseClient) {
+    const dbUpdate = {};
+    if (patch.status !== undefined) dbUpdate.is_suspended = (patch.status === 'SUSPENDED');
+    if (patch.suspension_reason !== undefined) dbUpdate.suspension_reason = patch.suspension_reason;
+    if (patch.custom_fee_percent !== undefined) dbUpdate.custom_fee_percent = cur.custom_fee_percent || null;
+    if (patch.kyc_status !== undefined) dbUpdate.kyc_status = patch.kyc_status;
+    if (patch.kyc_type !== undefined) dbUpdate.kyc_type = patch.kyc_type;
+    if (patch.balance_fcfa !== undefined) dbUpdate.balance_fcfa = parseFloat(patch.balance_fcfa);
+    if (Object.keys(dbUpdate).length > 0) {
+      supabaseClient.from('merchants').update(dbUpdate).eq('id', id).then(() => {}, () => {});
+    }
+  }
   return cur;
 }
 
@@ -247,6 +334,16 @@ function addAudit({ admin, action, target_type, target_id, details }) {
   store.audit_logs.unshift(entry);
   if (store.audit_logs.length > MAX_AUDIT) store.audit_logs.length = MAX_AUDIT;
   save();
+  if (supabaseClient) {
+    supabaseClient.from('audit_logs').insert([{
+      admin_email: admin || 'system',
+      action,
+      target_type: target_type || null,
+      target_id: target_id ? String(target_id) : null,
+      details: details || {},
+      created_at: entry.created_at
+    }]).then(() => {}, () => {});
+  }
   return entry;
 }
 
@@ -257,6 +354,7 @@ function getAudit({ target_id, limit = 200 } = {}) {
 }
 
 module.exports = {
+  setSupabaseClient,
   getSettings,
   updateSettings,
   publicConfig,

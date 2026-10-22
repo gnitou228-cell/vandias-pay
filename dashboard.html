@@ -196,21 +196,39 @@
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
 
-        <!-- Search Bar: "Recherche (bientôt)" -->
+        <!-- Search Bar Interactif Multi-Catégories -->
         <div class="relative w-full">
           <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <input type="text" placeholder="Recherche (bientôt)" readonly class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl pl-10 pr-4 py-2 text-xs sm:text-sm text-slate-700 placeholder-slate-400 outline-none cursor-not-allowed">
+          <input type="text" id="globalDashboardSearch" placeholder="Recherche rapide transactions, liens, clients..." class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl pl-10 pr-4 py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-[#0052FF] transition-all">
+          <!-- Dropdown Résultats de Recherche Rapide -->
+          <div id="globalSearchResultsDropdown" class="hidden absolute left-0 right-0 top-12 bg-white rounded-2xl border border-[#ECEEF6] shadow-2xl p-2 z-50 max-h-96 overflow-y-auto space-y-1 text-xs"></div>
         </div>
       </div>
 
       <!-- Right: Notification Bell & Profile Dropdown Trigger -->
       <div class="flex items-center gap-3 relative">
         
-        <!-- Notification Bell -->
-        <button class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors relative" title="Notifications">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500"></span>
-        </button>
+        <!-- Notification Bell Interactive -->
+        <div class="relative">
+          <button id="notificationBellBtn" class="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors relative" title="Notifications">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <span id="notificationBadgeCount" class="hidden absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center animate-pulse">0</span>
+          </button>
+          
+          <!-- Dropdown des Notifications -->
+          <div id="notificationsDropdownMenu" class="hidden absolute right-0 top-12 w-80 sm:w-96 bg-white rounded-3xl border border-[#ECEEF6] shadow-2xl p-4 z-50 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-[#F0F2F9]">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-extrabold text-[#111827]">Notifications</span>
+                <span id="notificationUnreadPill" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#0052FF]/10 text-[#0052FF]">0 non lue(s)</span>
+              </div>
+              <button onclick="markAllNotificationsAsRead()" class="text-[11px] font-bold text-[#0052FF] hover:underline">Tout marquer comme lu</button>
+            </div>
+            <div id="notificationsListContainer" class="max-h-72 overflow-y-auto space-y-2 text-xs">
+              <div class="text-center py-6 text-slate-400">Aucune notification pour le moment.</div>
+            </div>
+          </div>
+        </div>
 
         <!-- Profile Button Trigger -->
         <button id="profileDropdownBtn" class="flex items-center gap-2 p-1.5 pr-2.5 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-[#ECEEF6]">
@@ -262,7 +280,29 @@
     </header>
 
     <!-- Main Content Container -->
-    <main class="p-4 sm:p-8 flex-1">
+    <main class="p-4 sm:p-8 flex-1 space-y-4">
+      
+      <!-- Bannière d'Annonce Globale Plateforme (Diffusée par l'Admin) -->
+      <div id="platformAnnouncementBanner" class="hidden rounded-2xl p-4 shadow-sm border flex items-start gap-3 transition-all duration-300">
+        <span id="platformAnnouncementIcon" class="text-lg shrink-0">📢</span>
+        <div class="flex-1">
+          <div id="platformAnnouncementMessage" class="text-xs sm:text-sm font-medium"></div>
+        </div>
+      </div>
+
+      <!-- Bannière de Suspension Compte Marchand (Immédiate & Bloquante) -->
+      <div id="merchantSuspensionBanner" class="hidden bg-gradient-to-r from-rose-600 to-rose-700 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-rose-500 flex items-start gap-4 transition-all duration-300">
+        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl shrink-0">
+          ⚠️
+        </div>
+        <div class="flex-1 space-y-1">
+          <div class="text-sm font-extrabold tracking-tight">Compte marchand temporairement suspendu par l'administration</div>
+          <div id="merchantSuspensionReason" class="text-xs text-rose-100 font-medium">Motif : Non-respect des conditions d'utilisation.</div>
+          <div class="text-[11px] text-rose-200 pt-1">
+            Les créations de liens de paiement et les demandes de retraits sont restreintes. Contactez le support : <a href="mailto:support@vandiaspay.com" class="underline font-bold text-white hover:text-rose-100">support@vandiaspay.com</a>
+          </div>
+        </div>
+      </div>
       
       <!-- ====================================================
            SECTION 1 : TABLEAU DE BORD (100% CONFORME SCREENSHOT SASPAY)

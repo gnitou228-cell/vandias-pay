@@ -185,6 +185,9 @@ function enterAdminDashboard() {
   // Actualise immédiatement les compteurs de la barre latérale
   refreshSidebarMetrics();
 
+  // Active la synchronisation temps réel par Server-Sent Events (SSE)
+  initAdminRealtimeSync();
+
   // Load default tab
   switchAdminTab(AdminState.activeTab || 'overview');
 
@@ -196,6 +199,147 @@ function enterAdminDashboard() {
       loadAdminOverview(false);
     }
   }, 30000);
+}
+
+let adminSseInstance = null;
+let adminSseRetryTimer = null;
+
+function initAdminRealtimeSync() {
+  if (!AdminState.token) return;
+  if (adminSseInstance) {
+    try { adminSseInstance.close(); } catch (e) {}
+    adminSseInstance = null;
+  }
+
+  const sseUrl = `${ADMIN_API_BASE}/api/v1/events/stream?token=${encodeURIComponent(AdminState.token)}`;
+  try {
+    adminSseInstance = new EventSource(sseUrl);
+
+    adminSseInstance.addEventListener('open', () => {
+      console.log('⚡ [Admin SSE] Connexion temps réel Super Admin active.');
+    });
+
+    adminSseInstance.addEventListener('connected', (e) => {
+      console.log('⚡ [Admin SSE] Enregistré avec succès:', e.data);
+    });
+
+    // 1. Nouvelle vente en direct
+    adminSseInstance.addEventListener('payment.succeeded', (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        const data = event.payload || event;
+        const gross = parseFloat(data.amount_gross || 0);
+        const fee = parseFloat(data.fee_platform || 0);
+
+        showAdminToast(
+          '🎉 Nouvelle Vente en Direct !',
+          `+${formatFCFA(gross)} encaissés par "${data.merchant_name || 'Marchand'}" (${data.payment_method || 'Mobile Money'}). Commission plateforme : +${formatFCFA(fee)}`,
+          'success'
+        );
+
+        // Incrémente le volume total et la commission sur l'overview
+        const elVol = document.getElementById('kpiTotalVolume');
+        if (elVol && elVol.textContent) {
+          const current = parseFloat(elVol.textContent.replace(/[^\d]/g, '')) || 0;
+          elVol.textContent = formatFCFA(current + gross);
+          pulseElement(elVol, 'text-emerald-500');
+        }
+
+        const elFee = document.getElementById('kpiPlatformFees');
+        if (elFee && elFee.textContent) {
+          const current = parseFloat(elFee.textContent.replace(/[^\d]/g, '')) || 0;
+          elFee.textContent = formatFCFA(current + fee);
+          pulseElement(elFee, 'text-emerald-500');
+        }
+
+        // Met à jour les transactions si l'onglet est actif
+        if (AdminState.activeTab === 'overview') {
+          loadAdminOverview(false);
+        } else if (AdminState.activeTab === 'transactions') {
+          loadAdminTransactions();
+        }
+      } catch (err) {
+        console.error('[Admin SSE] Erreur traitement payment.succeeded:', err);
+      }
+    });
+
+    // 2. Nouvelle demande de retrait
+    adminSseInstance.addEventListener('payout.requested', (e) => {
+      try {
+        const event = JSON.parse(e.data);
+        const data = event.payload || event;
+        const amt = parseFloat(data.amount || 0);
+
+        showAdminToast(
+          '🔔 Demande de Retrait Reçue',
+          `"${data.merchant_name || 'Un marchand'}" sollicite un virement de ${formatFCFA(amt)} via ${data.channel || 'Mobile Money'} (${data.recipient_phone})`,
+          'warning'
+        );
+
+        // Met à jour le badge de la barre latérale
+        const bPayouts = document.getElementById('badgePayoutsPending');
+        if (bPayouts) {
+          const count = (parseInt(bPayouts.textContent, 10) || 0) + 1;
+          bPayouts.textContent = count;
+          bPayouts.className = 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white animate-pulse';
+        }
+
+        const elCount = document.getElementById('kpiPendingPayoutsCount');
+        if (elCount) {
+          const count = (parseInt(elCount.textContent, 10) || 0) + 1;
+          elCount.textContent = count;
+          pulseElement(elCount, 'text-amber-500');
+        }
+
+        if (AdminState.activeTab === 'payouts') {
+          loadAdminPayouts();
+        } else if (AdminState.activeTab === 'overview') {
+          loadAdminOverview(false);
+        }
+      } catch (err) {
+        console.error('[Admin SSE] Erreur traitement payout.requested:', err);
+      }
+    });
+
+    // 3. Décision de retrait (approbation ou rejet)
+    adminSseInstance.addEventListener('payout.approved', () => {
+      refreshSidebarMetrics();
+      if (AdminState.activeTab === 'payouts') loadAdminPayouts();
+    });
+
+    adminSseInstance.addEventListener('payout.rejected', () => {
+      refreshSidebarMetrics();
+      if (AdminState.activeTab === 'payouts') loadAdminPayouts();
+    });
+
+    // 4. Statut / KYC / Paramètres
+    adminSseInstance.addEventListener('merchant.suspended', () => {
+      if (AdminState.activeTab === 'merchants') loadAdminMerchants();
+    });
+    adminSseInstance.addEventListener('merchant.reactivated', () => {
+      if (AdminState.activeTab === 'merchants') loadAdminMerchants();
+    });
+    adminSseInstance.addEventListener('merchant.kyc_updated', () => {
+      if (AdminState.activeTab === 'merchants') loadAdminMerchants();
+    });
+
+    adminSseInstance.onerror = () => {
+      try { adminSseInstance.close(); } catch (e) {}
+      adminSseInstance = null;
+      clearTimeout(adminSseRetryTimer);
+      adminSseRetryTimer = setTimeout(initAdminRealtimeSync, 3000);
+    };
+  } catch (err) {
+    console.warn('[Admin SSE] Impossible d\'établir la connexion:', err.message);
+  }
+}
+
+function pulseElement(el, highlightClass = 'text-emerald-500') {
+  if (!el) return;
+  el.classList.add(highlightClass, 'scale-105', 'transition-all');
+  setTimeout(() => {
+    el.classList.remove(highlightClass, 'scale-105');
+  }, 1200);
 }
 
 /**
@@ -276,9 +420,70 @@ window.adminLogout = function () {
   localStorage.removeItem('vandias_admin_user');
   AdminState.token = null;
   AdminState.user = null;
+  if (adminSseInstance) {
+    try { adminSseInstance.close(); } catch (e) {}
+    adminSseInstance = null;
+  }
+  clearTimeout(adminSseRetryTimer);
   if (AdminState.refreshTimer) clearInterval(AdminState.refreshTimer);
   showAdminToast('Déconnexion', 'Vous avez été déconnecté de la console administrateur.', 'info');
   showAdminLogin();
+};
+
+/**
+ * 1.b Audit & Réconciliation du Grand Livre
+ */
+window.runAdminReconciliation = async function () {
+  try {
+    showAdminToast('Grand Livre', 'Vérification de l’intégrité financière en cours…', 'info');
+    const res = await adminFetch('/api/v1/admin/reconciliation');
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Erreur lors de la réconciliation');
+
+    const s = data.summary;
+    const d = data.details;
+    const isOk = data.reconciled;
+
+    const modal = document.getElementById('modalAdminReconciliation');
+    if (!modal) {
+      showAdminToast(
+        isOk ? '✅ Grand Livre Équilibré' : '⚠️ Écart Détecté dans le Grand Livre',
+        `Soldes Marchands: ${formatFCFA(s.total_merchants_balance)} | Grand Livre: ${formatFCFA(s.theoretical_ledger_balance)} (Écart: ${s.delta} FCFA)`,
+        isOk ? 'success' : 'warning'
+      );
+      return;
+    }
+
+    const bStatus = document.getElementById('reconcileStatusBadge');
+    if (bStatus) {
+      bStatus.textContent = s.status_label;
+      bStatus.className = isOk
+        ? 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800'
+        : 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-100 text-rose-800';
+    }
+
+    const elMBal = document.getElementById('reconcileMerchantsBalance');
+    if (elMBal) elMBal.textContent = formatFCFA(s.total_merchants_balance);
+
+    const elLBal = document.getElementById('reconcileLedgerBalance');
+    if (elLBal) elLBal.textContent = formatFCFA(s.theoretical_ledger_balance);
+
+    const elDelta = document.getElementById('reconcileDelta');
+    if (elDelta) elDelta.textContent = formatFCFA(s.delta);
+
+    const elCount = document.getElementById('reconcileMovementsCount');
+    if (elCount) elCount.textContent = d.movements_count;
+
+    const elCred = document.getElementById('reconcileCredits');
+    if (elCred) elCred.textContent = formatFCFA(d.total_credits);
+
+    const elDeb = document.getElementById('reconcileDebits');
+    if (elDeb) elDeb.textContent = formatFCFA(d.total_debits);
+
+    openAdminModal('modalAdminReconciliation');
+  } catch (err) {
+    showAdminToast('Erreur Réconciliation', err.message, 'danger');
+  }
 };
 
 // ========================================================

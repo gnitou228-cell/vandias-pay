@@ -245,6 +245,10 @@
           <button onclick="refreshCurrentAdminTab()" class="w-full py-1.5 px-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-[11px] font-bold transition-colors">
             ↻ Actualiser données
           </button>
+          <button onclick="runAdminReconciliation()" class="w-full py-1.5 px-2 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5">
+            <span>⚖️</span>
+            <span>Audit Grand Livre</span>
+          </button>
         </div>
       </aside>
 
@@ -1037,6 +1041,72 @@
           </button>
           <button type="button" onclick="submitPayoutDecision('APPROVE')" class="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm">
             ✓ Approuver le virement
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 7 : Audit & Réconciliation du Grand Livre (Ledger Integrity) -->
+  <div id="modalAdminReconciliation" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden opacity-0 transition-opacity">
+    <div class="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#ECEEF6] space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">⚖️</span>
+          <div>
+            <h3 class="text-base font-extrabold text-[#111827]">Audit & Réconciliation Comptable</h3>
+            <p class="text-xs text-slate-400">Vérification de la concordance Grand Livre ⇄ Portefeuilles</p>
+          </div>
+        </div>
+        <button onclick="closeAdminModal('modalAdminReconciliation')" class="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Statut d'intégrité -->
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-700">Statut de la balance</span>
+          <span id="reconcileStatusBadge" class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-100 text-emerald-800">
+            Vérification...
+          </span>
+        </div>
+
+        <!-- Grille des soldes -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6]">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Soldes Marchands Réels</div>
+            <div id="reconcileMerchantsBalance" class="text-lg font-black text-slate-900 mt-1 font-mono">0 FCFA</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Total soldes crédités en base</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-[#F8F9FD] border border-[#ECEEF6]">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Solde Théorique Ledger</div>
+            <div id="reconcileLedgerBalance" class="text-lg font-black text-[#0052FF] mt-1 font-mono">0 FCFA</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Crédits reçus - Débits retirés</div>
+          </div>
+        </div>
+
+        <!-- Détails de l'audit comptable -->
+        <div class="p-4 rounded-2xl bg-white border border-slate-200 space-y-2 text-xs">
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Écart détecté (Delta) :</span>
+            <span id="reconcileDelta" class="font-extrabold text-emerald-600 font-mono">0 FCFA</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Total des Mouvements Débit/Crédit :</span>
+            <span id="reconcileMovementsCount" class="font-bold text-slate-800 font-mono">0</span>
+          </div>
+          <div class="flex justify-between items-center py-1 border-b border-slate-100">
+            <span class="text-slate-500">Total Flux Créditeurs :</span>
+            <span id="reconcileCredits" class="font-bold text-emerald-700 font-mono">0 FCFA</span>
+          </div>
+          <div class="flex justify-between items-center py-1">
+            <span class="text-slate-500">Total Flux Débiteurs :</span>
+            <span id="reconcileDebits" class="font-bold text-rose-700 font-mono">0 FCFA</span>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button type="button" onclick="closeAdminModal('modalAdminReconciliation')" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm">
+            Fermer l'audit
           </button>
         </div>
       </div>

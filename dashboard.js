@@ -987,8 +987,42 @@ function initTransactionsSection() {
 }
 
 /* ========================================================
-   SECTION 4 : RENDU DES LIENS DE PAIEMENT (100% CONFORME CAPTURE)
+   SECTION 4 : RENDU DES LIENS DE PAIEMENT & HELPERS URL
    ======================================================== */
+function formatCheckoutLink(rawUrl, slugOrId) {
+  const slug = slugOrId || '';
+  if (rawUrl) {
+    try {
+      const u = new URL(rawUrl);
+      if (u.port === '10000' || (u.hostname === 'localhost' && window.location.hostname !== 'localhost')) {
+        return `${window.location.origin}/checkout.html?link=${encodeURIComponent(slug || u.searchParams.get('link') || '')}`;
+      }
+      return rawUrl;
+    } catch (e) {
+      if (rawUrl.startsWith('/')) {
+        return `${window.location.origin}${rawUrl}`;
+      }
+    }
+  }
+  return `${window.location.origin}/checkout.html?link=${encodeURIComponent(slug)}`;
+}
+
+function formatSessionLink(rawUrl, sessionId) {
+  if (rawUrl) {
+    try {
+      const u = new URL(rawUrl);
+      if (u.port === '10000' || (u.hostname === 'localhost' && window.location.hostname !== 'localhost')) {
+        return `${window.location.origin}/checkout.html?session=${encodeURIComponent(sessionId || u.searchParams.get('session') || '')}`;
+      }
+      return rawUrl;
+    } catch (e) {
+      if (rawUrl.startsWith('/')) {
+        return `${window.location.origin}${rawUrl}`;
+      }
+    }
+  }
+  return `${window.location.origin}/checkout.html?session=${encodeURIComponent(sessionId)}`;
+}
 
 async function renderPaymentLinksList() {
   const tbody = document.getElementById('paymentLinksTableBody');
@@ -1050,41 +1084,6 @@ async function renderPaymentLinksList() {
     const amountVal = parseFloat(lnk.amount_fcfa || lnk.amount || 0);
     const amountFormatted = amountVal.toLocaleString('fr-FR');
     const amountStr = isFixed ? `${amountFormatted} ${currencyStr}` : `Montant libre (${currencyStr})`;
-function formatCheckoutLink(rawUrl, slugOrId) {
-  const slug = slugOrId || '';
-  if (rawUrl) {
-    try {
-      const u = new URL(rawUrl);
-      if (u.port === '10000' || (u.hostname === 'localhost' && window.location.hostname !== 'localhost')) {
-        return `${window.location.origin}/checkout.html?link=${encodeURIComponent(slug || u.searchParams.get('link') || '')}`;
-      }
-      return rawUrl;
-    } catch (e) {
-      if (rawUrl.startsWith('/')) {
-        return `${window.location.origin}${rawUrl}`;
-      }
-    }
-  }
-  return `${window.location.origin}/checkout.html?link=${encodeURIComponent(slug)}`;
-}
-
-function formatSessionLink(rawUrl, sessionId) {
-  if (rawUrl) {
-    try {
-      const u = new URL(rawUrl);
-      if (u.port === '10000' || (u.hostname === 'localhost' && window.location.hostname !== 'localhost')) {
-        return `${window.location.origin}/checkout.html?session=${encodeURIComponent(sessionId || u.searchParams.get('session') || '')}`;
-      }
-      return rawUrl;
-    } catch (e) {
-      if (rawUrl.startsWith('/')) {
-        return `${window.location.origin}${rawUrl}`;
-      }
-    }
-  }
-  return `${window.location.origin}/checkout.html?session=${encodeURIComponent(sessionId)}`;
-}
-
     const uses = lnk.sales_count ?? 0;
     const usesStr = lnk.max_uses ? `${uses} / ${lnk.max_uses}` : `${uses}`;
     const desc = lnk.description || 'Sans description';

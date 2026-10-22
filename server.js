@@ -576,32 +576,7 @@ const memoryDb = {
       created_at: '2026-10-21T00:00:00.000Z'
     }
   ],
-  api_keys: [
-    {
-      id: 'key_7aac_live',
-      merchant_id: '7aac0e22-00ea-4355-a3ec-8b4fe3f0e960',
-      key_type: 'live',
-      name: 'Clé Production Live',
-      public_key: 'pk_live_vdp_89bac9c49944d131192ec533',
-      secret_key: 'sk_live_vdp_c3dadb875749aa0a1b630c25bcb955b1',
-      scope: 'FULL',
-      status: 'ACTIVE',
-      is_active: true,
-      created_at: '2026-10-21T00:00:00.000Z'
-    },
-    {
-      id: 'key_7aac_test',
-      merchant_id: '7aac0e22-00ea-4355-a3ec-8b4fe3f0e960',
-      key_type: 'test',
-      name: 'Clé Sandbox Test',
-      public_key: 'pk_test_vdp_af6cc78bb10674eb27f4322f',
-      secret_key: 'sk_test_vdp_a31dfeab444cbaf28b4a5235a67b71c2',
-      scope: 'FULL',
-      status: 'ACTIVE',
-      is_active: true,
-      created_at: '2026-10-21T00:00:00.000Z'
-    }
-  ],
+  api_keys: [],
   payment_links: [],
   transactions: [],
   payouts: [],
@@ -1148,39 +1123,6 @@ app.post('/api/v1/auth/register', async (req, res) => {
     // Sauvegarde en mémoire
     memoryDb.merchants.push(newMerchant);
     memoryDb.api_keys.push(...apiKeys);
-
-    // Initialisation des données de retrait par défaut conformes à la capture
-    const defaultPayout = {
-      id: 'po_' + crypto.randomUUID().slice(0, 8),
-      reference: '6b74624fae8c4308b1ce97429a9107a7',
-      merchant_id: merchantId,
-      amount: 4000.00,
-      net_amount: 4000.00,
-      fee: 0.00,
-      currency: 'XOF',
-      channel: 'WAVE',
-      recipient_phone: newMerchant.phone || '+221 77 842 19 04',
-      recipient_name: newMerchant.business_name,
-      status: 'SUCCESS',
-      created_at: '2026-10-19T02:59:00.000Z'
-    };
-    if (!memoryDb.payouts) memoryDb.payouts = [];
-    memoryDb.payouts.push(defaultPayout);
-
-    const defaultMethod = {
-      id: 'pm_' + crypto.randomUUID().slice(0, 8),
-      merchant_id: merchantId,
-      type: 'MOBILE_MONEY',
-      label: 'Wave Principal',
-      network: 'WAVE_SN',
-      network_name: 'Wave Sénégal',
-      phone_number: newMerchant.phone || '+221 77 842 19 04',
-      is_verified: true,
-      is_active: true,
-      created_at: '2026-10-15T10:00:00.000Z'
-    };
-    if (!memoryDb.payout_methods) memoryDb.payout_methods = [];
-    memoryDb.payout_methods.push(defaultMethod);
 
     // Sauvegarde dans Supabase si connecté avec compatibilité ascendante de schéma
     if (supabase) {
@@ -2195,26 +2137,8 @@ app.get('/api/v1/merchant/payouts', requireMerchantAuth, async (req, res) => {
     // S'assurer que le tableau des retraits existe
     if (!memoryDb.payouts) memoryDb.payouts = [];
 
-    // Vérifier si le marchand a des retraits; sinon injecter la valeur par défaut de la capture SasPay
+    // Récupérer les retraits réels du marchand
     let merchantPayouts = memoryDb.payouts.filter(p => p.merchant_id === req.merchant.id);
-    if (merchantPayouts.length === 0) {
-      const defaultPayout = {
-        id: 'po_6b74624fae8c4308b1ce97429a9107a7',
-        reference: '6b74624fae8c4308b1ce97429a9107a7',
-        merchant_id: req.merchant.id,
-        amount: 4000.00,
-        net_amount: 4000.00,
-        fee: 0.00,
-        currency: 'XOF',
-        channel: 'WAVE',
-        recipient_phone: req.merchant.phone || '+221 77 842 19 04',
-        recipient_name: req.merchant.business_name || 'VANDIA IA',
-        status: 'SUCCESS',
-        created_at: '2026-10-19T02:59:00.000Z'
-      };
-      memoryDb.payouts.push(defaultPayout);
-      merchantPayouts = [defaultPayout];
-    }
 
     // Filtrage par recherche
     let filtered = merchantPayouts;
@@ -2392,22 +2316,6 @@ app.get('/api/v1/merchant/payout-methods', requireMerchantAuth, async (req, res)
     if (!memoryDb.payout_methods) memoryDb.payout_methods = [];
 
     let methods = memoryDb.payout_methods.filter(m => m.merchant_id === req.merchant.id);
-    if (methods.length === 0) {
-      const defMethod = {
-        id: 'pm_' + crypto.randomUUID().slice(0, 8),
-        merchant_id: req.merchant.id,
-        type: 'MOBILE_MONEY',
-        label: 'Wave Principal',
-        network: 'WAVE_SN',
-        network_name: 'Wave Sénégal',
-        phone_number: req.merchant.phone || '+221 77 842 19 04',
-        is_verified: true,
-        is_active: true,
-        created_at: '2026-10-15T10:00:00.000Z'
-      };
-      memoryDb.payout_methods.push(defMethod);
-      methods = [defMethod];
-    }
 
     res.json({
       success: true,
@@ -2498,18 +2406,18 @@ app.get('/api/v1/merchant/settings', requireMerchantAuth, async (req, res) => {
       success: true,
       data: {
         kyc: {
-          status: m.kyc_status || 'VERIFIED',
+          status: m.kyc_status || 'PENDING',
           document_type: m.kyc_document_type || 'Carte Nationale d\'Identité (CNI)',
-          document_number: m.kyc_document_number || 'SN-DK-2024-B-98421',
-          manager_name: m.full_name || m.business_name || 'Jeff Diallo',
-          verified_date: m.kyc_verified_date || '15 janv. 2026'
+          document_number: m.kyc_document_number || '—',
+          manager_name: m.full_name || m.business_name || '—',
+          verified_date: m.kyc_verified_date || 'En attente'
         },
         entreprise: {
-          name: m.business_name || 'Jeff Digital Inc.',
-          category: m.category || 'SaaS & Logiciels',
-          support_email: m.support_email || m.email || 'support@jeffdigital.io',
-          support_phone: m.support_phone || m.phone || '+221778421904',
-          website_url: m.website_url || 'https://jeffdigital.io',
+          name: m.business_name || m.full_name || 'Mon Entreprise',
+          category: m.category || 'Commerce & Services',
+          support_email: m.support_email || m.email || '',
+          support_phone: m.support_phone || m.phone || '',
+          website_url: m.website_url || '',
           logo_url: m.logo_url || null
         },
         frais: {
@@ -2518,14 +2426,12 @@ app.get('/api/v1/merchant/settings', requireMerchantAuth, async (req, res) => {
           allow_client_override: m.fee_client_override === true
         },
         equipe: m.team || [
-          { id: 'tm_1', name: m.full_name || m.business_name || 'Jeff Diallo', email: m.email, role: 'OWNER', status: 'ACTIVE', created_at: '2026-01-10' },
-          { id: 'tm_2', name: 'Aïssatou Sow', email: 'aissatou.sow@jeffdigital.io', role: 'ADMIN', status: 'ACTIVE', created_at: '2026-02-01' },
-          { id: 'tm_3', name: 'Koffi Mensah', email: 'koffi.dev@jeffdigital.io', role: 'DEVELOPER', status: 'ACTIVE', created_at: '2026-02-15' }
+          { id: 'tm_1', name: m.full_name || m.business_name || 'Propriétaire', email: m.email, role: 'OWNER', status: 'ACTIVE', created_at: m.created_at || new Date().toISOString() }
         ],
         profil: {
-          full_name: m.full_name || m.business_name || 'Jeff Diallo',
+          full_name: m.full_name || m.business_name || '',
           email: m.email,
-          country: m.country || 'Sénégal'
+          country: m.country || 'Togo'
         },
         securite: {
           two_factor_enabled: m.two_factor_enabled === true,
@@ -2615,7 +2521,7 @@ app.post('/api/v1/merchant/settings/team/invite', requireMerchantAuth, async (re
 
     if (!Array.isArray(req.merchant.team)) {
       req.merchant.team = [
-        { id: 'tm_1', name: req.merchant.full_name || 'Jeff Diallo', email: req.merchant.email, role: 'OWNER', status: 'ACTIVE', created_at: '2026-01-10' }
+        { id: 'tm_1', name: req.merchant.full_name || req.merchant.business_name || 'Propriétaire', email: req.merchant.email, role: 'OWNER', status: 'ACTIVE', created_at: req.merchant.created_at || new Date().toISOString() }
       ];
     }
 
@@ -3776,32 +3682,35 @@ app.get('/api/v1/merchant/wallets', requireMerchantAuth, async (req, res) => {
   try {
     const merchantId = req.merchant.id;
 
+    const mCountry = (req.merchant.country || '').toUpperCase();
+    const mBal = parseFloat(req.merchant.balance_fcfa || 0);
+
     const default25Countries = [
-      { country: 'TG', currency: 'XOF', available: 80, pending: 0, frozen: 0 },
+      { country: 'TG', currency: 'XOF', available: mCountry === 'TG' ? mBal : 0, pending: 0, frozen: 0 },
       { country: 'XC', currency: 'USD', available: 0, pending: 0, frozen: 0 },
       { country: 'ZM', currency: 'ZMW', available: 0, pending: 0, frozen: 0 },
       { country: 'US_INTL', currency: 'USD', available: 0, pending: 0, frozen: 0 },
       { country: 'US', currency: 'USD', available: 0, pending: 0, frozen: 0 },
       { country: 'UG', currency: 'UGX', available: 0, pending: 0, frozen: 0 },
       { country: 'TZ', currency: 'TZS', available: 0, pending: 0, frozen: 0 },
-      { country: 'SN', currency: 'XOF', available: parseFloat(req.merchant.balance_fcfa || 0), pending: 0, frozen: 0 },
+      { country: 'SN', currency: 'XOF', available: (mCountry === 'SN' || !mCountry) ? mBal : 0, pending: 0, frozen: 0 },
       { country: 'RW', currency: 'RWF', available: 0, pending: 0, frozen: 0 },
       { country: 'NG', currency: 'NGN', available: 0, pending: 0, frozen: 0 },
-      { country: 'NE', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+      { country: 'NE', currency: 'XOF', available: mCountry === 'NE' ? mBal : 0, pending: 0, frozen: 0 },
       { country: 'MZ', currency: 'MZN', available: 0, pending: 0, frozen: 0 },
       { country: 'MW', currency: 'MWK', available: 0, pending: 0, frozen: 0 },
-      { country: 'ML', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+      { country: 'ML', currency: 'XOF', available: mCountry === 'ML' ? mBal : 0, pending: 0, frozen: 0 },
       { country: 'KE', currency: 'KES', available: 0, pending: 0, frozen: 0 },
       { country: 'IN', currency: 'INR', available: 0, pending: 0, frozen: 0 },
       { country: 'GN', currency: 'GNF', available: 0, pending: 0, frozen: 0 },
       { country: 'GH', currency: 'GHS', available: 0, pending: 0, frozen: 0 },
       { country: 'GA', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
       { country: 'CM', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
-      { country: 'CI', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
+      { country: 'CI', currency: 'XOF', available: mCountry === 'CI' ? mBal : 0, pending: 0, frozen: 0 },
       { country: 'CG', currency: 'XAF', available: 0, pending: 0, frozen: 0 },
       { country: 'CD', currency: 'CDF', available: 0, pending: 0, frozen: 0 },
-      { country: 'BJ', currency: 'XOF', available: 0, pending: 0, frozen: 0 },
-      { country: 'BF', currency: 'XOF', available: 0, pending: 0, frozen: 0 }
+      { country: 'BJ', currency: 'XOF', available: mCountry === 'BJ' ? mBal : 0, pending: 0, frozen: 0 },
+      { country: 'BF', currency: 'XOF', available: mCountry === 'BF' ? mBal : 0, pending: 0, frozen: 0 }
     ];
 
     // S'assurer que les 25 wallets existent pour ce marchand
@@ -3819,16 +3728,15 @@ app.get('/api/v1/merchant/wallets', requireMerchantAuth, async (req, res) => {
           is_frozen: false,
           updated_at: new Date().toISOString()
         });
+      } else {
+        // Mettre à jour si jamais l'ancien mock 80 était enregistré
+        if (existing.country === 'TG' && existing.available_amount === 80) {
+          existing.available_amount = mCountry === 'TG' ? mBal : 0;
+        }
       }
     });
 
     let list = memoryDb.wallets.filter(w => w.merchant_id === merchantId);
-
-    // Synchroniser le portefeuille principal SN avec le solde marchand
-    const snWallet = list.find(w => w.country === 'SN');
-    if (snWallet && parseFloat(req.merchant.balance_fcfa || 0) > 0) {
-      snWallet.available_amount = parseFloat(req.merchant.balance_fcfa);
-    }
 
     // Ordre canonique exact observé sur SasPay Dashboard
     const SASPAY_CANONICAL_ORDER = [
@@ -4110,54 +4018,13 @@ app.get('/api/v1/merchant/api-keys', requireMerchantAuth, async (req, res) => {
 
     let keys = memoryDb.api_keys.filter(k => k.merchant_id === merchantId);
 
-    // Initialiser les clés par défaut conformes à la capture SasPay si vide
-    if (keys.length === 0) {
-      const defaultKeys = [
-        {
-          id: `key_${crypto.randomUUID().slice(0, 8)}`,
-          merchant_id: merchantId,
-          key_type: 'live',
-          name: 'Jeff Digital',
-          public_key: 'pk_live_vdp_' + crypto.randomBytes(8).toString('hex'),
-          secret_key: 'sk_live_vdp_wqJUOJhG2TjZ' + crypto.randomBytes(6).toString('hex'),
-          secret_key_masked: 'sk_live_wqJUOJhG2TjZ...',
-          scope: 'FULL',
-          scope_label: 'Encaissement et décaissement',
-          status: 'ACTIVE',
-          is_active: true,
-          created_at: new Date(Date.now() - 30 * 86400000).toISOString()
-        },
-        {
-          id: `key_${crypto.randomUUID().slice(0, 8)}`,
-          merchant_id: merchantId,
-          key_type: 'live',
-          name: req.merchant.business_name || 'VANDIA IA',
-          public_key: 'pk_live_vdp_' + crypto.randomBytes(8).toString('hex'),
-          secret_key: 'sk_live_vdp_QZ2Lawuqkr0M' + crypto.randomBytes(6).toString('hex'),
-          secret_key_masked: 'sk_live_QZ2Lawuqkr0M...',
-          scope: 'FULL',
-          scope_label: 'Encaissement et décaissement',
-          status: 'ACTIVE',
-          is_active: true,
-          created_at: new Date(Date.now() - 15 * 86400000).toISOString()
-        },
-        {
-          id: `key_${crypto.randomUUID().slice(0, 8)}`,
-          merchant_id: merchantId,
-          key_type: 'live',
-          name: 'NESTORA',
-          public_key: 'pk_live_vdp_' + crypto.randomBytes(8).toString('hex'),
-          secret_key: 'sk_live_vdp_FfVxIymp2BZ' + crypto.randomBytes(6).toString('hex'),
-          secret_key_masked: 'sk_live_FfVxIymp2BZ-...',
-          scope: 'FULL',
-          scope_label: 'Encaissement et décaissement',
-          status: 'ACTIVE',
-          is_active: true,
-          created_at: new Date(Date.now() - 5 * 86400000).toISOString()
+    if (supabase) {
+      try {
+        const { data } = await supabase.from('api_keys').select('*').eq('merchant_id', merchantId);
+        if (data && data.length > 0) {
+          keys = data;
         }
-      ];
-      memoryDb.api_keys.push(...defaultKeys);
-      keys = defaultKeys;
+      } catch (e) {}
     }
 
     if (search && search.trim()) {

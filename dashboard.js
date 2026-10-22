@@ -6504,9 +6504,9 @@ async function loadAndRenderSettings() {
         badgeIcon.className = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isVerified ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'} text-lg`;
       }
       if (docType) docType.textContent = s.kyc.document_type || 'Carte Nationale d\'Identité (CNI)';
-      if (docNumber) docNumber.textContent = s.kyc.document_number || 'SN-DK-2024-B-98421';
-      if (mgrName) mgrName.textContent = s.kyc.manager_name || 'Jeff Diallo';
-      if (vDate) vDate.textContent = s.kyc.verified_date || '15 janv. 2026';
+      if (docNumber) docNumber.textContent = s.kyc.document_number || '—';
+      if (mgrName) mgrName.textContent = s.kyc.manager_name || VPState.merchant?.full_name || VPState.merchant?.business_name || '—';
+      if (vDate) vDate.textContent = s.kyc.verified_date || '—';
     }
 
     // 2. Entreprise

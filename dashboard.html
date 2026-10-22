@@ -733,8 +733,8 @@
               <!-- 3-Column Amount Row -->
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
                 <div id="wrapperFormLinkAmount">
-                  <label class="block text-xs font-bold text-[#111827] mb-1.5">Montant <span class="text-rose-500">*</span></label>
-                  <input type="number" id="formLinkAmount" required min="100" placeholder="5000" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm font-mono text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
+                  <label class="block text-xs font-bold text-[#111827] mb-1.5">Montant <span class="text-rose-500">*</span> <span class="text-[10px] text-slate-400 font-normal">(min. 200 FCFA)</span></label>
+                  <input type="number" id="formLinkAmount" required min="200" placeholder="5000" class="w-full bg-white border border-[#ECEEF6] rounded-2xl px-4 py-3 text-xs sm:text-sm font-mono text-[#111827] placeholder-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/10 transition-all">
                 </div>
                 <div id="wrapperFormLinkCurrency">
                   <label class="block text-xs font-bold text-[#111827] mb-1.5">Devise <span class="text-rose-500">*</span></label>
@@ -2358,8 +2358,8 @@ app.post('/webhooks/vandiaspay', express.raw({ type: 'application/json' }), (req
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-xs font-bold text-[#111827] block mb-1">Montant *</label>
-            <input type="number" id="newLinkAmount" required value="5000" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
+            <label class="text-xs font-bold text-[#111827] block mb-1">Montant * <span class="text-[10px] text-slate-400 font-normal">(min. 200 FCFA)</span></label>
+            <input type="number" id="newLinkAmount" required min="200" value="5000" class="w-full bg-[#F8F9FD] border border-[#ECEEF6] rounded-2xl px-3.5 py-2.5 text-xs font-mono">
           </div>
           <div>
             <label class="text-xs font-bold text-[#111827] block mb-1">Devise</label>

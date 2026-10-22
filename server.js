@@ -326,15 +326,101 @@ class AggregatorGatewayAdapter {
 }
 
 /**
- * Mapping officiel et exhaustif des codes réseaux SasPay (https://api.saspay.me/api/v1/networks/)
+ * Normalisation E.164 universelle et stricte pour les numéros de téléphone mobiles africains
+ * Évite les préfixes dupliqués (+228+228...), les espaces et zéros locaux résiduels
  */
-function mapSasPayNetworkCode(operatorId, method, country) {
+function normalizeAfricanPhone(phone, countryCode = 'TG') {
+  if (!phone) return '';
+  let digits = String(phone).replace(/[\s\-\.\(\)\/]/g, '');
+  if (digits.startsWith('00')) digits = '+' + digits.slice(2);
+
+  const prefixes = {
+    TG: '228', BF: '226', CI: '225', BJ: '229', SN: '221',
+    CM: '237', ML: '223', NE: '227', GN: '224', CD: '243',
+    CG: '242', GA: '241'
+  };
+
+  const cUpper = (countryCode || 'TG').toUpperCase();
+  const targetPrefix = prefixes[cUpper] || '228';
+
+  if (digits.startsWith('+')) {
+    let clean = digits.slice(1).replace(/\+/g, '');
+    if (clean.startsWith(targetPrefix + targetPrefix)) {
+      clean = clean.slice(targetPrefix.length);
+    }
+    return '+' + clean;
+  }
+
+  if (digits.startsWith(targetPrefix + targetPrefix)) {
+    digits = digits.slice(targetPrefix.length);
+    return '+' + digits;
+  }
+  if (digits.startsWith(targetPrefix)) {
+    return '+' + digits;
+  }
+
+  if (digits.startsWith('0') && ['TG', 'BF', 'BJ'].includes(cUpper) && digits.length === 9) {
+    digits = digits.slice(1);
+  }
+
+  return '+' + targetPrefix + digits;
+}
+
+/**
+ * Mapping des méthodes pour compatibilité avec la contrainte CHECK PostgreSQL de Supabase
+ * CHECK (payment_method IN ('WAVE', 'MTN', 'ORANGE', 'MOOV', 'CARD'))
+ */
+function mapSupabasePaymentMethod(method) {
+  const m = (method || '').toUpperCase();
+  if (['WAVE', 'MTN', 'ORANGE', 'MOOV', 'CARD'].includes(m)) return m;
+  if (m.includes('CARD') || m.includes('VISA') || m.includes('MASTER')) return 'CARD';
+  if (m.includes('MOOV') || m.includes('FLOOZ')) return 'MOOV';
+  if (m.includes('MTN') || m.includes('MOMO')) return 'MTN';
+  if (m.includes('ORANGE')) return 'ORANGE';
+  if (m.includes('WAVE')) return 'WAVE';
+  return 'MOOV';
+}
+
+/**
+ * Nettoie les champs exclus du schéma Supabase transactions
+ */
+function prepareSupabaseTransactionRow(transaction) {
+  const { country, operator_id, ...rest } = transaction;
+  return {
+    ...rest,
+    payment_method: mapSupabasePaymentMethod(transaction.payment_method),
+    metadata: {
+      ...(transaction.metadata || {}),
+      country: country || transaction.country,
+      operator_id: operator_id || transaction.operator_id,
+      original_method: transaction.payment_method
+    }
+  };
+}
+
+/**
+ * Mapping officiel et exhaustif des codes réseaux SasPay (https://api.saspay.me/api/v1/networks/)
+ * Avec auto-détection intelligente en cas de mauvaise sélection de l'opérateur
+ */
+function mapSasPayNetworkCode(operatorId, method, country, cleanPhone = '') {
   const opLow = (operatorId || '').toLowerCase().trim();
   const mLow = (method || '').toLowerCase().trim();
   const cLow = (country || 'tg').toLowerCase().trim();
 
-  // Togo (TG)
+  // Togo (TG) : Togocel (TMoney) vs Moov Togo (Flooz) vs Mixx
   if (cLow === 'tg') {
+    const local8 = (cleanPhone || '').replace(/[^0-9]/g, '').slice(-8);
+    // Préfixes Moov Togo : 96, 97, 98, 99
+    if (/^(96|97|98|99)/.test(local8) && !opLow.includes('moov')) {
+      console.log(`ℹ️ [AUTOROUTE TOGO] Numéro Moov (${local8}) détecté, routage automatique vers moov_tg`);
+      return 'moov_tg';
+    }
+    // Préfixes Togocel (TMoney) : 90, 91, 92, 93, 70, 71
+    if (/^(90|91|92|93|70|71)/.test(local8) && !opLow.includes('togocel') && !opLow.includes('tmoney')) {
+      console.log(`ℹ️ [AUTOROUTE TOGO] Numéro Togocel (${local8}) détecté, routage automatique vers togocel`);
+      return 'togocel';
+    }
+
     if (opLow.includes('togocel') || opLow.includes('tmoney') || mLow.includes('tmoney')) return 'togocel';
     if (opLow.includes('moov') || opLow.includes('flooz') || mLow.includes('moov')) return 'moov_tg';
     if (opLow.includes('mixx') || mLow.includes('mixx')) return 'mixx_tg';
@@ -422,20 +508,27 @@ class SasPayGatewayAdapter {
     }
 
     try {
+      const numAmt = Number(amount);
+      if ((currency === 'XOF' || currency === 'FCFA') && numAmt < 200) {
+        throw new Error("Le montant minimum pour un paiement Mobile Money réel est de 200 FCFA.");
+      }
+
       const nameParts = (name || 'Client').trim().split(' ');
       const firstName = nameParts[0] || 'Client';
       const lastName = nameParts.slice(1).join(' ') || 'VandiasPay';
 
-      let cleanPhone = (phone || '').replace(/\s+/g, '');
-      if (cleanPhone.startsWith('00')) cleanPhone = '+' + cleanPhone.slice(2);
+      const cleanPhone = normalizeAfricanPhone(phone, country);
+      if (!cleanPhone || cleanPhone.length < 9) {
+        throw new Error("Numéro de téléphone mobile incomplet ou invalide.");
+      }
 
-      // Mapping officiel et exhaustif des codes réseaux SasPay
-      const networkCode = mapSasPayNetworkCode(operatorId, method, country);
+      // Mapping officiel et exhaustif des codes réseaux SasPay avec auto-détection Togo
+      const networkCode = mapSasPayNetworkCode(operatorId, method, country, cleanPhone);
 
-      console.log(`⚡ [SASPAY SOFTPAY LIVE] PUSH direct vers ${cleanPhone} | Réseau: ${networkCode} | Montant: ${amount} ${currency} | OTP: ${otpCode || 'None'}`);
+      console.log(`⚡ [SASPAY SOFTPAY LIVE] PUSH direct vers ${cleanPhone} | Réseau: ${networkCode} | Montant: ${numAmt.toFixed(2)} ${currency} | OTP: ${otpCode || 'None'}`);
 
       const postData = JSON.stringify({
-        amount: Number(amount).toFixed(2),
+        amount: numAmt.toFixed(2),
         currency: (currency || 'XOF').toUpperCase(),
         country: (country || 'TG').toUpperCase(),
         network: networkCode,
@@ -488,7 +581,11 @@ class SasPayGatewayAdapter {
       const status = (data.status || '').toUpperCase();
       const isPaid = ['PAID', 'SUCCESS', 'COMPLETED'].includes(status);
       const isFailed = ['FAILED', 'REJECTED', 'CANCELLED', 'EXPIRED'].includes(status);
-      const failReason = data.status_logs?.[0]?.reason || data.error_message || 'Transaction non confirmée ou refusée sur le mobile';
+
+      // Récupération de la raison réelle d'échec dans les logs opérateur SasPay
+      const lastLog = (data.status_logs && data.status_logs.length) ? data.status_logs[data.status_logs.length - 1] : null;
+      const lastAttempt = (data.attempts && data.attempts.length) ? data.attempts[data.attempts.length - 1] : null;
+      const failReason = lastLog?.reason || lastAttempt?.error_message || data.error_message || 'Transaction non confirmée ou rejetée sur le mobile';
 
       return {
         status,
@@ -529,10 +626,27 @@ class SasPayGatewayAdapter {
               if (res.statusCode >= 200 && res.statusCode < 300) {
                 resolve(parsed);
               } else {
-                reject(new Error(parsed.message || parsed.error || `SasPay HTTP ${res.statusCode}: ${data}`));
+                let errorMsg = `Erreur SasPay (HTTP ${res.statusCode})`;
+                if (parsed.message) {
+                  errorMsg = parsed.message;
+                } else if (typeof parsed.error === 'string') {
+                  errorMsg = parsed.error;
+                } else if (parsed.error && parsed.error.message) {
+                  errorMsg = parsed.error.message;
+                } else if (parsed.error && typeof parsed.error === 'object') {
+                  const firstKey = Object.keys(parsed.error)[0];
+                  if (Array.isArray(parsed.error[firstKey])) {
+                    errorMsg = parsed.error[firstKey].join(', ');
+                  } else if (typeof parsed.error[firstKey] === 'string') {
+                    errorMsg = parsed.error[firstKey];
+                  } else {
+                    errorMsg = JSON.stringify(parsed.error);
+                  }
+                }
+                reject(new Error(errorMsg));
               }
             } catch (e) {
-              reject(new Error(`Réponse SasPay non JSON: ${data.slice(0, 100)}`));
+              reject(new Error(`Réponse SasPay non JSON (HTTP ${res.statusCode}): ${data.slice(0, 100)}`));
             }
           });
         });
@@ -5465,14 +5579,23 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
       }
 
       const amount = link ? parseFloat(link.amount_fcfa) : 5000;
+      if (amount < 200 && (!link || link.currency === 'XOF' || link.currency === 'FCFA')) {
+        return res.status(400).json({
+          success: false,
+          error: 'Le montant minimum autorisé pour un paiement Mobile Money réel est de 200 FCFA.',
+          status: 'FAILED'
+        });
+      }
+
       const activeFeePercent = adminStore.getFeePercent(merchantId);
       const fee = parseFloat(((amount * activeFeePercent) / 100).toFixed(2));
       const net = parseFloat((amount - fee).toFixed(2));
+      const cleanPhone = normalizeAfricanPhone(customer_phone, country_code || 'TG');
 
       transaction = {
-        id: 'tx_pay_' + crypto.randomUUID().replace(/-/g, '').slice(0, 14),
+        id: crypto.randomUUID(),
         merchant_id: merchantId,
-        payment_link_id: link ? link.id : null,
+        payment_link_id: (link && link.id && String(link.id).length > 20) ? link.id : null,
         title: link ? link.title : 'Commande en ligne',
         amount_gross: amount,
         fee_platform: fee,
@@ -5481,12 +5604,16 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
         country: country_code || 'TG',
         operator_id: operator_id || null,
         customer_name: customer_name || 'Client VandiasPay',
-        customer_phone: customer_phone || '+22890000000',
+        customer_phone: cleanPhone,
         customer_email: customer_email || 'client@email.com',
         payment_method: methodUpper,
         status: 'PENDING',
         mode: isLivePayment ? 'live' : 'sandbox',
         redirect_url: link ? link.redirect_url : '/index.html',
+        metadata: {
+          original_method: methodUpper,
+          operator_id: operator_id || null
+        },
         created_at: new Date().toISOString()
       };
 
@@ -5503,7 +5630,7 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
       country: country_code || transaction.country || 'TG',
       amount: transaction.amount_gross,
       currency: transaction.currency,
-      phone: customer_phone || transaction.customer_phone,
+      phone: transaction.customer_phone,
       name: customer_name || transaction.customer_name,
       email: customer_email || transaction.customer_email,
       otpCode: otp_code,
@@ -5511,15 +5638,18 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
     });
 
     transaction.payment_method = methodUpper;
-    transaction.customer_phone = customer_phone || transaction.customer_phone;
-    transaction.customer_name = customer_name || transaction.customer_name;
-    transaction.customer_email = customer_email || transaction.customer_email;
     transaction.operator_reference = gatewayResult.operator_reference || `VP-${methodUpper.slice(0, 3)}-${Date.now().toString().slice(-6)}`;
     transaction.updated_at = new Date().toISOString();
 
     if (!gatewayResult.success) {
       transaction.status = 'FAILED';
       transaction.failure_reason = gatewayResult.error || 'Échec d\'initiation du paiement';
+      if (supabase) {
+        try {
+          const dbRow = prepareSupabaseTransactionRow(transaction);
+          await supabase.from('transactions').upsert([dbRow]);
+        } catch (e) {}
+      }
       return res.status(400).json({
         success: false,
         error: gatewayResult.error || 'Impossible d\'initier la demande de paiement auprès de votre opérateur.',
@@ -5534,6 +5664,13 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
       // Crédit solde marchand et diffusion temps réel
       if (merchant) {
         await handlePaymentSuccess(transaction, merchant, link);
+      }
+
+      if (supabase) {
+        try {
+          const dbRow = prepareSupabaseTransactionRow(transaction);
+          await supabase.from('transactions').upsert([dbRow]);
+        } catch (e) {}
       }
 
       return res.json({
@@ -5564,8 +5701,11 @@ app.post('/api/v1/pay/:id/process', async (req, res) => {
     transaction.status = 'PENDING';
     if (supabase) {
       try {
-        await supabase.from('transactions').upsert([transaction]);
-      } catch {}
+        const dbRow = prepareSupabaseTransactionRow(transaction);
+        await supabase.from('transactions').upsert([dbRow]);
+      } catch (err) {
+        console.warn('Supabase upsert transaction warning:', err.message);
+      }
     }
 
     return res.json({

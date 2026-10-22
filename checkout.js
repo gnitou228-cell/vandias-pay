@@ -47,6 +47,43 @@ function getFlagUrl(countryCode) {
   return 'https://flagcdn.com/w40/' + c + '.png';
 }
 
+function normalizeAfricanPhone(phone, countryCode = 'TG') {
+  if (!phone) return '';
+  let digits = String(phone).replace(/[\s\-\.\(\)\/]/g, '');
+  if (digits.startsWith('00')) digits = '+' + digits.slice(2);
+
+  const prefixes = {
+    TG: '228', BF: '226', CI: '225', BJ: '229', SN: '221',
+    CM: '237', ML: '223', NE: '227', GN: '224', CD: '243',
+    CG: '242', GA: '241'
+  };
+
+  const cUpper = (countryCode || 'TG').toUpperCase();
+  const targetPrefix = prefixes[cUpper] || '228';
+
+  if (digits.startsWith('+')) {
+    let clean = digits.slice(1).replace(/\+/g, '');
+    if (clean.startsWith(targetPrefix + targetPrefix)) {
+      clean = clean.slice(targetPrefix.length);
+    }
+    return '+' + clean;
+  }
+
+  if (digits.startsWith(targetPrefix + targetPrefix)) {
+    digits = digits.slice(targetPrefix.length);
+    return '+' + digits;
+  }
+  if (digits.startsWith(targetPrefix)) {
+    return '+' + digits;
+  }
+
+  if (digits.startsWith('0') && ['TG', 'BF', 'BJ'].includes(cUpper) && digits.length === 9) {
+    digits = digits.slice(1);
+  }
+
+  return '+' + targetPrefix + digits;
+}
+
 function applyCheckoutDOM() {
   const merchantEl = document.getElementById('checkoutMerchantName');
   const avatarEl = document.getElementById('merchantAvatarCircle');
@@ -1665,12 +1702,41 @@ function initPaymentSubmission() {
     if (emailInput) CheckoutState.payer.email = emailInput.value.trim();
     if (phoneInput) CheckoutState.payer.phone = phoneInput.value.trim();
 
+    // 1. Contrôle du montant minimum (requis par SasPay et les passerelles télécoms)
+    if ((CheckoutState.currency === 'FCFA' || CheckoutState.currency === 'XOF') && Number(CheckoutState.amount) < 200) {
+      alert("Le montant minimum autorisé pour un paiement Mobile Money réel est de 200 FCFA (requis par les opérateurs télécoms).");
+      return;
+    }
+
+    // 2. Normalisation stricte du numéro de téléphone
+    const cleanPhone = normalizeAfricanPhone(CheckoutState.payer.phone, CheckoutState.country);
+    if (!cleanPhone || cleanPhone.length < 9) {
+      alert("Veuillez saisir un numéro de téléphone mobile valide pour votre pays.");
+      if (phoneInput) phoneInput.focus();
+      return;
+    }
+    CheckoutState.cleanPhone = cleanPhone;
+
     const op = CheckoutState.selectedOp || {
       id: CheckoutState.method,
       method: CheckoutState.method,
       name: CheckoutState.method.toUpperCase(),
       logo: 'assets/operators/card.svg'
     };
+
+    // Auto-détection intelligente pour le Togo si sélection incohérente
+    let opId = op.id;
+    let opMethod = (op.method || CheckoutState.method || 'TMONEY').toUpperCase();
+    if (CheckoutState.country === 'TG') {
+      const local8 = cleanPhone.slice(-8);
+      if (/^(96|97|98|99)/.test(local8)) {
+        opId = 'moov_tg';
+        opMethod = 'MOOV';
+      } else if (/^(90|91|92|93|70|71)/.test(local8)) {
+        opId = 'tmoney_tg';
+        opMethod = 'TMONEY';
+      }
+    }
 
     // Validation OTP obligatoire pour Orange Money Burkina Faso & CI
     let otpVal = null;
@@ -1700,10 +1766,10 @@ function initPaymentSubmission() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'initiate',
-          payment_method: (op.method || CheckoutState.method || 'TMONEY').toUpperCase(),
-          operator_id: op.id,
+          payment_method: opMethod,
+          operator_id: opId,
           country_code: CheckoutState.country,
-          customer_phone: `${CheckoutState.prefix} ${CheckoutState.payer.phone}`,
+          customer_phone: cleanPhone,
           customer_name: CheckoutState.payer.name,
           customer_email: CheckoutState.payer.email,
           otp_code: otpVal
@@ -1722,15 +1788,16 @@ function initPaymentSubmission() {
           return;
         }
 
-        // Statut PENDING : affichage de l'écran d'attente
+        // Statut PENDING confirmé par l'API : affichage de l'écran d'attente
         CheckoutState.lastReceipt = null;
         startPendingValidation(data);
       } else {
-        alert(data.error || "Impossible d'initier le paiement. Veuillez vérifier vos coordonnées.");
+        // En cas de refus ou erreur opérateur, afficher la raison exacte sans lancer de compte à rebours trompeur
+        alert(data.error || "Impossible d'initier le paiement mobile. Veuillez vérifier votre numéro et solde.");
       }
     } catch (err) {
-      console.warn('Submission error fallback:', err);
-      startPendingValidation();
+      console.warn('Submission error:', err);
+      alert("Erreur de connexion : " + (err.message || "Veuillez vérifier votre connexion Internet et réessayer."));
     } finally {
       if (btnSubmit) {
         btnSubmit.disabled = false;
@@ -1765,11 +1832,12 @@ function startPendingValidation(apiResponse = null) {
     const iconClass = isSvg ? 'w-full h-full object-contain p-2' : (isOrange ? 'w-full h-full object-contain p-1' : 'w-full h-full object-cover scale-[1.03]');
     iconEl.innerHTML = `<img src="${op.logo}" alt="${op.name}" class="${iconClass} rounded-2xl">`;
   }
-  if (targetPhoneEl) targetPhoneEl.textContent = `${CheckoutState.prefix} ${CheckoutState.payer.phone}`;
+  const displayPhone = CheckoutState.cleanPhone || `${CheckoutState.prefix} ${CheckoutState.payer.phone}`;
+  if (targetPhoneEl) targetPhoneEl.textContent = displayPhone;
   if (opNameEl) opNameEl.textContent = op.name;
   if (promptDescEl) {
     const hintText = (typeof op.hint === 'function') ? op.hint(CheckoutState.amount) : op.hint;
-    promptDescEl.innerHTML = `${hintText || 'Un message push a été envoyé sur votre mobile.'}<br><span class="text-slate-500 font-normal">Numéro cible :</span> <strong class="text-[#0F172A] font-mono">${CheckoutState.prefix} ${CheckoutState.payer.phone}</strong>`;
+    promptDescEl.innerHTML = `${hintText || 'Une demande de confirmation a été envoyée sur votre mobile.'}<br><span class="text-slate-500 font-normal">Numéro cible :</span> <strong class="text-[#0F172A] font-mono">${displayPhone}</strong>`;
   }
 
   // Lancement du compte à rebours de 58 secondes
